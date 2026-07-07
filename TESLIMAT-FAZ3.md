@@ -7,7 +7,7 @@ Tarih: 2026-07-07 · Python 3.12.4 · **69/69 test geçti** (61 → +8; öncekil
 | Bölüm | Durum |
 |---|---|
 | 0. Backtest metodoloji düzeltmeleri | ✅ taban çizgisi + örtüşmeyen pencere + DCA adaleti |
-| 1. GitHub canlı + Actions arşivleyici | ✅ kod+workflow hazır, yerel test; **push kullanıcı auth bekliyor** |
+| 1. GitHub canlı + Actions arşivleyici | ✅ push edildi, workflow **başarıyla çalıştı**, CSV repoya düştü |
 | 2. AI sentez paketi | ✅ `aipaket` + `/aipaket` (gerçek Telegram) |
 | 3. Google Trends göstergesi | ✅ canlı + testli; **kontrarian yön doğrulanmadı** (dürüst) |
 | 4. Dokümantasyon | ✅ rehber geri çekmeler, README, bu dosya |
@@ -61,8 +61,10 @@ büyümesidir."_ 4 yeni test (örtüşmeyen<örtüşen, etkin dönem, nakit-park
 - **`archive_fetch` + `import_actions` yerel test edildi:** CSV satırı üretildi
   (`data/archive/2026-07.csv`), import prim_history'yi besledi (**geçerli prim 23→24**,
   z-skor arşivi doluyor); hafta sonu kayıtları `weekend=1` etiketi + weekend_expectation.
-- **⏳ Kalan:** ilk `git push` kullanıcının GitHub auth'unu bekliyor (`gh` kurulu değil).
-  Komut: `git push -u origin main` (auth sonrası). Push'tan sonra Actions otomatik başlar.
+- **✅ CANLI:** `git push -u origin main` başarılı (dal master→main). Workflow API ile tetiklendi
+  → **conclusion=success**; Actions bot'u repoya yeni CSV satırı ekledi (commit `9b6b11f`,
+  satır `2026-07-07T18:30:01` ons=4153.0 — Actions'ın kendi çektiği taze fiyat). 15 dk cron aktif.
+  Repo: https://github.com/Mertsaglm/gold_tracking_system
 
 ## Bölüm 2 — AI sentez paketi
 

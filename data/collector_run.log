@@ -1,0 +1,23 @@
+2026-07-07 18:32:13,113 INFO collector: Toplayýcý baþladý. Truncgil 60s, yfinance 300s.
+2026-07-07 18:32:14,730 INFO collector: yfinance: ons=4156.60009765625 usdtry=46.83599853515625
+2026-07-07 18:32:14,996 INFO collector: prim=-0.823% (naive=-0.324) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:33:15,263 INFO collector: prim=-0.823% (naive=-0.324) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:34:15,567 INFO collector: prim=-0.823% (naive=-0.324) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:35:15,875 INFO collector: prim=-0.823% (naive=-0.324) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:36:16,417 INFO collector: prim=-0.823% (naive=-0.324) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:37:17,583 INFO collector: yfinance: ons=4157.2001953125 usdtry=46.83290100097656
+2026-07-07 18:37:17,583 INFO collector: prim=-0.831% (naive=-0.332) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:38:17,844 INFO collector: prim=-0.831% (naive=-0.332) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:39:18,302 INFO collector: prim=-0.831% (naive=-0.332) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:40:18,784 INFO collector: prim=-0.831% (naive=-0.332) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:41:19,258 INFO collector: prim=-0.831% (naive=-0.332) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:42:20,487 INFO collector: yfinance: ons=4155.60009765625 usdtry=46.833900451660156
+2026-07-07 18:42:20,487 INFO collector: prim=-0.794% (naive=-0.296) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:43:20,849 INFO collector: prim=-0.794% (naive=-0.296) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:44:25,818 INFO collector: prim=-0.794% (naive=-0.296) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:45:26,346 INFO collector: prim=-0.703% (naive=-0.204) makas=0.015 ceyrek_prim=-0.17 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:46:27,546 INFO collector: prim=-0.703% (naive=-0.204) makas=0.015 ceyrek_prim=-0.17 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:47:28,541 INFO collector: yfinance: ons=4154.2001953125 usdtry=46.83319854736328
+2026-07-07 18:47:28,541 INFO collector: prim=-0.668% (naive=-0.169) makas=0.015 ceyrek_prim=-0.17 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:48:28,905 INFO collector: prim=-0.668% (naive=-0.169) makas=0.015 ceyrek_prim=-0.17 [GECERLI tum_bacaklar_taze]
+2026-07-07 18:48:28,906 INFO collector: max_seconds doldu, çýkýlýyor.

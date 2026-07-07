@@ -1,2 +1,5 @@
 2026-07-07 20:51:55,867 INFO report: rapor yazıldı: C:\Users\merts\Desktop\altın\reports\rapor_2026-07-07.md
 2026-07-07 20:51:56,439 INFO telegram: telegram: 1 parça gönderildi (chat=1019200198, mode=plain)
+2026-07-07 22:01:49,600 INFO report: rapor yazıldı: C:\Users\merts\Desktop\altın\reports\rapor_2026-07-07.md
+2026-07-07 22:01:50,260 INFO telegram: telegram: 1 parça gönderildi (chat=1019200198, mode=plain)
+2026-07-07 22:01:50,264 INFO daily_job: daily_job: {'tarih': '2026-07-07', 'gun': 1, 'evds': {'usdtry_buy': 29, 'usdtry_sell': 29, 'eurtry_buy': 29, 'tufe': 0, 'kulce_altin_sell': 0, 'cumhuriyet_sell': 0, 'aofm_politika': 29, 'mevduat_1ay': 5, 'mevduat_3ay': 5, 'mevduat_6ay': 5, 'mevduat_1yil': 5, 'enf_bek_12ay': 2}, 'rapor': 'C:\\Users\\merts\\Desktop\\altın\\reports\\rapor_2026-07-07.md', 'telegram': 'gonderildi'}

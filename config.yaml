@@ -160,6 +160,12 @@ alerts:
   prim_abs_pct: 1.5                     # |prim| > bu -> bildirim
   prim_z: 2.0                           # |z| > bu
   daily_move_atr: 2.0                   # günlük hareket > N × ATR
+  spread_percentile: 90                 # makas > tarihsel pN -> bildirim
+  quarter_z: 2.0                        # çeyrek primi |z| > bu
+  cooldown_hours: 24                    # aynı sinyale soğuma
+  daily_cap: 6                          # günlük toplam bildirim tavanı
+  state_file: "data/alert_state.json"
+  archive_freq_minutes: 15              # arşiv/bildirim sıklığı (public repo: sınırsız)
 telegram:
   enabled: true
   # token + chat_id .env'den (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)

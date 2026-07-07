@@ -1,0 +1,52 @@
+name: Gunluk otonom rapor
+
+# Her gun 15:35 UTC (18:35 TR; cron gecikmesi payi ile 18:45 hedefi).
+# import_actions -> EVDS -> (pazartesi mutabakat) -> rapor (pazar: haftalik) -> Telegram -> commit.
+
+on:
+  schedule:
+    - cron: "35 15 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-commit          # arsivleyiciyle ayni grup -> push cakismasi yok
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Bagimliliklar
+        run: pip install --quiet -r requirements.txt
+
+      - name: Gunluk is (import + evds + rapor + Telegram)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EVDS_API_KEY: ${{ secrets.EVDS_API_KEY }}
+        run: python -m src.daily_job
+
+      - name: Commit + push (rebase korumali)
+        run: |
+          git config user.name "altin-daily"
+          git config user.email "actions@github.com"
+          git add data/ reports/
+          if ! git diff --cached --quiet; then
+            git commit -m "daily: rapor $(date -u +%Y-%m-%d)"
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push && break
+              echo "push retry $i"; sleep 3
+            done
+          else
+            echo "degisiklik yok"
+          fi

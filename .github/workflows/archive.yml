@@ -1,19 +1,24 @@
-name: Altin arsivleyici
+name: Altin arsivleyici + bildirim
 
-# 15 dakikada bir Truncgil + yfinance ons/kur cek -> CSV -> commit/push.
+# 15 dk: Truncgil + yfinance cek -> CSV -> esik degerlendir -> Telegram bildirim -> commit.
 # Actions cron 5-30 dk gecikebilir (bilinen kisit); timestamp cekim aninda alinir.
-# Secret YOK: kaynaklar keysiz. EVDS Actions'a konmaz.
+# Public repo: Actions dakikasi sinirsiz. Secret: Telegram (bildirim icin).
 
 on:
   schedule:
     - cron: "*/15 * * * *"
-  workflow_dispatch: {}          # elle tetik
+  workflow_dispatch:
+    inputs:
+      test_notify:
+        description: "Test bildirimi gonder (gercek esiklerden bagimsiz)"
+        type: boolean
+        default: false
 
 permissions:
-  contents: write                # commit/push icin
+  contents: write
 
 concurrency:
-  group: archive
+  group: repo-commit          # gunluk rapor workflow'uyla ayni grup -> push cakismasi yok
   cancel-in-progress: false
 
 jobs:
@@ -33,14 +38,29 @@ jobs:
       - name: Fiyat cek + CSV'ye ekle
         run: python -m src.archive_fetch
 
-      - name: Commit + push
+      - name: Bildirim degerlendir + gonder
+        continue-on-error: true          # bildirim hatasi commit'i bloklamasin
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ inputs.test_notify }}" = "true" ]; then
+            python -m src.notify test
+          else
+            python -m src.notify
+          fi
+
+      - name: Commit + push (rebase korumali)
         run: |
           git config user.name "altin-archiver"
           git config user.email "actions@github.com"
-          git add data/archive/
+          git add data/archive/ data/alert_state.json
           if ! git diff --cached --quiet; then
             git commit -m "archive: $(date -u +%Y-%m-%dT%H:%MZ)"
-            git push
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push && break
+              echo "push retry $i"; sleep 3
+            done
           else
             echo "degisiklik yok"
           fi

@@ -13,6 +13,41 @@ from . import evds_job
 log = logging.getLogger("report")
 
 
+def archive_health(cfg, hours: int = 24) -> dict:
+    """Arşiv CSV'lerinden son N saatte başarı oranı + en uzun boşluk (Actions sağlığı).
+
+    Her başarılı arşiv çalışması bir CSV satırı ekler → gap ≈ ardışık başarısızlık.
+    """
+    import csv
+    import glob
+    from datetime import timedelta
+    files = sorted(glob.glob(str(util.abspath("data/archive") / "*.csv")))
+    now = util.utcnow()
+    since = now - timedelta(hours=hours)
+    ts = []
+    for path in files[-2:]:                 # son 2 ay dosyası yeter
+        for row in csv.DictReader(open(path, encoding="utf-8")):
+            try:
+                t = datetime.fromisoformat(row["ts_utc"])
+                if t >= since:
+                    ts.append(t)
+            except (ValueError, KeyError):
+                continue
+    ts.sort()
+    freq = cfg["alerts"].get("archive_freq_minutes", 15)
+    expected = int(hours * 60 / freq)
+    actual = len(ts)
+    max_gap_min = 0.0
+    if len(ts) >= 2:
+        max_gap_min = max((ts[i] - ts[i - 1]).total_seconds() / 60
+                          for i in range(1, len(ts)))
+    consec_fail = int(max_gap_min / freq) - 1 if max_gap_min else 0
+    return {"basari": actual, "beklenen": expected,
+            "basari_pct": min(100.0, actual / expected * 100) if expected else 0,
+            "en_uzun_bosluk_dk": max_gap_min,
+            "ardisik_basarisiz": max(0, consec_fail)}
+
+
 def coverage_report(con, cfg, hours: int = 24) -> dict:
     """Son N saatte veri kapsaması ve en uzun kesinti (PC kapalı delikleri görünür kılar)."""
     from datetime import timedelta
@@ -186,6 +221,17 @@ def build_report(cfg: dict) -> str:
     lines.append(f"- Son 24s veri kapsaması: **%{cov['coverage_pct']:.0f}** "
                  f"({cov['actual']}/{cov['expected']} beklenen kayıt) · "
                  f"en uzun kesinti: **{cov['max_gap_min']:.0f} dk**")
+    # arşiv sağlığı (Actions)
+    try:
+        h = archive_health(cfg, 24)
+        lines.append(f"- Arşiv sağlığı (Actions): **{h['basari']}/{h['beklenen']}** çalışma "
+                     f"(%{h['basari_pct']:.0f}) · en uzun boşluk {h['en_uzun_bosluk_dk']:.0f} dk")
+        if h["ardisik_basarisiz"] >= 3:
+            lines.insert(3, f"> ⚠️ **Arşiv uyarısı:** ~{h['ardisik_basarisiz']} ardışık çalışma "
+                            f"başarısız (en uzun boşluk {h['en_uzun_bosluk_dk']:.0f} dk). "
+                            f"GitHub Actions kontrol edilmeli.")
+    except Exception as e:
+        log.warning("arşiv sağlığı hata: %s", e)
     if cov["coverage_pct"] < 80:
         lines.append("  - ⚠️ Kapsama düşük (PC kapalı kalmış olabilir); prim z-skoru yalnız "
                      "FRESH kayıtları saydığı için tarihçe bozulmaz.")
@@ -208,6 +254,46 @@ def build_report(cfg: dict) -> str:
 
     con.close()
     return "\n".join(lines)
+
+
+def build_weekly_report(cfg: dict) -> str:
+    """Pazar akşamı haftalık derin rapor: hafta dekompozisyonu + arşiv/z-skor ilerlemesi."""
+    con = db.connect(cfg)
+    off = cfg.get("timezone_offset_hours", 3)
+    local = util.to_local(util.utcnow(), off)
+    from datetime import timedelta
+    week_ago = util.iso(util.utcnow() - timedelta(days=7))
+    L = [f"# 📅 Haftalık Altın Raporu — {local.strftime('%d.%m.%Y')} (TR)", ""]
+
+    # haftanın dekompozisyonu
+    now_row = db.latest_prim(con)
+    prev = con.execute("SELECT * FROM prim_history WHERE ts_utc<=? ORDER BY ts_utc DESC LIMIT 1",
+                       (week_ago,)).fetchone()
+    L.append("## Haftanın Hareketi (dekompozisyon)")
+    L.append("")
+    if now_row and prev and prev["ons_usd"] and prev["theoretical"]:
+        dec = calc.decompose(prev["ons_usd"], prev["usdtry"], prev["prim_pct"] or 0,
+                             now_row["ons_usd"], now_row["usdtry"], now_row["prim_pct"] or 0)
+        usd_based = dec.ons_pct + dec.prim_pct
+        L += [f"- Ons: {dec.ons_pct:+.2f}% · Kur: {dec.kur_pct:+.2f}% · Prim: {dec.prim_pct:+.2f}%",
+              f"- **Toplam gram TL: {dec.total_pct:+.2f}%** · Dolar bazlı: {usd_based:+.2f}%"]
+    else:
+        L.append("_Haftalık dekompozisyon için yeterli geçmiş yok._")
+    L.append("")
+
+    # z-skor arşiv ilerlemesi
+    zmin = cfg["stats"]["zscore_min_samples"]
+    n_valid = db.count_valid_prim(con)
+    L += ["## Arşiv İlerlemesi", "",
+          f"- Z-skor arşivi: **{n_valid}/{zmin} gün** "
+          f"({'hazır ✅' if n_valid >= zmin else 'birikiyor ⏳'})",
+          f"- Toplam prim kaydı: {con.execute('SELECT COUNT(*) FROM prim_history').fetchone()[0]}",
+          ""]
+    con.close()
+    # normal günlük içeriği de ekle (kadran, makro, sinyaller)
+    L.append("---\n")
+    L.append(build_report(cfg))
+    return "\n".join(L)
 
 
 def save_report(cfg: dict, text: str) -> str:

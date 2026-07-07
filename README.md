@@ -104,6 +104,42 @@ kaynaklar keysiz). Cron 5-30 dk gecikebilir (Actions kısıtı); timestamp çeki
 - **Oracle'a geçince:** çift veri olmaması için Actions workflow'unu kapat (Actions → Disable),
   canlı toplayıcı devralır.
 
+## Otonom sistem (Faz 4 — kullanıcı hiçbir şey çalıştırmaz)
+
+İki GitHub Actions workflow'u her şeyi kendi yürütür; **Telegram'a kendiliğinden mesaj düşer.**
+
+| Workflow | Sıklık | Ne yapar |
+|---|---|---|
+| `archive.yml` | 15 dk | Fiyat çeker → CSV → **bildirim eşiklerini değerlendirir** → tetikte Telegram → commit |
+| `daily.yml` | Her gün 15:35 UTC (18:35 TR) | import → EVDS → rapor → Telegram → commit (pazartesi mutabakat, pazar haftalık) |
+
+**Secrets (repo Settings → Secrets → Actions):** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`,
+`EVDS_API_KEY`. `scripts/set_secrets.py` ile API üzerinden eklendi (gh gerekmez).
+
+**Bildirim kuralları (rehber 6.2):** |prim| > %1.5 veya z > 2 · makas > tarihsel p90 ·
+günlük hareket > 2×ATR · çeyrek primi z > 2. **Yorgunluk kontrolü:** aynı sinyale 24s soğuma +
+günlük tavan (6). Üç bacak FRESH değilse (hafta sonu/tatil) anomali bastırılır; ayrı "pazartesi
+beklentisi" mesajı günde 1. Durum `data/alert_state.json`'da (workflow commit'ler).
+
+**Test:** Actions → "Altin arsivleyici" → Run workflow → `test_notify: true` → tek seferlik test bildirimi.
+
+### ⚠️ Yerelde çalışmadan önce `git pull`
+Bot 15 dk'da bir repoya commit atıyor. Yerelde bir şey yapmadan önce **her seferinde `git pull`**
+— yoksa push çakışır. (Workflow'lar `concurrency: repo-commit` + `pull --rebase` ile kendi
+aralarında çakışmaz.)
+
+### Actions dakika bütçesi
+Repo **public** → Actions dakikası **sınırsız**, mevcut 15 dk sıklık sorunsuz. Ölçülen süreler:
+arşiv ~30s (faturalanan 1 dk), günlük ~3 dk. **Repoyu private yaparsan** aylık 2000 dk sınırı
+devreye girer: 15 dk × ~2880 çalışma = ~2880 dk > 2000 → **sıklığı 30 dk'ya çek**
+(`config.yaml alerts.archive_freq_minutes: 30` + `archive.yml` cron'u `*/30`), böylece
+~1440 + günlük 90 ≈ 1530 dk < 2000. Truncgil ~15 dk güncellendiği için 30 dk'da bilgi kaybı düşük.
+
+### Sistemi duraklat / yeniden başlat
+- **Duraklat:** GitHub → Actions → ilgili workflow → "⋯" → Disable workflow.
+- **Yeniden başlat:** aynı menü → Enable.
+- **Oracle'a geçiş:** her iki workflow'u Disable et (çift veri olmasın), Oracle systemd devralır.
+
 Linux/macOS'ta `.venv/bin/python`.
 
 > **Windows notu:** proje yolu non-ASCII ('altın') içerdiğinden `util.load_env()` SSL

@@ -1,0 +1,9 @@
+[Unit]
+Description=Altin gunluk yedek (her gun 20:15 TR)
+
+[Timer]
+OnCalendar=*-*-* 17:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

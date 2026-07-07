@@ -1,0 +1,164 @@
+"""Gün sonu markdown raporu: fiyat özeti + dekompozisyon + prim/makas + veri kalitesi.
+
+Rapor hem dosyaya yazılır hem (istenirse) Telegram'a gönderilir.
+"""
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timedelta, timezone
+
+from . import calc, db, util
+
+log = logging.getLogger("report")
+
+
+def _fmt(v, suffix="", nd=2):
+    if v is None:
+        return "—"
+    return f"{v:,.{nd}f}{suffix}"
+
+
+def _prim_at_or_before(con, ts_iso: str):
+    return con.execute(
+        "SELECT * FROM prim_history WHERE ts_utc<=? ORDER BY ts_utc DESC LIMIT 1",
+        (ts_iso,),
+    ).fetchone()
+
+
+def build_report(cfg: dict) -> str:
+    con = db.connect(cfg)
+    off = cfg.get("timezone_offset_hours", 3)
+    now = util.utcnow()
+    local = util.to_local(now, off)
+    latest = db.latest_prim(con)
+
+    lines = []
+    lines.append(f"# 🥇 Altın Günlük Rapor — {local.strftime('%d.%m.%Y %H:%M')} (TR)")
+    lines.append("")
+
+    if latest is None:
+        lines.append("_Henüz prim verisi yok. Toplayıcı yeni başlamış olabilir._")
+        con.close()
+        return "\n".join(lines)
+
+    tag = "🟡 INDICATIVE (forex kapalı/bayat)" if latest["indicative"] else "🟢 GEÇERLİ"
+    lines.append(f"**Veri durumu:** {tag}  ·  _{latest['reason']}_")
+    lines.append("")
+
+    # ---- Fiyat özeti ----
+    lines.append("## Fiyat Özeti")
+    lines.append("")
+    lines.append("| Metrik | Değer |")
+    lines.append("|---|---|")
+    lines.append(f"| Ons (XAU/USD) | {_fmt(latest['ons_usd'])} $ |")
+    lines.append(f"| USD/TRY | {_fmt(latest['usdtry'], nd=4)} |")
+    lines.append(f"| Teorik has gram | {_fmt(latest['theoretical'])} ₺ |")
+    lines.append(f"| Piyasa has gram (Kapalıçarşı) | {_fmt(latest['market_has'])} ₺ |")
+    lines.append(f"| Perakende gram | {_fmt(latest['gram_retail'])} ₺ |")
+    lines.append("")
+
+    # ---- Prim / Makas ----
+    lines.append("## Prim & Makas")
+    lines.append("")
+    lines.append("| Metrik | Değer |")
+    lines.append("|---|---|")
+    lines.append(f"| **Prim (has, saflık düzeltmeli)** | {_fmt(latest['prim_pct'], '%', 3)} |")
+    lines.append(f"| Prim (düzeltmesiz, perakende) | {_fmt(latest['prim_pct_naive'], '%', 3)} |")
+    if latest["prim_pct"] is not None and latest["prim_pct_naive"] is not None:
+        d = latest["prim_pct_naive"] - latest["prim_pct"]
+        lines.append(f"| → Saflık düzeltmesi etkisi | {_fmt(d, ' puan', 3)} |")
+    lines.append(f"| Has gram makası | {_fmt(latest['spread_pct'], '%', 3)} |")
+    lines.append(f"| Çeyrek primi | {_fmt(latest['quarter_prim_pct'], '%', 2)} |")
+    lines.append("")
+
+    band = cfg["stats"]["prim_sane_band_pct"]
+    if latest["prim_pct"] is not None:
+        if abs(latest["prim_pct"]) <= band:
+            lines.append(f"> ✅ Prim ±%{band:g} makul bandında.")
+        else:
+            lines.append(f"> ⚠️ Prim ±%{band:g} bandının DIŞINDA — veri/şema kontrolü önerilir.")
+    lines.append("")
+
+    # ---- Dekompozisyon (son 24s) ----
+    lines.append("## Hareket Ayrıştırma (son ~24 saat)")
+    lines.append("")
+    prev = _prim_at_or_before(con, util.iso(now - timedelta(hours=24)))
+    if prev and prev["ts_utc"] != latest["ts_utc"] and prev["ons_usd"] and prev["theoretical"]:
+        dec = calc.decompose(
+            prev["ons_usd"], prev["usdtry"], prev["prim_pct"] or 0.0,
+            latest["ons_usd"], latest["usdtry"], latest["prim_pct"] or 0.0,
+        )
+        lines.append("| Bileşen | Katkı |")
+        lines.append("|---|---|")
+        lines.append(f"| Ons (XAU/USD) | {_fmt(dec.ons_pct, '%', 2)} |")
+        lines.append(f"| Kur (USD/TRY) | {_fmt(dec.kur_pct, '%', 2)} |")
+        lines.append(f"| Kapalıçarşı primi | {_fmt(dec.prim_pct, '%', 2)} |")
+        lines.append(f"| **Toplam gram TL** | **{_fmt(dec.total_pct, '%', 2)}** |")
+    else:
+        lines.append("_Ayrıştırma için yeterli geçmiş yok (≥24s veri gerekir)._")
+    lines.append("")
+
+    # ---- Veri kalitesi ----
+    lines.append("## Veri Kalitesi")
+    lines.append("")
+    n_ticks = con.execute("SELECT COUNT(*) FROM ticks").fetchone()[0]
+    n_prim = con.execute("SELECT COUNT(*) FROM prim_history").fetchone()[0]
+    n_valid = db.count_valid_prim(con)
+    n_ohlc = con.execute("SELECT COUNT(*) FROM ohlc_1m").fetchone()[0]
+    zmin = cfg["stats"]["zscore_min_samples"]
+    lines.append(f"- Ham tick: **{n_ticks}** · 1dk OHLC bar: **{n_ohlc}**")
+    lines.append(f"- Prim kaydı: **{n_prim}** (geçerli: {n_valid})")
+    if n_valid < zmin:
+        lines.append(f"- Z-skor: ⏳ **yetersiz veri** ({n_valid}/{zmin} geçerli örnek)")
+    else:
+        series = db.prim_series(con, only_valid=True)
+        z = calc.zscore(series[:-1], series[-1], zmin)
+        lines.append(f"- Prim z-skoru: **{_fmt(z.value, '', 2)}** (n={z.n})")
+    lines.append("")
+    lines.append("---")
+    lines.append("_Genel bilgilendirme amaçlıdır; yatırım tavsiyesi değildir._")
+
+    con.close()
+    return "\n".join(lines)
+
+
+def save_report(cfg: dict, text: str) -> str:
+    off = cfg.get("timezone_offset_hours", 3)
+    local = util.to_local(util.utcnow(), off)
+    fname = f"rapor_{local.strftime('%Y-%m-%d')}.md"
+    path = util.abspath(cfg["paths"]["reports_dir"]) / fname
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    con = db.connect(cfg)
+    con.execute("INSERT OR REPLACE INTO reports(date,path,created_utc) VALUES(?,?,?)",
+                (local.strftime('%Y-%m-%d'), str(path), util.iso(util.utcnow())))
+    con.commit()
+    con.close()
+    log.info("rapor yazıldı: %s", path)
+    return str(path)
+
+
+def latest_report_path(cfg: dict):
+    con = db.connect(cfg)
+    row = con.execute("SELECT path FROM reports ORDER BY date DESC LIMIT 1").fetchone()
+    con.close()
+    return row["path"] if row else None
+
+
+def main(cfg: dict, send: bool = True) -> str:
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    text = build_report(cfg)
+    path = save_report(cfg, text)
+    if send and cfg["telegram"]["enabled"]:
+        try:
+            from .telegram_bot import send_message
+            send_message(cfg, text)
+        except Exception as e:
+            log.warning("telegram gönderim hata: %s", e)
+    return path
+
+
+if __name__ == "__main__":
+    util.load_env()
+    main(util.load_config())

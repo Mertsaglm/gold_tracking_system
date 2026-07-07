@@ -1,0 +1,9 @@
+[Unit]
+Description=Altin Takip - Gun Sonu Raporu + Telegram
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/altin
+ExecStart=/home/ubuntu/altin/.venv/bin/python -m src.report

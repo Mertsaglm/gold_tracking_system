@@ -1,0 +1,1 @@
+"""Altın Takip MVP paketi."""

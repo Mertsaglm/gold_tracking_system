@@ -1,0 +1,9 @@
+[Unit]
+Description=Altin Takip - SQLite yedek + git push
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/altin
+ExecStart=/home/ubuntu/altin/scripts/backup.sh

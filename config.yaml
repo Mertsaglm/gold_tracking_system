@@ -1,0 +1,91 @@
+# ================= Altın Takip MVP — Yapılandırma =================
+# Tüm eşik / URL / oran bu dosyada. Kod içine sabit gömülmez.
+
+timezone_offset_hours: 3          # Türkiye UTC+3 (sabit, DST yok)
+
+paths:
+  db: "data/altin.sqlite"
+  reports_dir: "reports"
+  evds_series_file: "evds_series.json"
+  holidays_file: "holidays_tr.yaml"
+
+# ----------------- Veri kaynakları -----------------
+sources:
+  truncgil:
+    url: "https://finans.truncgil.com/v3/today.json"
+    poll_seconds: 60
+    timeout: 20
+    # Truncgil JSON anahtar eşlemesi (şema değişirse buradan güncelle)
+    keys:
+      usd: "USD"
+      gram_altin: "gram-altin"          # perakende gram (saflık düzeltmesi GEREKTİRİR)
+      gram_has_altin: "gram-has-altin"  # has (saf) referans — prim bunun üzerinden
+      ceyrek: "ceyrek-altin"
+      yarim: "yarim-altin"
+      tam: "tam-altin"
+      cumhuriyet: "cumhuriyet-altini"
+    update_date_key: "Update_Date"
+
+  yfinance:
+    poll_seconds: 300                   # gecikmeli + rate-limit; 5 dk yeterli
+    ons_ticker: "GC=F"                  # ons XAU/USD (futures proxy)
+    ons_fallback_ticker: "XAUUSD=X"
+    usdtry_ticker: "TRY=X"
+
+  evds:
+    base: "https://evds2.tcmb.gov.tr/service/evds"
+    # API key .env içinde EVDS_API_KEY. Key header'da gönderilir (Nisan 2024 kuralı).
+    start_date: "01-01-2015"
+    # Doğrulanmış kodlar; keşif script'i evds_series.json'ı zenginleştirir.
+    series:
+      usdtry_buy: "TP.DK.USD.A.YTL"
+      usdtry_sell: "TP.DK.USD.S.YTL"
+      eurtry_buy: "TP.DK.EUR.A.YTL"
+      tufe: "TP.FE.OKTG01"
+      # aşağıdakiler keşifle teyit edilecek (yoksa atlanır, çökmez):
+      kulce_altin_sell: "TP.MK.KUL.YTL"
+      cumhuriyet_sell: "TP.MK.CUM.YTL"
+
+# ----------------- Piyasa takvimi / durum makinesi -----------------
+market:
+  # Bacak bazında bayatlama eşiği (saniye). Aşınca STALE.
+  stale_seconds:
+    truncgil_gunduz: 300
+    truncgil_gece: 3600
+    yfinance: 1200                      # 20 dk (gecikmeli veri toleransı)
+    evds: 172800                        # 2 gün (günlük yayın)
+  gece_baslangic_hour: 1                # TR saatiyle 01:00-08:00 "gece" (düşük likidite)
+  gece_bitis_hour: 8
+  # Forex (ons + kur) seansı UTC: Pazar 22:00 -> Cuma 21:00 açık
+  forex_open_sunday_utc_hour: 22
+  forex_close_friday_utc_hour: 21
+
+# ----------------- Enstrüman metrikleri (has içerik) -----------------
+instruments:
+  troy_ounce_gram: 31.1034768
+  gram_has_purity: 1.0                  # gram-has-altin zaten saf (1000) bazında
+  gram_retail_purity: 0.995             # gram-altin ~995 bazında (saflık düzeltmesi)
+  coins:
+    ceyrek:   { gross_g: 1.804, milyem: 0.916 }
+    yarim:    { gross_g: 3.608, milyem: 0.916 }
+    tam:      { gross_g: 7.216, milyem: 0.916 }
+    cumhuriyet: { gross_g: 7.216, milyem: 0.916 }
+
+# ----------------- Hesap / istatistik -----------------
+stats:
+  zscore_min_samples: 60                # arşiv < 60 gün ise "yetersiz veri"
+  prim_sane_band_pct: 3.0               # |prim| bu bandın dışındaysa uyarı
+
+# ----------------- Rapor / Telegram -----------------
+report:
+  hour_local: 20                        # gün sonu raporu saati (TR)
+telegram:
+  enabled: true
+  # token + chat_id .env'den (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
+  poll_timeout: 30
+
+# ----------------- Yedekleme -----------------
+backup:
+  git_remote: "origin"
+  git_branch: "main"
+  commit_prefix: "backup"

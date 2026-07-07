@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+# Not: data/ ve reports/ YEDEKLENİR (private repo). Yerel WAL dosyaları hariç:
+data/*.sqlite-wal
+data/*.sqlite-shm

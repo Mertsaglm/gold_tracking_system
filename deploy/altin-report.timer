@@ -1,0 +1,10 @@
+[Unit]
+Description=Altin gun sonu raporu (her gun 20:00 TR)
+
+[Timer]
+# TR = UTC+3. 20:00 TR = 17:00 UTC. Sunucu saati UTC ise:
+OnCalendar=*-*-* 17:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

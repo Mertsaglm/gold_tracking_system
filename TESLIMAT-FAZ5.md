@@ -17,11 +17,11 @@ Tarih: 2026-07-07 · **91/91 test geçti** (79 → +12) · Repo public
 
 ## Bölüm 0 — Gizlilik (repo public kalıyor)
 
-**Öncesi → Sonrası** (izlenen dosyalarda):
+**Öncesi → Sonrası** (izlenen dosyalarda; ham değerler burada da kasıtlı olarak yazılmadı):
 ```
-TESLIMAT.md:      "Bot: `James_Rodriguez_bot` · chat_id `1019200198`"
+TESLIMAT.md:      "Bot: `<botun-gerçek-adı>` · chat_id `<10-haneli-id>`"
               →   "Bot: `<bot_adı>` · chat_id `<chat_id>`"
-TESLIMAT-FAZ4.md: "chat 1019200198"  →  "chat <chat_id>"
+TESLIMAT-FAZ4.md: "chat <10-haneli-id>"  →  "chat <chat_id>"
 ```
 - `git grep` ile izlenen `.md`'lerde artık **0 iz** (doğrulandı).
 - `logs/*.log` (chat_id içeriyordu) **izlemeden çıkarıldı** (Faz 3'te gitignore edilmişti ama

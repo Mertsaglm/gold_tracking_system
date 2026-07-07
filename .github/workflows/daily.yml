@@ -29,6 +29,9 @@ jobs:
       - name: Bagimliliklar
         run: pip install --quiet -r requirements.txt
 
+      - name: DB'yi dump'tan restore et (binary git'te yok)
+        run: python -m src.restore_db
+
       - name: Gunluk is (import + evds + rapor + Telegram)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -36,11 +39,14 @@ jobs:
           EVDS_API_KEY: ${{ secrets.EVDS_API_KEY }}
         run: python -m src.daily_job
 
+      - name: DB'yi dump'a yaz (commit icin diff'lenebilir)
+        run: python -m src.dbdump
+
       - name: Commit + push (rebase korumali)
         run: |
           git config user.name "altin-daily"
           git config user.email "actions@github.com"
-          git add data/ reports/
+          git add data/ reports/          # data/altin.sqlite gitignore'da; data/altin.sql izlenir
           if ! git diff --cached --quiet; then
             git commit -m "daily: rapor $(date -u +%Y-%m-%d)"
             for i in 1 2 3; do

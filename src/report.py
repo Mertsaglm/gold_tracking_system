@@ -13,6 +13,37 @@ from . import evds_job
 log = logging.getLogger("report")
 
 
+def weekend_section(con, cfg, days: int = 3) -> list:
+    """Son N günde hafta sonu beklenti kaydı varsa 'beklenti vs gerçekleşme' bölümü.
+
+    Veri yoksa boş liste (rapor sessiz kalır — hafta içi yanlışlıkla görünmez).
+    """
+    from datetime import timedelta
+    since = util.iso(util.utcnow() - timedelta(days=days))
+    rows = con.execute(
+        "SELECT ts_utc,expectation_pct FROM weekend_expectation "
+        "WHERE ts_utc>=? ORDER BY ts_utc", (since,)
+    ).fetchall()
+    if not rows:
+        return []                     # SESSİZ
+    # gerçekleşen = en yeni GEÇERLİ (hafta içi) prim
+    realized = con.execute(
+        "SELECT prim_pct FROM prim_history WHERE indicative=0 AND weekend=0 "
+        "ORDER BY ts_utc DESC LIMIT 1"
+    ).fetchone()
+    exp_avg = sum(r["expectation_pct"] for r in rows if r["expectation_pct"] is not None) / len(rows)
+    out = ["## Hafta Sonu Beklentisi vs Gerçekleşme", "",
+           f"- Hafta sonu ortalama beklenti (donmuş teoriğe göre): **%{exp_avg:+.2f}** "
+           f"({len(rows)} nokta)"]
+    if realized:
+        out.append(f"- Pazartesi gerçekleşen prim: **%{realized['prim_pct']:+.2f}** · "
+                   f"fark: **{realized['prim_pct'] - exp_avg:+.2f} puan**")
+    else:
+        out.append("- _Gerçekleşme için hafta içi geçerli prim henüz yok._")
+    out.append("")
+    return out
+
+
 def archive_health(cfg, hours: int = 24) -> dict:
     """Arşiv CSV'lerinden son N saatte başarı oranı + en uzun boşluk (Actions sağlığı).
 
@@ -162,6 +193,14 @@ def build_report(cfg: dict) -> str:
         lines.append("_Ayrıştırma için yeterli geçmiş yok (≥24s veri gerekir)._")
     lines.append("")
 
+    # ---- Hafta sonu beklentisi vs gerçekleşme (veri yoksa SESSİZ) ----
+    try:
+        wk = weekend_section(con, cfg)
+        if wk:
+            lines.extend(wk)
+    except Exception as e:
+        log.warning("hafta sonu bölümü hata: %s", e)
+
     # ---- EVDS makro bağlam ----
     try:
         ctx = evds_job.context(cfg)
@@ -302,7 +341,7 @@ def save_report(cfg: dict, text: str) -> str:
     fname = f"rapor_{local.strftime('%Y-%m-%d')}.md"
     path = util.abspath(cfg["paths"]["reports_dir"]) / fname
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    path.write_text(util.mask_pii(text), encoding="utf-8")  # commit'e chat_id kaçmasın
     con = db.connect(cfg)
     con.execute("INSERT OR REPLACE INTO reports(date,path,created_utc) VALUES(?,?,?)",
                 (local.strftime('%Y-%m-%d'), str(path), util.iso(util.utcnow())))

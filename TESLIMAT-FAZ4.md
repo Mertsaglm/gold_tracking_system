@@ -51,7 +51,7 @@ rapor (pazar: **haftalık derin** — hafta dekompozisyonu + z-skor arşiv ilerl
 **Kanıt — Actions'ta gerçek çalışma:**
 ```
 "Gunluk otonom rapor"  conclusion=success  202s
-→ rapor Telegram'a gönderildi (chat 1019200198) + DB/rapor commit'lendi
+→ rapor Telegram'a gönderildi (chat <chat_id>) + DB/rapor commit'lendi
 ```
 Yerel test: `daily_job` import 2 satır, EVDS 29 gün güncelledi, rapor Telegram'a düştü.
 

@@ -5,6 +5,7 @@ timezone_offset_hours: 3          # Türkiye UTC+3 (sabit, DST yok)
 
 paths:
   db: "data/altin.sqlite"
+  db_dump: "data/altin.sql"             # diff'lenebilir dump (binary DB yerine commit'lenir)
   reports_dir: "reports"
   evds_series_file: "evds_series.json"
   holidays_file: "holidays_tr.yaml"
@@ -170,6 +171,9 @@ telegram:
   enabled: true
   # token + chat_id .env'den (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
   poll_timeout: 30
+  # Komut yetkilendirmesi: TELEGRAM_CHAT_ID her zaman izinli.
+  # Ek izinli sohbetler (opsiyonel); izinli değilse komut sessizce yoksayılır.
+  extra_allowed_chat_ids: []
 
 # ----------------- Supervisor (7/24 watchdog) -----------------
 supervisor:

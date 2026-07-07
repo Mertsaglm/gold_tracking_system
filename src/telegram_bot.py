@@ -43,6 +43,21 @@ def _call(method: str, **params):
     return r.json()
 
 
+def allowed_chats(cfg: dict) -> set[str]:
+    """İzinli sohbet kimlikleri: .env TELEGRAM_CHAT_ID + config ekstralar."""
+    ids = set()
+    owner = util.env("TELEGRAM_CHAT_ID")
+    if owner:
+        ids.add(str(owner))
+    for x in cfg.get("telegram", {}).get("extra_allowed_chat_ids", []) or []:
+        ids.add(str(x))
+    return ids
+
+
+def is_allowed(chat_id: str, allowed: set[str]) -> bool:
+    return str(chat_id) in allowed
+
+
 def _chunks(text: str, size: int = TG_LIMIT - 200):
     """Satır sınırlarını koruyarak böl (tablo/paragraf ortadan kesilmesin)."""
     out, cur = [], ""
@@ -83,7 +98,8 @@ def send_message(cfg: dict, text: str, chat_id: str | None = None,
             data["parse_mode"] = parse_mode
         _call("sendMessage", **data)
         n += 1
-    log.info("telegram: %d parça gönderildi (chat=%s, mode=%s)", n, cid, parse_mode or "plain")
+    # chat_id loglanmaz (gizlilik); son 3 hane yeter
+    log.info("telegram: %d parça gönderildi (chat=…%s, mode=%s)", n, str(cid)[-3:], parse_mode or "plain")
     return n
 
 
@@ -157,8 +173,8 @@ def run_bot(cfg: dict) -> None:
     log = logging_setup.setup("telegram_bot", cfg)
     offset = None
     timeout = cfg["telegram"]["poll_timeout"]
-    env_cid = util.env("TELEGRAM_CHAT_ID")
-    log.info("Telegram bot başladı (long-polling). Beklenen chat_id=%s", env_cid)
+    allowed = allowed_chats(cfg)
+    log.info("Telegram bot başladı (long-polling). İzinli sohbet sayısı=%d", len(allowed))
     while True:
         try:
             resp = _call("getUpdates", timeout=timeout, offset=offset if offset else "")
@@ -169,11 +185,11 @@ def run_bot(cfg: dict) -> None:
                     continue
                 text = (msg.get("text") or "").strip().lower()
                 cid = str(msg["chat"]["id"])
+                # Yetkilendirme: izinli olmayan sohbet sessizce yoksayılır
+                if not is_allowed(cid, allowed):
+                    log.warning("yetkisiz sohbet komut denedi: …%s (yoksayıldı)", cid[-3:])
+                    continue
                 if text.startswith("/start"):
-                    match = "EŞLEŞTİ" if cid == str(env_cid) else "UYUŞMUYOR!"
-                    log.info("/start geldi: chat_id=%s (.env ile %s)", cid, match)
-                    if cid != str(env_cid):
-                        log.warning("chat_id uyuşmazlığı: gelen=%s beklenen=%s", cid, env_cid)
                     send_message(cfg, "Merhaba! Komutlar:\n/durum — anlık fiyat + prim\n"
                                       "/rapor — son gün sonu raporu", chat_id=cid)
                 elif text.startswith("/durum"):

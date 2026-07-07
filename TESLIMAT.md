@@ -24,10 +24,10 @@ Güncelleme: 2026-07-07 · Ortam: Windows (geliştirme), Python 3.12.4, .venv ·
 
 ## A. Telegram (gerçek gönderim kanıtı)
 
-Bot: `James_Rodriguez_bot` · chat_id `1019200198` (doğrulandı).
+Bot: `<bot_adı>` · chat_id `<chat_id>` (doğrulandı).
 
-- **Bağlantı testi:** `sendMessage ok=True, message_id=19 -> chat_id 1019200198` (HTML).
-- **Gün sonu raporu:** `telegram: 1 parça gönderildi (chat=1019200198, mode=plain)` — tam rapor düz metin.
+- **Bağlantı testi:** `sendMessage ok=True, message_id=19 -> chat_id <chat_id>` (HTML).
+- **Gün sonu raporu:** `telegram: 1 parça gönderildi (chat=<chat_id>, mode=plain)` — tam rapor düz metin.
 - **/durum (HTML):** gönderildi, 1 parça. `_` içeren metin (`tum_bacaklar_taze`) `<i>` içinde güvenli:
   ```
   <b>Anlık Durum</b> (20:02 TR) 🟢 geçerli

@@ -1,9 +1,0 @@
-2026-07-07 20:05:10,344 INFO supervisor: Supervisor başladı. Yönetilen: ['collector', 'telegram_bot']
-2026-07-07 20:05:10,347 INFO supervisor: başlatıldı: collector (pid=23324)
-2026-07-07 20:05:10,351 INFO supervisor: başlatıldı: telegram_bot (pid=14032)
-2026-07-07 20:07:44,174 INFO supervisor: Supervisor başladı. Yönetilen: ['collector', 'telegram_bot']
-2026-07-07 20:07:44,178 INFO supervisor: başlatıldı: collector (pid=25928)
-2026-07-07 20:07:44,182 INFO supervisor: başlatıldı: telegram_bot (pid=11340)
-2026-07-07 20:10:40,392 INFO supervisor: Supervisor başladı. Yönetilen: ['collector', 'telegram_bot']
-2026-07-07 20:10:40,399 INFO supervisor: başlatıldı: collector (pid=11364)
-2026-07-07 20:10:40,404 INFO supervisor: başlatıldı: telegram_bot (pid=27292)

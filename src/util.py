@@ -109,6 +109,17 @@ def abspath(rel: str | Path) -> Path:
     return p if p.is_absolute() else ROOT / p
 
 
+def mask_pii(text: str) -> str:
+    """Rapor/çıktıya kaçmış olabilecek kişisel değerleri (chat_id) maskeler.
+    Repo public — commit'lenen hiçbir metinde chat_id görünmemeli (savunma katmanı)."""
+    if not text:
+        return text
+    cid = os.environ.get("TELEGRAM_CHAT_ID")
+    if cid and cid in text:
+        text = text.replace(cid, "<chat_id>")
+    return text
+
+
 def write_json(path: str | Path, data: Any) -> None:
     with open(abspath(path), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)

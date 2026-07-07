@@ -38,6 +38,10 @@ jobs:
       - name: Fiyat cek + CSV'ye ekle
         run: python -m src.archive_fetch
 
+      - name: DB'yi dump'tan restore et (bildirim baglami icin, salt-okunur)
+        continue-on-error: true
+        run: python -m src.restore_db
+
       - name: Bildirim degerlendir + gonder
         continue-on-error: true          # bildirim hatasi commit'i bloklamasin
         env:

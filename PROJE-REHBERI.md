@@ -157,9 +157,18 @@ Sinyalleri tekil değil, rejim kombinasyonu olarak değerlendir. Örnek rejim ma
 | A | Üstünde | Düşüyor | Baskılanıyor | Gram yatay/birikim, prim düşük → **birikim penceresi** (kur düzeltmesi geldiğinde gram sıçrar) |
 | B | Üstünde | Düşüyor | Serbest/zayıflıyor | En güçlü gram rejimi |
 | C | Altında | Yükseliyor | Baskılanıyor | Gram için en zayıf rejim; mevduat fırsat maliyeti yüksek |
+| **D** | Değişken | Yükseliyor | — | **Merkez bankası alım rejimi** — klasik korelasyon bozulur (aşağıda) |
 
 2021-2025 dönemi B ve A arasında gidip geldi; "kur baskılanırken prim düşer, seçim/serbestleşme
 sonrası tek seferde telafi gelir" örüntüsü (2023 seçim sonrası gibi) rejim analizinin ana bulgusudur.
+
+> **Dipnot — Rejim D (merkez bankası alım rejimi):** Kadran panelindeki "reel faiz ↑ / DXY ↑ →
+> ons ↓" mantığı, merkez bankalarının (TCMB, PBoC, RCB dahil) rekor fiziki altın aldığı dönemlerde
+> **bozulur**. 2022-2024'te ABD reel faizleri yükselirken ve dolar güçlüyken ons tarihsel
+> korelasyonun tersine yükseldi — çünkü fiyatı belirleyen Batı ETF akışı değil, resmi sektör taban
+> talebiydi. Pratik sonuç: panel "olumsuz" derken ons yükselmeye devam edebilir. Bu yüzden panel
+> "kesin yön" değil "bağlam" olarak sunulur; WGC çeyreklik merkez bankası alım verisi bir üst-filtre
+> (rejim anahtarı) olarak izlenmeli. Alım rejimi aktifken reel-faiz/DXY göstergelerinin ağırlığı düşürülür.
 
 ### 2.4 EVDS seri kodları
 
@@ -443,3 +452,22 @@ kullanıcı güveni açısından "kesin strateji" iddiasından daha ikna edicidi
 2. **v2:** ATR/GMA sinyalleri, bildirim motoru (eşik tablosu), enstrüman net-getiri hesaplayıcı, bilezik/milyem hesaplayıcı.
 3. **v3:** Backtest altyapısı (sinyal → forward-return dağılımı), rejim matrisi, AI sentez katmanı (6.4'teki paket + 6.3'teki şema).
 4. **Sürekli:** kendi Kapalıçarşı tick arşivini büyüt — uzun vadede projenin savunulabilir tek varlığı bu.
+
+### Backlog (MVP Faz 1 tamamlandı — sıradakiler)
+
+**MVP Faz 1 (bitti):** veri toplayıcı, durum makinesi, prim/makas/dekompozisyon/dolar-bazlı getiri,
+EVDS makro bağlam + 5 yıl backfill, gösterge uzlaşı paneli, günlük rapor + Telegram botu, dönen loglar,
+Oracle systemd dağıtımı. Hedef ortam Oracle Always Free.
+
+**v2 — Bildirim & sinyal motoru:**
+- Eşik bazlı bildirim (prim |>%1.5| veya z>2, makas > p90, günlük hareket > 2 ATR, çeyrek primi z>2).
+- Bildirim yorgunluğu kontrolü (günlük tavan + 24s soğuma).
+- Sinyal çıktısı üçlü format (gerekçe + güven + geçersizlik koşulu).
+- Enstrüman net-getiri hesaplayıcı + bilezik/milyem başabaş hesaplayıcı.
+- Rejim D anahtarı: WGC merkez bankası alım verisiyle panel ağırlıklandırma.
+
+**v3 — Backtest & zeka:**
+- Backtest altyapısı (sinyal → 1/3/6 ay forward-return dağılımı; kendi prim arşivi doldukça).
+- AI sentez katmanı (6.4 veri paketi → 6.3 JSON şeması).
+- **Google Trends "gram altın" kalabalık göstergesi** — perakende ilgi zirvesi çoğu zaman
+  yerel tepe ile çakışır; ters-gösterge (contrarian) adayı olarak panele eklenir.

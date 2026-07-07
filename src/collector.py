@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from . import calc, db, util
+from . import calc, db, logging_setup, util
 from .market_calendar import MarketCalendar
 from .sources import truncgil, yf
 from .state_machine import prim_validity
@@ -125,10 +125,8 @@ def compute_and_store_prim(con, cfg, cal: MarketCalendar,
 
 
 def run(cfg: dict, max_seconds: Optional[float] = None) -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+    global log
+    log = logging_setup.setup("collector", cfg)
     cal = MarketCalendar(cfg)
     con = db.connect(cfg)
     poll = cfg["sources"]["truncgil"]["poll_seconds"]

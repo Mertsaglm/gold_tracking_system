@@ -1,0 +1,9 @@
+[Unit]
+Description=Altin gunluk EVDS guncelleme (her gun 15:30 UTC = 18:30 TR, rapordan once)
+
+[Timer]
+OnCalendar=*-*-* 15:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,8 +1,8 @@
 [Unit]
-Description=Altin gunluk yedek (her gun 20:15 TR)
+Description=Altin gunluk yedek (opsiyonel; her gun 02:30 TR)
 
 [Timer]
-OnCalendar=*-*-* 17:15:00
+OnCalendar=*-*-* 23:30:00
 Persistent=true
 
 [Install]

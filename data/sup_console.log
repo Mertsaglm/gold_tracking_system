@@ -1,0 +1,7 @@
+2026-07-07 20:05:10,344 INFO supervisor: Supervisor başladı. Yönetilen: ['collector', 'telegram_bot']
+2026-07-07 20:05:10,347 INFO supervisor: başlatıldı: collector (pid=23324)
+2026-07-07 20:05:10,351 INFO supervisor: başlatıldı: telegram_bot (pid=14032)
+2026-07-07 20:05:10,517 INFO telegram_bot: Telegram bot başladı (long-polling). Beklenen chat_id=1019200198
+2026-07-07 20:05:10,526 INFO collector: Toplayıcı başladı. Truncgil 60s, yfinance 300s.
+2026-07-07 20:05:12,064 INFO collector: yfinance: ons=4155.7998046875 usdtry=46.82789993286133
+2026-07-07 20:05:12,345 INFO collector: prim=-0.754% (naive=-0.256) makas=0.014 ceyrek_prim=-0.11 [GECERLI tum_bacaklar_taze]

@@ -33,18 +33,36 @@ sources:
     usdtry_ticker: "TRY=X"
 
   evds:
-    base: "https://evds2.tcmb.gov.tr/service/evds"
+    # 2024 sonrası yeni servis yolu (evds2/service/evds artık SPA'ya yönleniyor).
+    base: "https://evds3.tcmb.gov.tr/igmevdsms-dis"
     # API key .env içinde EVDS_API_KEY. Key header'da gönderilir (Nisan 2024 kuralı).
     start_date: "01-01-2015"
-    # Doğrulanmış kodlar; keşif script'i evds_series.json'ı zenginleştirir.
+    # CANLI KEYLE TEYİT EDİLDİ (2026-07-07). Frekans yorumda.
     series:
-      usdtry_buy: "TP.DK.USD.A.YTL"
-      usdtry_sell: "TP.DK.USD.S.YTL"
-      eurtry_buy: "TP.DK.EUR.A.YTL"
-      tufe: "TP.FE.OKTG01"
-      # aşağıdakiler keşifle teyit edilecek (yoksa atlanır, çökmez):
-      kulce_altin_sell: "TP.MK.KUL.YTL"
-      cumhuriyet_sell: "TP.MK.CUM.YTL"
+      usdtry_buy: "TP.DK.USD.A.YTL"          # günlük
+      usdtry_sell: "TP.DK.USD.S.YTL"         # günlük
+      eurtry_buy: "TP.DK.EUR.A.YTL"          # günlük
+      tufe: "TP.FE.OKTG01"                    # aylık (TÜFE endeksi 2003=100)
+      kulce_altin_sell: "TP.MK.KUL.YTL"       # aylık — Kapalıçarşı tarihsel proxy
+      cumhuriyet_sell: "TP.MK.CUM.YTL"        # aylık
+      aofm_politika: "TP.APIFON4"             # günlük — AOFM (politika faizi proxy)
+      mevduat_1ay: "TP.TRY.MT02"              # haftalık
+      mevduat_3ay: "TP.TRY.MT03"              # haftalık
+      mevduat_6ay: "TP.TRY.MT04"              # haftalık
+      mevduat_1yil: "TP.TRY.MT06"             # haftalık
+      enf_bek_12ay: "TP.ENFBEK.PKA12ENF"      # aylık — piyasa kat. 12 ay TÜFE beklentisi
+    # 5 yıl backfill'e girecek seriler (tek seferlik, backtest hazırlığı)
+    backfill:
+      - usdtry_sell
+      - tufe
+      - kulce_altin_sell
+      - cumhuriyet_sell
+      - aofm_politika
+      - mevduat_3ay
+      - mevduat_1yil
+      - enf_bek_12ay
+    # Rapor bağlam satırları için stopaj (net mevduat faizi hesabı)
+    mevduat_stopaj_pct: 15.0
 
 # ----------------- Piyasa takvimi / durum makinesi -----------------
 market:
@@ -76,6 +94,23 @@ stats:
   zscore_min_samples: 60                # arşiv < 60 gün ise "yetersiz veri"
   prim_sane_band_pct: 3.0               # |prim| bu bandın dışındaysa uyarı
 
+# ----------------- Kadran / gösterge uzlaşı paneli (rapor E.2) -----------------
+# Her gösterge altın açısından olumlu(+1)/nötr(0)/olumsuz(-1) etiketlenir.
+indicators:
+  fred_base: "https://fred.stlouisfed.org/graph/fredgraph.csv"
+  real_rate_series: "DFII10"            # ABD 10Y TIPS reel faiz
+  dxy_series: "DTWEXBGS"                # geniş dolar endeksi (FRED)
+  dxy_ticker: "DX-Y.NYB"               # yedek (yfinance)
+  gld_csv: "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv"
+  ons_ticker: "GC=F"
+  trend_lookback_days: 21               # trend için ~1 ay
+  thresholds:
+    real_rate_bps: 5.0                  # |değişim| < 5bps -> nötr; düşüş -> olumlu
+    dxy_pct: 0.5                        # |%değişim| < 0.5 -> nötr; düşüş -> olumlu
+    gld_ton_pct: 0.5                    # tonaj |%| < 0.5 -> nötr; artış -> olumlu
+    reel_faiz_dusuk: 2.0                # reel net mevduat < 2% -> altın olumlu
+    reel_faiz_yuksek: 8.0               # > 8% -> altın olumsuz (mevduat rekabetçi)
+
 # ----------------- Rapor / Telegram -----------------
 report:
   hour_local: 20                        # gün sonu raporu saati (TR)
@@ -83,6 +118,10 @@ telegram:
   enabled: true
   # token + chat_id .env'den (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
   poll_timeout: 30
+
+# ----------------- Supervisor (7/24 watchdog) -----------------
+supervisor:
+  singleton_port: 47615      # tek-instance kilidi (localhost bind)
 
 # ----------------- Yedekleme -----------------
 backup:

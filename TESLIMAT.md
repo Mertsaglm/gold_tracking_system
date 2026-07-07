@@ -1,149 +1,139 @@
-# TESLIMAT — MVP Faz 1 Kanıt Dosyası
+# TESLIMAT — Faz 1 Kapanışı + Canlıya Alma
 
-Tarih: 2026-07-07 · Ortam: Windows (yerel), Python 3.12.4, .venv
+Güncelleme: 2026-07-07 · Ortam: Windows (geliştirme), Python 3.12.4, .venv · Hedef: Oracle Cloud
 
-## Özet
+## Kapsam değişikliği (kullanıcı kararı)
+- **C. Windows 7/24 kalıcı çalıştırma: İPTAL.** Proje Oracle gelince tamamlanmış sayılacak.
+  Kurulan Windows artefaktları temizlendi (aşağıda kanıt).
+- **D. GitHub yedeği: Oracle'a ertelendi (opsiyonel).** Windows'ta 7/24 çalışılmadığı için biriken
+  veri yok → acil değil. Yedekleme kodu repoda hazır; Oracle'da tek adımla açılır.
 
-| Kalem | Durum |
+## Özet durum
+
+| Bölüm | Durum |
 |---|---|
-| Veri toplayıcı (Truncgil 60sn + yfinance 5dk) | ✅ 16 dk kesintisiz çalıştı (exit 0) |
-| Piyasa durum makinesi (FRESH/STALE/CLOSED_*) | ✅ çalışıyor, 17 kayıt GEÇERLİ etiketli |
-| Hesap katmanı (prim/makas/çeyrek/dekompozisyon/z-skor) | ✅ + 22 birim testi geçti |
-| Gün sonu markdown raporu | ✅ üretildi (`reports/rapor_2026-07-07.md`) |
-| Telegram gönderimi | ⚠️ kod hazır; gerçek gönderim token gerektirir (aşağıda) |
-| SQLite arşiv + OHLC | ✅ 127 tick, 127 OHLC, 17 prim |
-| Yedek + git push | ✅ script hazır; repo init + commit yapıldı |
-| systemd deploy dosyaları + README (ARM) | ✅ |
+| A. Telegram canlı | ✅ gerçek mesajlar gönderildi (bağlantı testi, rapor, /durum HTML) |
+| B. EVDS canlı | ✅ 12 kod teyit, 5 yıl backfill (7531 satır), günlük job, rapor bağlamı |
+| C. Windows 7/24 | ⛔ iptal (kullanıcı) — temizlendi |
+| D. Yedekleme | ⏸️ Oracle'a ertelendi — kod hazır (`backup_db.py`, `backup.sh`) |
+| E. Rapor zenginleştirme | ✅ dolar-bazlı getiri + kadran paneli + EVDS bağlam + kapsama satırı |
+| F. Dokümantasyon | ✅ README (Oracle-odaklı), PROJE-REHBERI (rejim D + backlog), bu dosya |
+| Testler | ✅ **31/31 geçti** (22 mevcut + 9 yeni gösterge) |
 
 ---
 
-## 1. Birim testleri (22/22 geçti)
+## A. Telegram (gerçek gönderim kanıtı)
 
+Bot: `James_Rodriguez_bot` · chat_id `1019200198` (doğrulandı).
+
+- **Bağlantı testi:** `sendMessage ok=True, message_id=19 -> chat_id 1019200198` (HTML).
+- **Gün sonu raporu:** `telegram: 1 parça gönderildi (chat=1019200198, mode=plain)` — tam rapor düz metin.
+- **/durum (HTML):** gönderildi, 1 parça. `_` içeren metin (`tum_bacaklar_taze`) `<i>` içinde güvenli:
+  ```
+  <b>Anlık Durum</b> (20:02 TR) 🟢 geçerli
+  Ons: <code>4154.20$</code> · USD/TRY: <code>46.8332</code>
+  Teorik has gram: <code>6255.07₺</code> · Piyasa has gram: <code>6213.29₺</code>
+  <b>Prim: -0.668%</b> · Makas: 0.015% · Çeyrek primi: -0.17%
+  ```
+- **Tuzak çözümleri:** raporlar **düz metin** (Markdown/HTML kaçış tuzağı yok), /durum **HTML** +
+  `html.escape`; 4096 sınırı için satır-sınırında bölme; `/start` chat_id'si loglanıp `.env` ile
+  karşılaştırılıyor (uyuşmazlıkta uyarı). Bot watchdog altında çökerse yeniden başlar.
+
+## B. EVDS (canlı, teyit + backfill)
+
+**Endpoint düzeltmesi:** eski `evds2/service/evds` artık SPA'ya yönleniyor. Doğru servis:
+`https://evds3.tcmb.gov.tr/igmevdsms-dis`. **Değer ayrıştırma düzeltmesi:** EVDS değerleri
+nokta-ondalıklı (`46.8204`), TR virgül değil → ayrı parser (yoksa 10× hata).
+
+### Teyit tablosu
+
+| Amaç | Kod | Frekans | Durum |
+|---|---|---|---|
+| USD alış/satış | TP.DK.USD.A.YTL / .S.YTL | günlük | ✅ |
+| EUR alış | TP.DK.EUR.A.YTL | günlük | ✅ |
+| TÜFE endeksi | TP.FE.OKTG01 | aylık | ✅ |
+| **Külçe altın (Kapalıçarşı proxy)** | **TP.MK.KUL.YTL** | aylık | ✅ kritik hedef |
+| Cumhuriyet altını | TP.MK.CUM.YTL | aylık | ✅ |
+| Politika faizi (AOFM proxy) | TP.APIFON4 | günlük | ✅ |
+| Mevduat 1ay/3ay/6ay/1yıl | TP.TRY.MT02/03/04/06 | haftalık | ✅ |
+| 12 ay TÜFE beklentisi (piyasa) | TP.ENFBEK.PKA12ENF | aylık | ✅ |
+
+**Bulunamayan:** saf "1 hafta repo politika faizi" tek serisi.
+Denenen kodlar: `TP.PY.P01`, `TP.APIFON1` (400 Bad Request), `TP.MEVDUATTL` (400).
+Çözüm: **TP.APIFON4 (AOFM = ağırlıklı ort. fonlama maliyeti, şu an %40)** politika faizi proxy'si
+olarak kullanılıyor — pratikte efektif politika faizidir.
+
+### Backfill (yıl-yıl chunk; EVDS ~1000 satır/istek sınırını aşar) — evds_daily = 7531 satır
+```
+USD satış (TP.DK.USD.S.YTL)      2897   2015-2026 (günlük)
+AOFM     (TP.APIFON4)            2890   2015-2026 (günlük)
+TÜFE     (TP.FE.OKTG01)           132   2015-2026 (aylık)
+Külçe    (TP.MK.KUL.YTL)          137   2015-2026 (aylık)
+Cumhuriyet (TP.MK.CUM.YTL)        137   2015-2026 (aylık)
+Mevduat 3ay/1yıl (TP.TRY.MT03/06) 600 + 600  2015-2026 (haftalık)
+12 ay beklenti (TP.ENFBEK.PKA12ENF) 138  2015-2026 (aylık)
+```
+Yıl-yıl kapsama doğrulandı (ör. USD ~252/yıl × 12 yıl). **Keşif:** 597 altın + 2080 faiz +
+1845 anket serisi → `evds_series.json`.
+
+## E. Rapor zenginleştirme
+
+Üretilen raporda (`reports/rapor_2026-07-07.md`) yeni bölümler:
+
+- **Dolar bazlı gram getirisi** satırı (dekompozisyonda): `= ons + prim` (kur etkisi çıkarılmış).
+  "TL eridiği için mi kazandım?" sorusunun cevabı.
+- **Makro Bağlam (EVDS):** politika %40.00 · 1 yıl mevduat brüt 47.43 → **net 40.32** ·
+  TÜFE (yıllık) 30.89 · 12 ay beklenti 23.81 · **reel net mevduat +13.33%**.
+- **Gösterge Uzlaşı Paneli** (canlı):
+  ```
+  ABD 10Y reel faiz    🔴 olumsuz  2.07% → 2.26% (+19bps/~1ay)
+  Dolar endeksi (DXY)  🔴 olumsuz  +1.39% (~1ay)
+  Ons 50/200 GMA       🔴 olumsuz  fiyat 4157 · 50G 4407 · 200G 4461
+  TL reel net mevduat  🔴 olumsuz  +13.3%
+  SPDR GLD tonaj       ➖ veri yok  (paydadan çıkarıldı)
+  Uzlaşı: 🔴 olumsuz — skor -4/4 (normalize -1.00)
+  ```
+  Eşikler `config.yaml`'da; etiketleme mantığı **9 birim testle** doğrulandı.
+- **Kapsama satırı:** "son 24s veri kapsaması %X, en uzun kesinti Y dk"; %80 altında uyarı +
+  "z-skor yalnız FRESH kayıtları sayar" notu (boşluklar tarihçeyi bozmaz).
+
+### Süreçte çözülen 2 gerçek hata
+1. **Non-ASCII yol SSL hatası:** proje yolu `altın` içerdiği için `curl_cffi` cacert'i açamıyordu
+   (yfinance GMA/GLD çekimi kırık). `util._ensure_ascii_cert()` cacert'i ASCII temp yola kopyalayıp
+   env ayarlıyor. Oracle'da (ASCII yol) devreye girmez.
+2. **yfinance `period=300d` geçersiz** → `1y` + fallback ticker.
+
+## C. Windows 7/24 — iptal & temizlik kanıtı
+- 6 çalışan süreç durduruldu (çift supervisor dahil).
+- Zamanlanmış görevler silindi: AltinRapor, AltinReconcile, AltinBackup (`SUCCESS ... deleted`).
+- Startup VBS silindi. Kalan `src.*` süreç: **0**.
+- (Not: `supervisor.py` tek-instance kilidiyle repoda kaldı — çapraz platform, opsiyonel.
+  Oracle'da systemd `Restart=always` bu işi üstlenir.)
+
+## Testler
 ```
 $ .venv/Scripts/python.exe -m pytest -q
-......................                        [100%]
-22 passed in 0.06s
+...............................   31 passed
 ```
+Yeni: `tests/test_indicators.py` (9) — reel faiz/DXY/GMA/GLD/mevduat etiketleme + uzlaşı
+(veri-yok paydadan çıkarma, yön eşiği).
 
-Kapsam: teorik gram, **saflık düzeltmesi (~%0.5)**, makas, **çeyrek primi has içeriği**,
-**dekompozisyon toplamı (tam eşitlik)**, dekompozisyon = gram log-getirisi, z-skor
-(yetersiz/ok/flat), **forex seansı** (hafta içi/Cumartesi/Cuma gecesi/Pazar akşamı),
-**bacak durum geçişleri** (FRESH/STALE/CLOSED_WEEKEND/NO_DATA), **prim geçerliliği**
-(hafta sonu → indicative), **TR tatil** ve **gündüz/gece** tespiti.
+## Oracle dağıtımı (F)
+`deploy/` systemd birimleri: collector, bot, **evds.timer (15:30 UTC)**, report.timer (15:45 UTC =
+18:45 TR), backup.timer (opsiyonel). Shape planı: **Ampere A1 (ARM64)**, kapasite yoksa
+**AMD E2.1.Micro**. "VM gelince taşınma" adımları README'de (repo + DB kopyası + systemd).
 
-## 2. 16 dakikalık yerel sürüş
+## Bilinen eksikler / v2'ye kalanlar
+- **SPDR GLD tonaj CSV** ayrıştırılamadı (URL güncel format vermedi) → gösterge "veri yok",
+  uzlaşı paydasından çıkıyor (tasarım gereği). v2: doğru GLD kaynağı.
+- 1 hafta repo saf serisi yok → AOFM proxy (yeterli).
+- 7/24 çalıştırma Oracle'da; şu an veri birikmeden bekliyor.
+- Sinyal/bildirim motoru, backtest, AI katmanı: v2/v3 (bkz. PROJE-REHBERI backlog).
 
-```
-18:32:13 Toplayıcı başladı. Truncgil 60s, yfinance 300s.
-18:32:14 yfinance: ons=4156.60 usdtry=46.836
-18:32:14 prim=-0.823% (naive=-0.324) makas=0.015 ceyrek_prim=-0.08 [GECERLI tum_bacaklar_taze]
-...
-18:48:28 prim=-0.668% (naive=-0.169) makas=0.015 ceyrek_prim=-0.17 [GECERLI tum_bacaklar_taze]
-18:48:28 max_seconds doldu, çıkılıyor.
-```
-
-DB sayımları: **ticks=127, ohlc_1m=127, prim_history=17, weekend_expectation=0**
-(hafta içi olduğu için hafta sonu tablosu boş — beklenen).
-
-### Örnek tick satırları (SQLite)
-
-```
-15:48:28 truncgil cumhuriyet      alis=41609.0  satis=42239.0
-15:48:28 truncgil tam             alis=40075.01 satis=40874.55
-15:48:28 truncgil ceyrek          alis=10018.75 satis=10249.98
-15:48:28 truncgil gram_has_altin  alis=6212.35  satis=6213.29
-15:48:28 truncgil gram_altin      alis=6243.56  satis=6244.51
-```
-
-### Örnek prim satırları
-
-```
-15:48:28 ons=4154.2 kur=46.833 teorik=6255.1 piyasa=6213.3 prim=-0.668% naive=-0.169% makas=0.015% ceyrek=-0.17% ind=0
-15:46:26 ons=4155.6 kur=46.834 teorik=6257.3 piyasa=6213.3 prim=-0.703% naive=-0.204% makas=0.015% ceyrek=-0.17% ind=0
-```
-
-### 1 dk OHLC (gram_has_altin)
-
-```
-15:48 O=6213.29 H=6213.29 L=6213.29 C=6213.29 n=1
-15:47 O=6213.29 H=6213.29 L=6213.29 C=6213.29 n=1
-```
-
-## 3. İstenen doğrulamalar
-
-### Prim ±%3 bandında mı? → ✅ EVET
-
-Tüm kayıtlar -0.67% … -0.82% aralığında. Rapor otomatik "✅ Prim ±%3 makul bandında" yazıyor.
-
-> Not: ons kaynağı `GC=F` (futures) spot XAU'ya göre ~%0.5-0.7 contango taşıdığı için
-> prim hafif negatif. Spot feed'e geçilince sıfıra yaklaşır. Mantık doğru çalışıyor.
-
-### Saflık düzeltmesi ~%0.5 fark yaratıyor mu? → ✅ EVET (0.498 puan)
-
-17 kayıt ortalaması:
-```
-ort prim(has, düzeltmeli) = -0.788%
-ort prim(naive, perakende) = -0.289%
-FARK = 0.498 puan   ← ~%0.5, beklenen
-```
-Kaynak: `gram-has-altin` (saf, 6213.29) ile `gram-altin` (perakende, 6244.51) oranı = 0.995.
-Prim'i `gram-altin` ile (naif) hesaplarsan gerçek primi ~0.5 puan yüksek görürsün — düzeltme bunu kaldırıyor.
-
-### Dekompozisyon gerçek veride tutarlı mı? → ✅ EVET
-
-16 dk içindeki gram TL hareketi (+0.092%) ayrıştırması:
-```
-Ons  katkısı : -0.0578%
-Kur  katkısı : -0.0060%
-Prim katkısı : +0.1560%
-TOPLAM       : +0.0923%
-bileşen toplamı == total (fark < 1e-9) ✅
-```
-
-## 4. Üretilen rapor
-
-`reports/rapor_2026-07-07.md` — fiyat özeti, prim/makas (saflık etkisi satırı dahil),
-dekompozisyon (24s veri yokken doğru şekilde "yetersiz geçmiş" diyor), veri kalitesi
-(z-skor 17/60 → "yetersiz veri", tam istendiği gibi), feragatname. Tam metin dosyada.
-
-## 5. Telegram
-
-- `/durum` mesajı canlı DB'ye karşı render edildi (biçim doğrulandı):
-
-```
-*Anlık Durum* (18:33 TR) 🟢 geçerli
-Ons: `4156.60$`  ·  USD/TRY: `46.8360`
-Teorik has gram: `6259.06₺`
-Piyasa has gram: `6207.56₺`
-*Prim: -0.823%*  ·  Makas: 0.015%
-Çeyrek primi: -0.08%
-_tum_bacaklar_taze_
-```
-
-- **Gerçek gönderim** senin bot token'ını gerektiriyor (`.env` şu an boş). Token ekleyince tek komutla test:
-
+## Tekrar üretmek
 ```bash
-# .env içine TELEGRAM_BOT_TOKEN ve TELEGRAM_CHAT_ID yaz, sonra:
-.venv/Scripts/python.exe -m src.report          # raporu üretir + Telegram'a gönderir
-.venv/Scripts/python.exe -m src.telegram_bot     # /durum ve /rapor komutlarını dinler
-```
-
-Rapor kodu token yokken düzgünce atlıyor (log: `telegram gönderim hata: TELEGRAM_CHAT_ID
-tanımlı değil` → çökme yok, dosya yine yazıldı).
-
-## 6. Bilinen sınırlar / sonraki adım
-
-- Ons futures proxy (yukarıda). Ücretsiz spot XAU alternatifi ararsan `src/sources/yf.py` tek noktadan değişir.
-- EVDS keşif + günlük çekim key gerektirir; key yoksa sessizce atlanıyor (test edildi).
-- Kapsam dışı (v2/v3): sinyal/bildirim motoru, backtest, AI katmanı, web arayüz.
-
-## Tekrar üretmek için
-
-```bash
-python -m venv .venv
-.venv/Scripts/python.exe -m pip install -r requirements.txt
 .venv/Scripts/python.exe -m pytest -q
-# 16 dk sürüş:
-.venv/Scripts/python.exe -c "from src import util,collector; util.load_env(); collector.run(util.load_config(), max_seconds=960)"
-.venv/Scripts/python.exe -m src.report
+.venv/Scripts/python.exe -m src.evds_job backfill      # 7531 satır
+.venv/Scripts/python.exe -m src.evds_job context       # makro bağlam
+.venv/Scripts/python.exe -m src.report                 # rapor + Telegram
 ```

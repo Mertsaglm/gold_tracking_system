@@ -66,7 +66,8 @@ def load_yaml(path: str | Path) -> dict:
 
 
 def load_env(path: str | Path = ROOT / ".env") -> None:
-    """Basit .env yükleyici (harici bağımlılık yok)."""
+    """Basit .env yükleyici (harici bağımlılık yok) + SSL cacert ASCII-path düzeltmesi."""
+    _ensure_ascii_cert()
     p = Path(path)
     if not p.exists():
         return
@@ -76,6 +77,27 @@ def load_env(path: str | Path = ROOT / ".env") -> None:
             continue
         k, v = line.split("=", 1)
         os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+def _ensure_ascii_cert() -> None:
+    """Proje yolu non-ASCII ise (ör. 'altın') curl_cffi cacert'i açamaz.
+    certifi cacert'ini ASCII temp yola kopyalayıp env değişkenlerini ayarlar."""
+    try:
+        import certifi
+        src = certifi.where()
+        if src.isascii():
+            return  # sorun yok
+        import shutil
+        import tempfile
+        dst = Path(tempfile.gettempdir()) / "altin_cacert.pem"
+        if not str(dst).isascii():
+            return  # temp de non-ASCII ise yapacak bir şey yok
+        if not dst.exists():
+            shutil.copy(src, dst)
+        for var in ("CURL_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"):
+            os.environ.setdefault(var, str(dst))
+    except Exception:
+        pass  # cert düzeltmesi başarısızsa sessizce devam
 
 
 def env(key: str, default: Optional[str] = None) -> Optional[str]:

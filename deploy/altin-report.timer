@@ -1,9 +1,9 @@
 [Unit]
-Description=Altin gun sonu raporu (her gun 20:00 TR)
+Description=Altin gun sonu raporu (her gun 18:45 TR)
 
 [Timer]
-# TR = UTC+3. 20:00 TR = 17:00 UTC. Sunucu saati UTC ise:
-OnCalendar=*-*-* 17:00:00
+# TR = UTC+3. 18:45 TR = 15:45 UTC. EVDS (15:30) bittikten sonra calisir.
+OnCalendar=*-*-* 15:45:00
 Persistent=true
 
 [Install]

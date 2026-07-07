@@ -47,55 +47,60 @@ def fetch_series(cfg: dict, series_code: str,
     field = series_code.replace(".", "_")
     for it in items:
         raw = it.get(field) or it.get(series_code)
-        val = util.parse_tr_number(raw) if raw not in (None, "") else None
-        out.append({"date": it.get("Tarih"), "value": val})
+        out.append({"date": it.get("Tarih"), "value": _parse_evds_value(raw)})
     return out
 
 
+def _parse_evds_value(raw) -> Optional[float]:
+    """EVDS değerleri standart nokta-ondalıklı ('45.71340000'). TR parse KULLANMA."""
+    if raw is None or raw == "":
+        return None
+    try:
+        return float(str(raw).strip())
+    except ValueError:
+        return None
+
+
 # ---------- Keşif (kurulumun parçası) ----------
+# datagroups(mode=0) tüm grupları verir; adına göre filtreleyip serieList ile serileri çekeriz.
+_KEYWORDS = {
+    "gold_series": ["altın", "altin", "kıymetli maden", "kiymetli maden"],
+    "rate_series": ["faiz", "mevduat", "fonlama", "politika"],
+    "survey_series": ["beklenti", "anket", "katılımcı", "katilimci", "enflasyon bek"],
+}
+
+
 def discover(cfg: dict) -> dict:
-    """categories -> datagroups -> serieList gezerek kod haritası çıkarır."""
-    ec = cfg["sources"]["evds"]
-    base = ec["base"]
+    """datagroups(mode=0) -> ad filtresi -> serieList ile kod haritası çıkarır."""
+    base = cfg["sources"]["evds"]["base"]
     if not available():
         log.warning("EVDS_API_KEY yok, keşif atlandı")
         return {}
-    result = {"categories": [], "gold_series": [], "rate_series": [], "survey_series": []}
+    result = {"gold_series": [], "rate_series": [], "survey_series": []}
     try:
-        cats = requests.get(f"{base}/categories/key=&type=json",
-                            headers=_headers(), timeout=30).json()
-        for c in cats if isinstance(cats, list) else []:
-            cid = c.get("CATEGORY_ID")
-            title = (c.get("TOPIC_TITLE_TR") or "").lower()
-            result["categories"].append({"id": cid, "title": c.get("TOPIC_TITLE_TR")})
-            bucket = None
-            if "altın" in title or "altin" in title:
-                bucket = "gold_series"
-            elif "faiz" in title:
-                bucket = "rate_series"
-            elif "beklenti" in title or "anket" in title:
-                bucket = "survey_series"
-            if not bucket or cid is None:
-                continue
-            try:
-                groups = requests.get(
-                    f"{base}/datagroups/mode=2&code={cid}&type=json",
-                    headers=_headers(), timeout=30).json()
-                for g in groups if isinstance(groups, list) else []:
-                    dgc = g.get("DATAGROUP_CODE")
-                    if not dgc:
-                        continue
-                    series = requests.get(
-                        f"{base}/serieList/type=json&code={dgc}",
-                        headers=_headers(), timeout=30).json()
-                    for s in series if isinstance(series, list) else []:
-                        result[bucket].append({
-                            "code": s.get("SERIE_CODE"),
-                            "name": s.get("SERIE_NAME"),
-                            "group": dgc,
-                        })
-            except Exception as e:
-                log.warning("keşif alt grup hata (%s): %s", cid, e)
+        groups = requests.get(f"{base}/datagroups/mode=0&type=json",
+                              headers=_headers(), timeout=40).json()
     except Exception as e:
-        log.warning("EVDS keşif hata: %s", e)
+        log.warning("EVDS datagroups hata: %s", e)
+        return result
+    for g in groups if isinstance(groups, list) else []:
+        name = (g.get("DATAGROUP_NAME") or "").lower()
+        dgc = g.get("DATAGROUP_CODE")
+        if not dgc:
+            continue
+        bucket = next((b for b, kws in _KEYWORDS.items() if any(k in name for k in kws)), None)
+        if not bucket:
+            continue
+        try:
+            series = requests.get(f"{base}/serieList/type=json&code={dgc}",
+                                  headers=_headers(), timeout=30).json()
+            for s in series if isinstance(series, list) else []:
+                if s.get("SERIE_CODE"):
+                    result[bucket].append({
+                        "code": s.get("SERIE_CODE"),
+                        "name": s.get("SERIE_NAME"),
+                        "group": dgc,
+                    })
+        except Exception as e:
+            log.warning("keşif serieList hata (%s): %s", dgc, e)
     return result

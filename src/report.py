@@ -7,9 +7,32 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import calc, db, util
+from . import calc, db, indicators, util
+from . import evds_job
 
 log = logging.getLogger("report")
+
+
+def coverage_report(con, cfg, hours: int = 24) -> dict:
+    """Son N saatte veri kapsaması ve en uzun kesinti (PC kapalı delikleri görünür kılar)."""
+    from datetime import timedelta
+    now = util.utcnow()
+    since = util.iso(now - timedelta(hours=hours))
+    rows = con.execute(
+        "SELECT ts_utc FROM prim_history WHERE ts_utc>=? ORDER BY ts_utc", (since,)
+    ).fetchall()
+    poll = cfg["sources"]["truncgil"]["poll_seconds"]
+    expected = int(hours * 3600 / poll)
+    actual = len(rows)
+    cov = min(100.0, actual / expected * 100.0) if expected else 0.0
+    max_gap_min = 0.0
+    if len(rows) >= 2:
+        ts = [datetime.fromisoformat(r["ts_utc"]) for r in rows]
+        gaps = [(ts[i] - ts[i - 1]).total_seconds() / 60.0 for i in range(1, len(ts))]
+        max_gap_min = max(gaps) if gaps else 0.0
+    # ilk kayıt now-hours'tan yeniyse, baştaki delik de kesinti
+    return {"coverage_pct": cov, "actual": actual, "expected": expected,
+            "max_gap_min": max_gap_min}
 
 
 def _fmt(v, suffix="", nd=2):
@@ -94,13 +117,70 @@ def build_report(cfg: dict) -> str:
         lines.append(f"| Kur (USD/TRY) | {_fmt(dec.kur_pct, '%', 2)} |")
         lines.append(f"| Kapalıçarşı primi | {_fmt(dec.prim_pct, '%', 2)} |")
         lines.append(f"| **Toplam gram TL** | **{_fmt(dec.total_pct, '%', 2)}** |")
+        # E.1: Dolar bazında gram getirisi = toplam − kur = ons + prim
+        usd_based = dec.ons_pct + dec.prim_pct
+        lines.append(f"| **Dolar bazında gram getirisi** | **{_fmt(usd_based, '%', 2)}** |")
+        lines.append("")
+        lines.append("> _Dolar bazlı getiri, TL değer kaybından arındırılmış gerçek altın "
+                     "getirisidir (\"TL eridiği için mi kazandım?\" sorusunun cevabı)._")
     else:
         lines.append("_Ayrıştırma için yeterli geçmiş yok (≥24s veri gerekir)._")
     lines.append("")
 
+    # ---- EVDS makro bağlam ----
+    try:
+        ctx = evds_job.context(cfg)
+    except Exception as e:
+        log.warning("EVDS bağlam hata: %s", e)
+        ctx = {}
+    if ctx:
+        lines.append("## Makro Bağlam (TCMB EVDS)")
+        lines.append("")
+        if "politika_faizi" in ctx:
+            lines.append(f"- Politika faizi (AOFM): **{_fmt(ctx['politika_faizi'], '%', 2)}**")
+        if "mevduat_1yil_net" in ctx:
+            lines.append(f"- 1 yıl mevduat: brüt {_fmt(ctx['mevduat_1yil_brut'],'%',2)} → "
+                         f"**net {_fmt(ctx['mevduat_1yil_net'],'%',2)}** (stopaj sonrası)")
+        if "tufe_yoy" in ctx:
+            lines.append(f"- TÜFE (yıllık, {ctx.get('tufe_date','')}): **{_fmt(ctx['tufe_yoy'],'%',2)}**")
+        if "enf_bek_12ay" in ctx:
+            lines.append(f"- 12 ay TÜFE beklentisi (piyasa): **{_fmt(ctx['enf_bek_12ay'],'%',2)}**")
+        if "reel_net_mevduat" in ctx:
+            lines.append(f"- **Reel net mevduat faizi: {_fmt(ctx['reel_net_mevduat'],'%',2)}** "
+                         f"(altın tutmanın fırsat maliyeti)")
+        lines.append("")
+
+    # ---- Kadran / gösterge uzlaşı paneli (E.2) ----
+    try:
+        panel = indicators.build_panel(cfg, ctx.get("reel_net_mevduat"))
+        lines.append("## Gösterge Uzlaşı Paneli")
+        lines.append("")
+        lines.append("| Gösterge | Değerlendirme | Detay |")
+        lines.append("|---|---|---|")
+        emoji = {"olumlu": "🟢 olumlu", "nötr": "⚪ nötr",
+                 "olumsuz": "🔴 olumsuz", "veri yok": "➖ veri yok"}
+        for s in panel["signals"]:
+            lines.append(f"| {s.name} | {emoji.get(s.label, s.label)} | {s.detail} |")
+        c = panel["consensus"]
+        yon = emoji.get(c["yon"], c["yon"])
+        lines.append("")
+        lines.append(f"**Uzlaşı: {yon}** — skor {c['score']:+d}/{c['n']} gösterge "
+                     f"(normalize {c['normalized']:+.2f}). _Altın perspektifinden; "
+                     f"kesin yön değil, bağlam._")
+        lines.append("")
+    except Exception as e:
+        log.warning("kadran paneli hata: %s", e)
+
     # ---- Veri kalitesi ----
     lines.append("## Veri Kalitesi")
     lines.append("")
+    cov = coverage_report(con, cfg, 24)
+    lines.append(f"- Son 24s veri kapsaması: **%{cov['coverage_pct']:.0f}** "
+                 f"({cov['actual']}/{cov['expected']} beklenen kayıt) · "
+                 f"en uzun kesinti: **{cov['max_gap_min']:.0f} dk**")
+    if cov["coverage_pct"] < 80:
+        lines.append("  - ⚠️ Kapsama düşük (PC kapalı kalmış olabilir); prim z-skoru yalnız "
+                     "FRESH kayıtları saydığı için tarihçe bozulmaz.")
     n_ticks = con.execute("SELECT COUNT(*) FROM ticks").fetchone()[0]
     n_prim = con.execute("SELECT COUNT(*) FROM prim_history").fetchone()[0]
     n_valid = db.count_valid_prim(con)
@@ -146,8 +226,8 @@ def latest_report_path(cfg: dict):
 
 
 def main(cfg: dict, send: bool = True) -> str:
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    from . import logging_setup
+    logging_setup.setup("report", cfg)
     text = build_report(cfg)
     path = save_report(cfg, text)
     if send and cfg["telegram"]["enabled"]:

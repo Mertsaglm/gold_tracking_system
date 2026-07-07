@@ -1,22 +1,25 @@
 """Minimal Telegram entegrasyonu (harici bağımlılık yok, sadece requests).
 
-- send_message: rapor/mesaj gönderir.
-- run_bot: long-polling ile /rapor ve /durum komutlarını dinler.
+- Raporlar DÜZ METİN gönderilir (Markdown/HTML kaçış tuzağı yok).
+- /durum mesajı HTML parse_mode ile (dinamik değerler html.escape ile kaçışlı).
+- 4096 karakter sınırı için bölme.
+- run_bot: long-polling ile /durum, /rapor; ilk /start chat_id'si loglanır+doğrulanır.
 """
 from __future__ import annotations
 
 import html
 import logging
+import re
 import time
-from datetime import timedelta
 
 import requests
 
-from . import calc, db, util
+from . import db, util
 
 log = logging.getLogger("telegram")
 
 API = "https://api.telegram.org/bot{token}/{method}"
+TG_LIMIT = 4096
 
 
 def _token() -> str:
@@ -40,17 +43,48 @@ def _call(method: str, **params):
     return r.json()
 
 
-def _chunks(text: str, size: int = 3800):
-    for i in range(0, len(text), size):
-        yield text[i:i + size]
+def _chunks(text: str, size: int = TG_LIMIT - 200):
+    """Satır sınırlarını koruyarak böl (tablo/paragraf ortadan kesilmesin)."""
+    out, cur = [], ""
+    for line in text.split("\n"):
+        if len(cur) + len(line) + 1 > size:
+            if cur:
+                out.append(cur)
+            # tek satır bile sığmıyorsa sert böl
+            while len(line) > size:
+                out.append(line[:size])
+                line = line[size:]
+            cur = line
+        else:
+            cur = f"{cur}\n{line}" if cur else line
+    if cur:
+        out.append(cur)
+    return out
 
 
-def send_message(cfg: dict, text: str, chat_id: str | None = None) -> None:
+def _md_to_plain(text: str) -> str:
+    """Markdown süslerini temizleyip Telegram için okunur düz metne çevirir."""
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)   # **kalın**
+    text = re.sub(r"`(.+?)`", r"\1", text)          # `kod`
+    text = re.sub(r"^#+\s*", "", text, flags=re.MULTILINE)   # başlık #
+    text = re.sub(r"^>\s?", "", text, flags=re.MULTILINE)     # alıntı >
+    return text
+
+
+def send_message(cfg: dict, text: str, chat_id: str | None = None,
+                 parse_mode: str | None = None) -> int:
+    """Düz metin (varsayılan) veya HTML gönderir. Gönderilen parça sayısını döner."""
     cid = chat_id or _chat_id()
-    for part in _chunks(text):
-        _call("sendMessage", chat_id=cid, text=part,
-              parse_mode="Markdown", disable_web_page_preview="true")
-    log.info("telegram mesaj gönderildi (chat=%s)", cid)
+    payload = _md_to_plain(text) if parse_mode is None else text
+    n = 0
+    for part in _chunks(payload):
+        data = {"chat_id": cid, "text": part, "disable_web_page_preview": "true"}
+        if parse_mode:
+            data["parse_mode"] = parse_mode
+        _call("sendMessage", **data)
+        n += 1
+    log.info("telegram: %d parça gönderildi (chat=%s, mode=%s)", n, cid, parse_mode or "plain")
+    return n
 
 
 # ---------- Komutlar ----------
@@ -61,49 +95,45 @@ def _cmd_durum(cfg: dict) -> str:
     if latest is None:
         con.close()
         return "Henüz veri yok."
-    legs_reason = latest["reason"]
     tag = "🟡 indicative" if latest["indicative"] else "🟢 geçerli"
     local = util.to_local(util.utcnow(), off).strftime("%H:%M")
+    e = html.escape
+    def g(k, f="%.2f"):
+        v = latest[k]
+        return e(f % v) if v is not None else "—"
     con.close()
     return (
-        f"*Anlık Durum* ({local} TR) {tag}\n"
-        f"Ons: `{latest['ons_usd']:.2f}$`  ·  USD/TRY: `{latest['usdtry']:.4f}`\n"
-        f"Teorik has gram: `{latest['theoretical']:.2f}₺`\n"
-        f"Piyasa has gram: `{latest['market_has']:.2f}₺`\n"
-        f"*Prim: {latest['prim_pct']:.3f}%*  ·  Makas: "
-        f"{('%.3f%%' % latest['spread_pct']) if latest['spread_pct'] is not None else '—'}\n"
-        f"Çeyrek primi: "
-        f"{('%.2f%%' % latest['quarter_prim_pct']) if latest['quarter_prim_pct'] is not None else '—'}\n"
-        f"_{legs_reason}_"
+        f"<b>Anlık Durum</b> ({local} TR) {tag}\n"
+        f"Ons: <code>{g('ons_usd')}$</code>  ·  USD/TRY: <code>{g('usdtry','%.4f')}</code>\n"
+        f"Teorik has gram: <code>{g('theoretical')}₺</code>\n"
+        f"Piyasa has gram: <code>{g('market_has')}₺</code>\n"
+        f"<b>Prim: {g('prim_pct','%.3f')}%</b>  ·  Makas: {g('spread_pct','%.3f')}%\n"
+        f"Çeyrek primi: {g('quarter_prim_pct','%.2f')}%\n"
+        f"<i>{e(latest['reason'] or '')}</i>"
     )
 
 
 def _cmd_rapor(cfg: dict) -> str:
-    path = db_latest_report(cfg)
-    if path and util.abspath(path).exists():
-        return util.abspath(path).read_text(encoding="utf-8")
-    # yoksa anlık üret
+    con = db.connect(cfg)
+    row = con.execute("SELECT path FROM reports ORDER BY date DESC LIMIT 1").fetchone()
+    con.close()
+    if row and util.abspath(row["path"]).exists():
+        return util.abspath(row["path"]).read_text(encoding="utf-8")
     from .report import build_report
     return build_report(cfg)
 
 
-def db_latest_report(cfg: dict):
-    con = db.connect(cfg)
-    row = con.execute("SELECT path FROM reports ORDER BY date DESC LIMIT 1").fetchone()
-    con.close()
-    return row["path"] if row else None
-
-
 def run_bot(cfg: dict) -> None:
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    global log
+    from . import logging_setup
+    log = logging_setup.setup("telegram_bot", cfg)
     offset = None
     timeout = cfg["telegram"]["poll_timeout"]
-    log.info("Telegram bot başladı (long-polling).")
+    env_cid = util.env("TELEGRAM_CHAT_ID")
+    log.info("Telegram bot başladı (long-polling). Beklenen chat_id=%s", env_cid)
     while True:
         try:
-            resp = _call("getUpdates", timeout=timeout,
-                         offset=offset if offset else "")
+            resp = _call("getUpdates", timeout=timeout, offset=offset if offset else "")
             for upd in resp.get("result", []):
                 offset = upd["update_id"] + 1
                 msg = upd.get("message") or upd.get("channel_post")
@@ -111,12 +141,19 @@ def run_bot(cfg: dict) -> None:
                     continue
                 text = (msg.get("text") or "").strip().lower()
                 cid = str(msg["chat"]["id"])
-                if text.startswith("/durum"):
-                    send_message(cfg, _cmd_durum(cfg), chat_id=cid)
+                if text.startswith("/start"):
+                    match = "EŞLEŞTİ" if cid == str(env_cid) else "UYUŞMUYOR!"
+                    log.info("/start geldi: chat_id=%s (.env ile %s)", cid, match)
+                    if cid != str(env_cid):
+                        log.warning("chat_id uyuşmazlığı: gelen=%s beklenen=%s", cid, env_cid)
+                    send_message(cfg, "Merhaba! Komutlar:\n/durum — anlık fiyat + prim\n"
+                                      "/rapor — son gün sonu raporu", chat_id=cid)
+                elif text.startswith("/durum"):
+                    send_message(cfg, _cmd_durum(cfg), chat_id=cid, parse_mode="HTML")
                 elif text.startswith("/rapor"):
                     send_message(cfg, _cmd_rapor(cfg), chat_id=cid)
-                elif text.startswith("/start") or text.startswith("/yardim") or text.startswith("/help"):
-                    send_message(cfg, "Komutlar:\n/durum — anlık fiyat + prim\n/rapor — son gün sonu raporu", chat_id=cid)
+                elif text.startswith("/yardim") or text.startswith("/help"):
+                    send_message(cfg, "Komutlar: /durum, /rapor", chat_id=cid)
         except Exception as e:
             log.warning("bot döngü hata: %s", e)
             time.sleep(5)

@@ -1,0 +1,212 @@
+"""Kadran / gösterge uzlaşı paneli (rapor E.2).
+
+Etiketleme fonksiyonları saf ve testli; veri çekiciler ağ hatasında None döner
+(gösterge "veri yok" olur, uzlaşı skorunun paydası dışında kalır).
+"""
+from __future__ import annotations
+
+import io
+import logging
+from dataclasses import dataclass
+from typing import Optional
+
+import requests
+
+log = logging.getLogger("indicators")
+
+OLUMLU, NOTR, OLUMSUZ, YOK = "olumlu", "nötr", "olumsuz", "veri yok"
+_SCORE = {OLUMLU: 1, NOTR: 0, OLUMSUZ: -1}
+
+
+@dataclass
+class Signal:
+    name: str
+    label: str
+    detail: str
+
+    @property
+    def score(self) -> Optional[int]:
+        return _SCORE.get(self.label)  # YOK -> None (paydadan çıkar)
+
+
+# ---------- Saf etiketleme fonksiyonları (TESTLİ) ----------
+def label_real_rate(delta_bps: float, thr_bps: float) -> str:
+    """Reel faiz DÜŞÜŞÜ altın için olumlu."""
+    if abs(delta_bps) < thr_bps:
+        return NOTR
+    return OLUMLU if delta_bps < 0 else OLUMSUZ
+
+
+def label_dxy(pct_change: float, thr_pct: float) -> str:
+    """Dolar endeksi DÜŞÜŞÜ altın için olumlu."""
+    if abs(pct_change) < thr_pct:
+        return NOTR
+    return OLUMLU if pct_change < 0 else OLUMSUZ
+
+
+def label_gma(price: float, gma50: float, gma200: float) -> str:
+    """Fiyat > 200GMA ve 50 > 200 -> olumlu; fiyat < 200GMA ve 50 < 200 -> olumsuz."""
+    if price > gma200 and gma50 >= gma200:
+        return OLUMLU
+    if price < gma200 and gma50 < gma200:
+        return OLUMSUZ
+    return NOTR
+
+
+def label_gld(ton_pct_change: float, thr_pct: float) -> str:
+    """SPDR GLD tonaj ARTIŞI altın için olumlu."""
+    if abs(ton_pct_change) < thr_pct:
+        return NOTR
+    return OLUMLU if ton_pct_change > 0 else OLUMSUZ
+
+
+def label_real_deposit(reel_net_pct: float, dusuk: float, yuksek: float) -> str:
+    """Reel net mevduat DÜŞÜK -> altın olumlu; YÜKSEK -> olumsuz (mevduat rekabetçi)."""
+    if reel_net_pct < dusuk:
+        return OLUMLU
+    if reel_net_pct > yuksek:
+        return OLUMSUZ
+    return NOTR
+
+
+def consensus(signals: list[Signal]) -> dict:
+    scored = [s.score for s in signals if s.score is not None]
+    total = sum(scored)
+    n = len(scored)
+    if n == 0:
+        return {"score": 0, "n": 0, "yon": NOTR, "normalized": 0.0}
+    norm = total / n
+    yon = OLUMLU if norm > 0.25 else OLUMSUZ if norm < -0.25 else NOTR
+    return {"score": total, "n": n, "yon": yon, "normalized": norm}
+
+
+# ---------- Veri çekiciler (ağ hatasında None) ----------
+def _fred_csv(cfg: dict, series_id: str) -> Optional[list[tuple[str, float]]]:
+    try:
+        url = f"{cfg['indicators']['fred_base']}?id={series_id}"
+        r = requests.get(url, timeout=25, headers={"User-Agent": "altin/1.0"})
+        r.raise_for_status()
+        out = []
+        for line in r.text.splitlines()[1:]:
+            parts = line.split(",")
+            if len(parts) < 2:
+                continue
+            d, v = parts[0], parts[-1]
+            if v in (".", "", "NaN"):
+                continue
+            try:
+                out.append((d, float(v)))
+            except ValueError:
+                continue
+        return out or None
+    except Exception as e:
+        log.warning("FRED %s hata: %s", series_id, e)
+        return None
+
+
+def _trend_delta(series: list[tuple[str, float]], lookback: int):
+    """Son değer − 'lookback' gözlem öncesi. (latest, prev, delta) döner."""
+    vals = [v for _, v in series]
+    if len(vals) < 2:
+        return None
+    latest = vals[-1]
+    idx = max(0, len(vals) - 1 - lookback)
+    prev = vals[idx]
+    return latest, prev, latest - prev
+
+
+def real_rate_signal(cfg: dict) -> Signal:
+    ic = cfg["indicators"]
+    s = _fred_csv(cfg, ic["real_rate_series"])
+    td = _trend_delta(s, ic["trend_lookback_days"]) if s else None
+    if not td:
+        return Signal("ABD 10Y reel faiz", YOK, "FRED verisi yok")
+    latest, prev, delta = td
+    delta_bps = delta * 100.0  # yüzde puanı -> bps
+    lbl = label_real_rate(delta_bps, ic["thresholds"]["real_rate_bps"])
+    return Signal("ABD 10Y reel faiz", lbl,
+                  f"{prev:.2f}% → {latest:.2f}% ({delta_bps:+.0f}bps/~1ay)")
+
+
+def dxy_signal(cfg: dict) -> Signal:
+    ic = cfg["indicators"]
+    s = _fred_csv(cfg, ic["dxy_series"])
+    td = _trend_delta(s, ic["trend_lookback_days"]) if s else None
+    if not td:
+        return Signal("Dolar endeksi (DXY)", YOK, "veri yok")
+    latest, prev, delta = td
+    pct = (latest / prev - 1.0) * 100.0 if prev else 0.0
+    lbl = label_dxy(pct, ic["thresholds"]["dxy_pct"])
+    return Signal("Dolar endeksi (DXY)", lbl, f"{pct:+.2f}% (~1ay)")
+
+
+def ons_gma_signal(cfg: dict) -> Signal:
+    ic = cfg["indicators"]
+    try:
+        import yfinance as yf
+        close = None
+        for tk in (ic["ons_ticker"], "XAUUSD=X", "GLD"):
+            h = yf.Ticker(tk).history(period="1y", interval="1d")
+            if not h.empty and h["Close"].dropna().shape[0] >= 200:
+                close = h["Close"].dropna()
+                break
+        if close is None:
+            return Signal("Ons 50/200 GMA", YOK, "yeterli tarih yok")
+        price = float(close.iloc[-1])
+        gma50 = float(close.tail(50).mean())
+        gma200 = float(close.tail(200).mean())
+        lbl = label_gma(price, gma50, gma200)
+        return Signal("Ons 50/200 GMA", lbl,
+                      f"fiyat {price:.0f} · 50G {gma50:.0f} · 200G {gma200:.0f}")
+    except Exception as e:
+        log.warning("ons GMA hata: %s", e)
+        return Signal("Ons 50/200 GMA", YOK, "yfinance hatası")
+
+
+def gld_signal(cfg: dict) -> Signal:
+    """SPDR GLD tonaj değişimi. CSV çekilemezse 'veri yok'."""
+    ic = cfg["indicators"]
+    try:
+        r = requests.get(ic["gld_csv"], timeout=25, headers={"User-Agent": "altin/1.0"})
+        r.raise_for_status()
+        import csv
+        rows = list(csv.reader(r.text.splitlines()))
+        tons = []
+        for row in rows:
+            for cell in row:
+                try:
+                    val = float(cell.replace(",", ""))
+                    if 100 < val < 5000:      # tonaj makul aralığı
+                        tons.append(val)
+                        break
+                except (ValueError, AttributeError):
+                    continue
+        if len(tons) < 2:
+            return Signal("SPDR GLD tonaj", YOK, "CSV ayrıştırılamadı")
+        latest, prev = tons[-1], tons[max(0, len(tons) - 1 - ic["trend_lookback_days"])]
+        pct = (latest / prev - 1.0) * 100.0 if prev else 0.0
+        lbl = label_gld(pct, ic["thresholds"]["gld_ton_pct"])
+        return Signal("SPDR GLD tonaj", lbl, f"{pct:+.2f}% (~1ay)")
+    except Exception as e:
+        log.warning("GLD tonaj hata: %s", e)
+        return Signal("SPDR GLD tonaj", YOK, "CSV çekilemedi")
+
+
+def real_deposit_signal(cfg: dict, reel_net_pct: Optional[float]) -> Signal:
+    if reel_net_pct is None:
+        return Signal("TL reel net mevduat", YOK, "EVDS verisi yok")
+    thr = cfg["indicators"]["thresholds"]
+    lbl = label_real_deposit(reel_net_pct, thr["reel_faiz_dusuk"], thr["reel_faiz_yuksek"])
+    return Signal("TL reel net mevduat", lbl, f"{reel_net_pct:+.1f}% (altın fırsat maliyeti)")
+
+
+def build_panel(cfg: dict, reel_net_pct: Optional[float] = None) -> dict:
+    """Tüm göstergeleri toplar, uzlaşı skorunu döner."""
+    signals = [
+        real_rate_signal(cfg),
+        dxy_signal(cfg),
+        ons_gma_signal(cfg),
+        real_deposit_signal(cfg, reel_net_pct),
+        gld_signal(cfg),
+    ]
+    return {"signals": signals, "consensus": consensus(signals)}

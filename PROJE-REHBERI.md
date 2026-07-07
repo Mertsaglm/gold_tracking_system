@@ -162,14 +162,24 @@ Sinyalleri tekil değil, rejim kombinasyonu olarak değerlendir. Örnek rejim ma
 2021-2025 dönemi B ve A arasında gidip geldi; "kur baskılanırken prim düşer, seçim/serbestleşme
 sonrası tek seferde telafi gelir" örüntüsü (2023 seçim sonrası gibi) rejim analizinin ana bulgusudur.
 
-> **✅ FAZ 2 BACKTEST İLE DOĞRULANDI (2016→2026, teorik has gram, 3 ay ileri getiri):**
-> Rejim A (897 gün): gram TL medyan **+11.3%**, kazanma %88 — "birikim penceresi" iddiası DOĞRULANDI.
-> Rejim D (796 gün): medyan **+11.5%**, kazanma %91 — anomali rejimi güçlü, "MB alım rejiminde altın
-> yükselir" DOĞRULANDI. Rejim C (498 gün): medyan +8.1% (beklenenden iyi — "en zayıf rejim" iddiası
-> KISMEN ÇÜRÜTÜLDÜ; kur şoku katkısı). Rejim B (26 gün): N düşük, istatistiksel olarak zayıf.
-> Dolar bazlı (ons) getiriler çok daha düşük (A: +5.0%, D: +2.8%) — TL getirisinin büyük kısmı kur.
-> Ons 200GMA üstüne kırılım sinyali (37 kez): 6 ay sonra gram TL medyan **+23.1%**, kazanma %97.
-> _(Kaynak: `reports/backtest_raporu.md`. Gram = teorik has; canlı prim arşivi dolunca yenilenecek.)_
+> **⚠️ FAZ 3 DÜZELTMESİ — Faz 2 "doğrulandı" iddiaları GERİ ÇEKİLDİ.** Faz 2'deki tablo örtüşen
+> günlük pencereler + taban çizgisiz olduğu için yanıltıcıydı: TL enflasyonu rejim başarısı gibi
+> görünüyordu. **Örtüşmeyen pencere + "tüm günler" tabanına karşı fark** ile yeniden ölçüldü
+> (2016→2026, 3 ay ileri, gram TL):
+>
+> | Rejim | Etkin dönem | Gram TL tabandan fark | Dolar bazlı (ons) fark |
+> |---|---|---|---|
+> | Taban (tüm günler) | 40 | med +10.9% (referans) | med +3.4% (referans) |
+> | A | ~14 | **−0.2p (üstünlük YOK)** | +0.1p |
+> | B | ~1 | −15.0p ⚠️N=2 zayıf | −1.6p ⚠️ |
+> | C | ~7 | −1.6p | +0.7p |
+> | D | ~12 | **+1.4p (marjinal, zayıf N)** | −1.3p |
+>
+> **Sonuç:** ❌ "Rejim A birikim penceresi" ve ❌ "Rejim D güçlü" iddiaları taban çizgisine karşı
+> ANLAMSIZ (fark ≈0, dolar bazında hiçbir rejimde üstünlük yok). Rejim matrisi bu örneklemde
+> **öngörü değeri taşımıyor**; mutlak medyanlar enflasyon artefaktıydı. Ons 200GMA kırılımı da
+> 3ay **−3.3p**, 6ay **+0.0p** — tabana karşı üstünlük yok. _(Kaynak: `reports/backtest_raporu.md`.
+> Etkin dönem ≈ gün/pencere; kazanma oranları örtüşme nedeniyle Faz 2'de abartılıydı.)_
 
 > **Dipnot — Rejim D (merkez bankası alım rejimi):** Kadran panelindeki "reel faiz ↑ / DXY ↑ →
 > ons ↓" mantığı, merkez bankalarının (TCMB, PBoC, RCB dahil) rekor fiziki altın aldığı dönemlerde
@@ -267,15 +277,17 @@ dürüstçe raporla), prim-koşullu alım (prim < medyan iken al — genelde anl
 ATR-düşüş koşullu alım (haftalık düşüş > 1 ATR ise o haftanın payını öne çek).
 Çıktı: "koşulsuz DCA vs koşullu DCA son 5 yıl fark: +X puan, maksimum geri çekilme: Y".
 
-> **✅ FAZ 2 BACKTEST (2016→2026, aylık DCA):**
-> - **"Altın enflasyona karşı korudu mu?" → EVET, ama dönemsel.** Tüm dönem: koşulsuz gram DCA
->   nominal +1736%, **TÜFE-reel +43%**; TL mevduat (net) nominal +368%, reel çok gerido.
->   In-sample (2016-2022): gram reel **+14%**, mevduat reel **−61%** — altın korudu, mevduat eritti.
-> - **ÇÜRÜTÜLEN:** 2023+ out-of-sample'da koşulsuz gram reel **−15%** (o dönem TÜFE'yi yenemedi);
->   mevduat +117% nominal ile öne geçti. Yani "altın her zaman korur" YANLIŞ — rejime bağlı.
-> - **Prim-koşullu alım:** in-sample'da koşulsuza göre daha iyi (reel +32% vs +14%) ama
->   out-of-sample'da DAHA KÖTÜ (+33% vs +148% nominal) — **aylık külçe proxy sinyali OOS'ta
->   dayanıksız.** Günlük canlı prim arşivi dolunca yeniden test edilmeli. (Kaynak: `backtest_raporu.md`.)
+> **✅ FAZ 3 BACKTEST (2016→2026, aylık DCA — adil: atlanan ay nakdi mevduatta faizle işler):**
+> - **"Altın enflasyona karşı korudu mu?" → dönemsel EVET.** Tüm dönem koşulsuz gram DCA:
+>   nominal +1736%, **TÜFE-reel +43%**; TL mevduat (EVDS 1yıl, net=brüt×0.85): nominal +368%,
+>   **reel −63%** (mevduat satın alma gücünü korumadı).
+> - **❌ ÇÜRÜTÜLDÜ "altın her zaman korur":** 2023+ out-of-sample'da koşulsuz gram reel **−15%**
+>   (o dönemde TÜFE'yi yenemedi). Rejime/döneme bağlı.
+> - **❌ ÇÜRÜTÜLDÜ "prim-koşullu alım anlamlı fark yaratır":** Faz 2'deki dramatik üstünlük
+>   **ölü-nakit artefaktıydı.** Adil kurulumda (atlanan ay nakdi mevduatta): tüm dönem reel
+>   **+40% vs koşulsuz +43%** (hafif KÖTÜ); OOS reel **−20% vs −15%** (yine kötü). Aylık külçe
+>   proxy prim sinyali üstünlük sağlamıyor (OOS'ta 38/43 ay atlandı, ort. 12 ay bekleme).
+>   Günlük canlı prim arşivi dolunca (Oracle/Actions) yeniden test edilecek. (`backtest_raporu.md`.)
 
 ### 3.4 Kademe ve zarar-kes (ATR bazlı)
 
@@ -495,3 +507,10 @@ Oracle systemd dağıtımı. Hedef ortam Oracle Always Free.
 - AI sentez katmanı (6.4 veri paketi → 6.3 JSON şeması).
 - **Google Trends "gram altın" kalabalık göstergesi** — perakende ilgi zirvesi çoğu zaman
   yerel tepe ile çakışır; ters-gösterge (contrarian) adayı olarak panele eklenir.
+  > **⚠️ FAZ 3 — kontrarian yön DOĞRULANMADI (hatta zayıfça ters).** Panele eklendi ve canlı
+  > çalışıyor (`src/trends.py`, kontrarian etiketleme testli). Ama tarihsel doğrulama (11 ilgi
+  > zirvesi, örtüşmeyen pencere + taban): zirve sonrası gram TL 1ay **+6.4p**, 3ay **+8.3p
+  > TABANIN ÜSTÜNDE** — yani ilgi zirveleri momentum (devam) sinyali gibi, kontrarian DEĞİL.
+  > **AMA:** N=4-6 (istatistiksel olarak çok zayıf) + zirveler 2018/2021 kur krizleriyle çakışıyor
+  > (TL enflasyonu confounding). Sonuç: **düşük güven, yön belirsiz** — gösterge panelde kalır ama
+  > "doğrulanmış sinyal" sayılmaz. pytrends 429 rate-limit'e takılabilir → "veri yok" (paydadan çıkar).

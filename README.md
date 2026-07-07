@@ -83,9 +83,26 @@ copy .env.example .env      # doldur
 .\.venv\Scripts\python.exe -m src.signals alerts        # bildirim eşik değerlendirmesi
 .\.venv\Scripts\python.exe -m src.calculators 100000 12 30   # enstrüman net karşılaştırma
 .\.venv\Scripts\python.exe -m src.calculators bilezik 20 20  # bilezik başabaş
+.\.venv\Scripts\python.exe -m src.aipaket               # AI'a yapıştırılacak veri paketi + prompt
+.\.venv\Scripts\python.exe -m src.trends                # Google Trends kalabalık göstergesi
+.\.venv\Scripts\python.exe -m src.import_actions        # Actions CSV arşivini ana DB'ye aktar
 ```
 
-**Telegram komutları:** `/durum` · `/rapor` · `/net <tutar> <ay> [altın%]` · `/bilezik <gram> <işçilik%>`
+**Telegram komutları:** `/durum` · `/rapor` · `/net <tutar> <ay> [altın%]` · `/bilezik <gram> <işçilik%>` · `/aipaket`
+
+## GitHub arşivleyici (Actions — kesintisiz canlı arşiv)
+
+Private repo: `.github/workflows/archive.yml` her 15 dk'da bir Truncgil + yfinance ons/kur çekip
+`data/archive/YYYY-MM.csv`'ye ekler ve commit/push eder (GITHUB_TOKEN ile; **secret gömülmez**,
+kaynaklar keysiz). Cron 5-30 dk gecikebilir (Actions kısıtı); timestamp çekim anından alınır.
+
+- **Aktifleştirme:** repoyu push et → Actions sekmesinde workflow otomatik başlar (veya
+  "Run workflow" ile elle tetikle). Repo Settings → Actions → Workflow permissions = "Read and write".
+- **Ana DB'ye aktarma:** `python -m src.import_actions` — CSV'leri `ticks`(source='gh_actions') +
+  `ohlc_1m` + `prim_history`'ye yazar. Hafta içi kayıtlar **geçerli** (z-skor arşivini doldurur),
+  hafta sonu kayıtları `weekend=1` (pazartesi mutabakatı). Projenin ilk kesintisiz arşivi budur.
+- **Oracle'a geçince:** çift veri olmaması için Actions workflow'unu kapat (Actions → Disable),
+  canlı toplayıcı devralır.
 
 Linux/macOS'ta `.venv/bin/python`.
 

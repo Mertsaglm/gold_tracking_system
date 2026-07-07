@@ -9,3 +9,8 @@ data/*.sqlite-wal
 data/*.sqlite-shm
 
 .claude/
+
+# Geçici (Faz 3)
+data/trends_cache.json
+data/*.log
+logs/

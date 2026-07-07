@@ -75,6 +75,38 @@ def forward_returns(
     return out
 
 
+def forward_returns_nonoverlap(
+    dates: Sequence[str],
+    prices: Sequence[float],
+    signal_idx: Sequence[int],
+    horizon: int,
+) -> list[float]:
+    """Örtüşmeyen ileri getiriler: bir pencere kullanılınca sonraki giriş en az
+    'horizon' gün ileriden seçilir → bağımsız örneklem (şişkin N ve abartılı
+    kazanma oranı düzeltmesi).
+    """
+    out = []
+    n = len(prices)
+    last_used_exit = -1
+    for t in sorted(signal_idx):
+        enter = t + 1
+        if enter <= last_used_exit:          # önceki pencereyle örtüşüyor → atla
+            continue
+        exit_ = enter + horizon
+        if exit_ >= n:
+            continue
+        p0, p1 = prices[enter], prices[exit_]
+        if p0 and p1:
+            out.append((p1 / p0 - 1.0) * 100.0)
+            last_used_exit = exit_
+    return out
+
+
+def effective_periods(n_days: int, horizon: int) -> int:
+    """Örtüşen günlük pencerelerin kaba etkin (bağımsız) dönem tahmini."""
+    return max(1, n_days // horizon) if horizon else n_days
+
+
 # ---------- Rejim etiketleme ----------
 def regime_label(
     ons: float, gma200: Optional[float],
@@ -141,6 +173,52 @@ def dca_simulate(
     ret = (value / invested - 1.0) * 100.0 if invested else 0.0
     max_dd = _max_drawdown(equity_curve)
     return DcaResult(invested, units, value, ret, max_dd)
+
+
+def dca_conditional_deposit(
+    month_keys: Sequence[str],
+    month_prices: dict,
+    monthly_rate_pct: dict,
+    amount: float,
+    stopaj_pct: float,
+    buy_condition: Callable[[str], bool],
+):
+    """Prim-koşullu DCA — ADİL: alım yapılmayan ayların nakdi mevduatta net faizle
+    işler (ölü nakit değil), sonraki alım ayında altına konuşlanır.
+
+    Döner: (DcaResult, {atlanan_ay, ortalama_bekleme}).
+    """
+    units = 0.0
+    dry = 0.0            # bekleyen nakit (mevduatta faiz işler)
+    invested = 0.0
+    skipped = 0
+    wait_run = 0
+    wait_runs = []
+    curve = []
+    for mk in month_keys:
+        rate = monthly_rate_pct.get(mk)
+        if rate is not None:
+            net_monthly = (rate * (1 - stopaj_pct / 100.0) / 100.0) / 12.0
+            dry *= (1 + net_monthly)
+        price = month_prices.get(mk)
+        invested += amount
+        if buy_condition(mk) and price:
+            units += (amount + dry) / price
+            dry = 0.0
+            if wait_run:
+                wait_runs.append(wait_run)
+                wait_run = 0
+        else:
+            dry += amount
+            skipped += 1
+            wait_run += 1
+        curve.append(units * (price or 0) + dry)
+    last = month_prices.get(month_keys[-1]) if month_keys else None
+    value = units * (last or 0) + dry
+    ret = (value / invested - 1.0) * 100.0 if invested else 0.0
+    avg_wait = (sum(wait_runs) / len(wait_runs)) if wait_runs else 0.0
+    return (DcaResult(invested, units, value, ret, _max_drawdown(curve)),
+            {"atlanan_ay": skipped, "ortalama_bekleme_ay": avg_wait})
 
 
 def _max_drawdown(curve: Sequence[float]) -> float:
@@ -282,26 +360,40 @@ def _tufe_factor(con, code, start_mk, end_mk):
 
 
 def _regime_stats_table(hist, labels, horizon):
+    """Örtüşmeyen pencerelerle rejim istatistikleri + '_baseline' (tüm günler) satırı."""
     dates = [h["date"] for h in hist]
     gram = [h["gram_teorik"] for h in hist]
     ons = [h["ons_usd"] for h in hist]
+    all_idx = list(range(len(hist)))
+    rows = {"_baseline": {
+        "gun": len(hist),
+        "eff": effective_periods(len(hist), horizon),
+        "gram_tl": dist_stats(forward_returns_nonoverlap(dates, gram, all_idx, horizon)),
+        "usd": dist_stats(forward_returns_nonoverlap(dates, ons, all_idx, horizon)),
+    }}
     by = {}
     for i, lab in enumerate(labels):
         by.setdefault(lab, []).append(i)
-    rows = {}
     for lab, idxs in sorted(by.items()):
-        gtl = forward_returns(dates, gram, idxs, horizon)
-        usd = forward_returns(dates, ons, idxs, horizon)  # USD bazlı = ons getirisi
-        rows[lab] = {"gun": len(idxs), "gram_tl": dist_stats(gtl), "usd": dist_stats(usd)}
+        rows[lab] = {
+            "gun": len(idxs),
+            "eff": effective_periods(len(idxs), horizon),
+            "gram_tl": dist_stats(forward_returns_nonoverlap(dates, gram, idxs, horizon)),
+            "usd": dist_stats(forward_returns_nonoverlap(dates, ons, idxs, horizon)),
+        }
     return rows
 
 
-def _fmt_stat(s):
+def _fmt_stat(s, baseline=None):
     if s.get("n", 0) == 0:
         return "veri yok"
     tag = " ⚠️zayıf" if s.get("weak") else ""
-    return (f"med {s['medyan']:+.1f}% · ort {s['ortalama']:+.1f}% · "
-            f"kaz %{s['kazanma_pct']:.0f} · N={s['n']}{tag}")
+    base = ""
+    if baseline and baseline.get("n"):
+        diff = s["medyan"] - baseline["medyan"]
+        base = f" · taban {baseline['medyan']:+.1f}% · **fark {diff:+.1f}p**"
+    return (f"med {s['medyan']:+.1f}% · kaz %{s['kazanma_pct']:.0f} · "
+            f"N={s['n']}{tag}{base}")
 
 
 def run(cfg: dict) -> str:
@@ -338,16 +430,27 @@ def run(cfg: dict) -> str:
           f"| D | {cnt.get('D',0)} | ons>200GMA, reel faiz↑ (anomali/MB alım rejimi) |",
           f"| X | {cnt.get('X',0)} | sınıflanamayan |", ""]
 
-    # --- Rejim başına ileri getiri (3 ay) ---
+    # --- Rejim başına ileri getiri (3 ay, ÖRTÜŞMEYEN pencere + taban çizgisi) ---
     h63 = bc["horizons_days"]["3ay"]
     rstats = _regime_stats_table(hist, labels, h63)
-    L += [f"## Rejim Başına 3 Ay İleri Getiri", "",
-          "| Rejim | Gram TL | Dolar bazlı (ons) |", "|---|---|---|"]
+    bl_g = rstats["_baseline"]["gram_tl"]
+    bl_u = rstats["_baseline"]["usd"]
+    L += ["## Rejim Başına 3 Ay İleri Getiri (örtüşmeyen pencere)", "",
+          "> Örtüşen günlük pencereler bağımsız değil; **örtüşmeyen** pencere kullanıldı, "
+          "her satırda **tabandan (tüm günler) fark** verildi. Bilgi değeri = farktır; "
+          "mutlak medyan TL enflasyonu artefaktıdır.", "",
+          "| Rejim | Gün(etkin) | Gram TL vs taban | Dolar bazlı (ons) vs taban |",
+          "|---|---|---|---|",
+          f"| **Taban (tüm günler)** | {rstats['_baseline']['gun']}"
+          f"({rstats['_baseline']['eff']}) | med {bl_g['medyan']:+.1f}% · kaz %{bl_g['kazanma_pct']:.0f}"
+          f" | med {bl_u['medyan']:+.1f}% · kaz %{bl_u['kazanma_pct']:.0f} |"]
     for lab in ["A", "B", "C", "D", "X"]:
         if lab in rstats:
-            L.append(f"| {lab} | {_fmt_stat(rstats[lab]['gram_tl'])} | "
-                     f"{_fmt_stat(rstats[lab]['usd'])} |")
-    L += ["", "_Rehber 2.3 rejim matrisi iddiaları bu tabloyla veriyle test edildi._", ""]
+            r = rstats[lab]
+            L.append(f"| {lab} | {r['gun']}({r['eff']}) | "
+                     f"{_fmt_stat(r['gram_tl'], bl_g)} | {_fmt_stat(r['usd'], bl_u)} |")
+    L += ["", "_'Gün(etkin)' = takvim günü (kaba bağımsız dönem). Fark ≈0 veya negatifse "
+          "rejimin bilgi değeri yok. Rehber iddiaları buna göre yeniden değerlendirildi._", ""]
 
     # --- Sinyal demo: ons 200GMA üstüne çıkış (golden cross) ---
     ons = [h["ons_usd"] for h in hist]
@@ -359,11 +462,14 @@ def run(cfg: dict) -> str:
         g1 = _rolling_mean(ons, i, bc["gma_window"])
         if g0 and g1 and ons[i - 1] <= g0 and ons[i] > g1:
             cross_idx.append(i)
-    L += ["## Sinyal Demo: Ons 200GMA Üstüne Kırılım", ""]
+    all_idx = list(range(len(hist)))
+    L += ["## Sinyal Demo: Ons 200GMA Üstüne Kırılım (taban karşılaştırmalı)", ""]
     for hn, hd in bc["horizons_days"].items():
-        st = dist_stats(forward_returns(dates, gram, cross_idx, hd))
-        L.append(f"- {hn} sonra gram TL: {_fmt_stat(st)}")
-    L += ["", f"_(Sinyal {len(cross_idx)} kez oluştu.)_", ""]
+        st = dist_stats(forward_returns_nonoverlap(dates, gram, cross_idx, hd))
+        base = dist_stats(forward_returns_nonoverlap(dates, gram, all_idx, hd))
+        L.append(f"- {hn}: {_fmt_stat(st, base)}")
+    L += ["", f"_(Sinyal {len(cross_idx)} kez; örtüşmeyen pencerelerle N küçülür — "
+          "kesinlik iddiası buna göre.)_", ""]
 
     # --- DCA karşılaştırması ---
     msp = _month_start_prices(hist)
@@ -376,34 +482,35 @@ def run(cfg: dict) -> str:
     prim_map = {p["date"]: p["prim_pct"] for p in proxy.get("series", [])}
     prim_median = statistics.median(prim_map.values()) if prim_map else 0.0
 
-    def run_dca(keys):
-        uncond = dca_simulate(keys, msp, amt)
-        cond = dca_simulate(keys, msp, amt,
-                            buy_condition=lambda mk: prim_map.get(mk, 1e9) < prim_median)
-        dep = deposit_simulate(keys, dep_rate, amt, stopaj)
-        tf = _tufe_factor(con, ev["tufe"], keys[0], keys[-1])
-        def real(nom):
-            return ((1 + nom / 100) / tf - 1) * 100 if tf else None
-        return uncond, cond, dep, tf, real
-
     def dca_block(title, keys):
         if len(keys) < 6:
             return [f"### {title}", "_yetersiz ay_", ""]
-        u, c, d, tf, real = run_dca(keys)
+        u = dca_simulate(keys, msp, amt)
+        c, extra = dca_conditional_deposit(
+            keys, msp, dep_rate, amt, stopaj,
+            buy_condition=lambda mk: prim_map.get(mk, 1e9) < prim_median)
+        d = deposit_simulate(keys, dep_rate, amt, stopaj)
+        tf = _tufe_factor(con, ev["tufe"], keys[0], keys[-1])
+        def real(nom):
+            return ((1 + nom / 100) / tf - 1) * 100 if tf else None
+        def rr(nom):
+            v = real(nom)
+            return f"{v:+.0f}%" if v is not None else "—"
         b = [f"### {title} ({keys[0]}→{keys[-1]}, {len(keys)} ay)", "",
-             "| Strateji | Nominal getiri | TÜFE-reel | Maks. geri çekilme |",
+             "| Strateji | Nominal | TÜFE-reel | Maks. geri çekilme |",
              "|---|---|---|---|",
-             f"| DCA koşulsuz (aylık gram) | {u.getiri_pct:+.0f}% | "
-             f"{('%+.0f%%'%real(u.getiri_pct)) if real(u.getiri_pct) is not None else '—'} | {u.max_dd_pct:.0f}% |",
-             f"| DCA prim-koşullu | {c.getiri_pct:+.0f}% | "
-             f"{('%+.0f%%'%real(c.getiri_pct)) if real(c.getiri_pct) is not None else '—'} | {c.max_dd_pct:.0f}% |",
-             f"| TL mevduat (net %{100-stopaj:.0f}) | {d.getiri_pct:+.0f}% | "
-             f"{('%+.0f%%'%real(d.getiri_pct)) if real(d.getiri_pct) is not None else '—'} | — |", ""]
+             f"| DCA koşulsuz (aylık gram) | {u.getiri_pct:+.0f}% | {rr(u.getiri_pct)} | {u.max_dd_pct:.0f}% |",
+             f"| DCA prim-koşullu (nakit mevduatta) | {c.getiri_pct:+.0f}% | {rr(c.getiri_pct)} | {c.max_dd_pct:.0f}% |",
+             f"| TL mevduat (EVDS 1yıl, net=brüt×{1-stopaj/100:.2f}) | {d.getiri_pct:+.0f}% | {rr(d.getiri_pct)} | — |",
+             "",
+             f"_Prim-koşullu: {extra['atlanan_ay']}/{len(keys)} ay atlandı (nakit mevduatta faiz "
+             f"işledi), ort. bekleme {extra['ortalama_bekleme_ay']:.1f} ay._", ""]
         return b
 
     L += ["## DCA Karşılaştırması (aylık birikim)", "",
           f"_Prim-koşullu alım aylık külçe proxy (saflık bazı: {proxy.get('basis','?')}); "
-          f"aylık çözünürlük — günlük prim değil._", ""]
+          f"aylık çözünürlük — günlük prim değil. Alınmayan ay nakdi EVDS mevduatında net "
+          f"faizle işler (adil karşılaştırma). Mevduat faizi = EVDS TP.TRY.MT06 tarihsel serisi._", ""]
     L += dca_block("Tüm dönem", mks)
 
     # --- Out-of-sample ---

@@ -1,0 +1,46 @@
+name: Altin arsivleyici
+
+# 15 dakikada bir Truncgil + yfinance ons/kur cek -> CSV -> commit/push.
+# Actions cron 5-30 dk gecikebilir (bilinen kisit); timestamp cekim aninda alinir.
+# Secret YOK: kaynaklar keysiz. EVDS Actions'a konmaz.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}          # elle tetik
+
+permissions:
+  contents: write                # commit/push icin
+
+concurrency:
+  group: archive
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Bagimliliklar
+        run: pip install --quiet requests PyYAML yfinance
+
+      - name: Fiyat cek + CSV'ye ekle
+        run: python -m src.archive_fetch
+
+      - name: Commit + push
+        run: |
+          git config user.name "altin-archiver"
+          git config user.email "actions@github.com"
+          git add data/archive/
+          if ! git diff --cached --quiet; then
+            git commit -m "archive: $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          else
+            echo "degisiklik yok"
+          fi

@@ -184,10 +184,14 @@ def run_bot(cfg: dict) -> None:
                     send_message(cfg, _cmd_net(cfg, text), chat_id=cid)
                 elif text.startswith("/bilezik"):
                     send_message(cfg, _cmd_bilezik(cfg, text), chat_id=cid)
+                elif text.startswith("/aipaket"):
+                    from . import aipaket
+                    send_message(cfg, aipaket.build_prompt(cfg), chat_id=cid)
                 elif text.startswith("/yardim") or text.startswith("/help"):
                     send_message(cfg, "Komutlar:\n/durum · /rapor\n"
                                       "/net <tutar> <ay> [altın%] — enstrüman karşılaştırma\n"
-                                      "/bilezik <gram> <işçilik%> [gramfiyat] — başabaş",
+                                      "/bilezik <gram> <işçilik%> [gramfiyat] — başabaş\n"
+                                      "/aipaket — AI'a yapıştırılacak veri paketi",
                                  chat_id=cid)
         except Exception as e:
             log.warning("bot döngü hata: %s", e)

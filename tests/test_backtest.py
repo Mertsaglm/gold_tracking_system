@@ -95,3 +95,44 @@ def test_deposit_simulate_compounds():
 def test_max_drawdown():
     assert math.isclose(bt._max_drawdown([100, 120, 60, 90]), -50.0, rel_tol=1e-9)
     assert bt._max_drawdown([100, 110, 120]) == 0.0
+
+
+def test_nonoverlap_fewer_than_overlap():
+    # 10 gün, her gün sinyal, horizon 3 -> örtüşen ~6, örtüşmeyen ~2-3
+    prices = [100 + i for i in range(10)]
+    dates = [f"d{i}" for i in range(10)]
+    sig = list(range(10))
+    over = bt.forward_returns(dates, prices, sig, 3)
+    non = bt.forward_returns_nonoverlap(dates, prices, sig, 3)
+    assert len(non) < len(over)
+    # örtüşmeyen pencereler bitişik: giriş d1(çıkış d4), sonraki giriş >= d4
+    assert len(non) <= (10 // 3) + 1
+
+
+def test_effective_periods():
+    assert bt.effective_periods(900, 63) == 14
+    assert bt.effective_periods(10, 63) == 1     # en az 1
+
+
+def test_conditional_deposit_parks_cash():
+    # hep atla -> tüm nakit mevduatta faizle büyür, altın 0
+    mk = ["2020-01-01", "2020-02-01", "2020-03-01"]
+    mp = {d: 100 for d in mk}
+    rates = {d: 12.0 for d in mk}
+    res, extra = bt.dca_conditional_deposit(mk, mp, rates, 1000, 0.0,
+                                            buy_condition=lambda d: False)
+    assert extra["atlanan_ay"] == 3
+    assert res.birim == 0.0            # hiç altın alınmadı
+    assert res.deger > 3000            # nakit faiz işledi
+
+
+def test_conditional_deposit_deploys_dry_powder():
+    # ilk iki ay atla, üçüncü ay al -> biriken nakit + o ay altına gider
+    mk = ["2020-01-01", "2020-02-01", "2020-03-01"]
+    mp = {d: 100 for d in mk}
+    rates = {d: 0.0 for d in mk}       # faiz yok, sade birikim
+    res, extra = bt.dca_conditional_deposit(mk, mp, rates, 1000, 0.0,
+                                            buy_condition=lambda d: d == "2020-03-01")
+    assert extra["atlanan_ay"] == 2
+    # 3000 TL biriken nakit 100 fiyattan -> 30 gram
+    assert math.isclose(res.birim, 30.0)

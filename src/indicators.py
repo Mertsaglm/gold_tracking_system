@@ -236,4 +236,9 @@ def build_panel(cfg: dict, reel_net_pct: Optional[float] = None) -> dict:
         real_deposit_signal(cfg, reel_net_pct),
         gld_signal(cfg),
     ]
+    try:
+        from .trends import trends_signal
+        signals.append(trends_signal(cfg))
+    except Exception as e:
+        log.warning("trends göstergesi hata: %s", e)
     return {"signals": signals, "consensus": consensus(signals)}

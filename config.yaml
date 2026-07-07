@@ -141,6 +141,15 @@ indicators:
     gld_ton_pct: 0.5                    # tonaj |%| < 0.5 -> nötr; artış -> olumlu
     reel_faiz_dusuk: 2.0                # reel net mevduat < 2% -> altın olumlu
     reel_faiz_yuksek: 8.0               # > 8% -> altın olumsuz (mevduat rekabetçi)
+    trends_z: 2.0                       # arama ilgisi z > 2 -> kalabalık yoğun (kontrarian olumsuz)
+
+# ----------------- Google Trends kalabalık göstergesi (Bölüm 3) -----------------
+trends:
+  keywords: ["gram altın", "altın fiyatları"]
+  geo: "TR"
+  timeframe: "today 5-y"                # 5 yıl haftalık
+  cache_hours: 24                       # günlük önbellek (rate-limit'e karşı)
+  cache_file: "data/trends_cache.json"
 
 # ----------------- Rapor / Telegram -----------------
 report:

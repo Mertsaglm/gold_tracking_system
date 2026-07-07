@@ -7,3 +7,5 @@ venv/
 # Not: data/ ve reports/ YEDEKLENİR (private repo). Yerel WAL dosyaları hariç:
 data/*.sqlite-wal
 data/*.sqlite-shm
+
+.claude/

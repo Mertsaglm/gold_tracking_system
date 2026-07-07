@@ -171,6 +171,14 @@ def build_report(cfg: dict) -> str:
     except Exception as e:
         log.warning("kadran paneli hata: %s", e)
 
+    # ---- Sinyaller (Bölüm 3) ----
+    try:
+        from . import signals
+        sig = signals.build_signals(cfg)
+        lines.append(signals.format_signals_md(sig))
+    except Exception as e:
+        log.warning("sinyal bölümü hata: %s", e)
+
     # ---- Veri kalitesi ----
     lines.append("## Veri Kalitesi")
     lines.append("")

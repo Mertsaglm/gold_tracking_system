@@ -12,6 +12,8 @@ from typing import Optional
 
 import requests
 
+from . import util
+
 log = logging.getLogger("indicators")
 
 OLUMLU, NOTR, OLUMSUZ, YOK = "olumlu", "nötr", "olumsuz", "veri yok"
@@ -163,33 +165,58 @@ def ons_gma_signal(cfg: dict) -> Signal:
         return Signal("Ons 50/200 GMA", YOK, "yfinance hatası")
 
 
-def gld_signal(cfg: dict) -> Signal:
-    """SPDR GLD tonaj değişimi. CSV çekilemezse 'veri yok'."""
-    ic = cfg["indicators"]
+OZ_PER_TONNE = 32150.7466
+
+
+def gld_tonnes_now(cfg: dict) -> Optional[float]:
+    """SPDR GLD güncel tonaj = AUM / altın_ons_fiyatı / (ons/ton).
+
+    Eski arşiv CSV'si artık PDF dönüyor; yfinance GLD.info totalAssets kullanılır.
+    """
     try:
-        r = requests.get(ic["gld_csv"], timeout=25, headers={"User-Agent": "altin/1.0"})
-        r.raise_for_status()
-        import csv
-        rows = list(csv.reader(r.text.splitlines()))
-        tons = []
-        for row in rows:
-            for cell in row:
-                try:
-                    val = float(cell.replace(",", ""))
-                    if 100 < val < 5000:      # tonaj makul aralığı
-                        tons.append(val)
-                        break
-                except (ValueError, AttributeError):
-                    continue
-        if len(tons) < 2:
-            return Signal("SPDR GLD tonaj", YOK, "CSV ayrıştırılamadı")
-        latest, prev = tons[-1], tons[max(0, len(tons) - 1 - ic["trend_lookback_days"])]
-        pct = (latest / prev - 1.0) * 100.0 if prev else 0.0
-        lbl = label_gld(pct, ic["thresholds"]["gld_ton_pct"])
-        return Signal("SPDR GLD tonaj", lbl, f"{pct:+.2f}% (~1ay)")
+        import yfinance as yf
+        gld = yf.Ticker(cfg["indicators"].get("gld_ticker", "GLD"))
+        aum = gld.info.get("totalAssets") or gld.info.get("netAssets")
+        if not aum:
+            return None
+        # altın ons fiyatı
+        ons = None
+        h = yf.Ticker(cfg["indicators"]["ons_ticker"]).history(period="5d", interval="1d")
+        if not h.empty:
+            ons = float(h["Close"].dropna().iloc[-1])
+        if not ons:
+            return None
+        return aum / ons / OZ_PER_TONNE
     except Exception as e:
-        log.warning("GLD tonaj hata: %s", e)
-        return Signal("SPDR GLD tonaj", YOK, "CSV çekilemedi")
+        log.warning("GLD tonaj hesap hata: %s", e)
+        return None
+
+
+def gld_signal(cfg: dict) -> Signal:
+    """SPDR GLD tonaj değişimi. Güncel tonaj AUM'dan; trend için günlük snapshot arşivi.
+
+    İlk gözlemde 'veri birikiyor' (arşiv dolunca değişim hesaplanır) — prim arşivi mantığı.
+    """
+    from . import db
+    ic = cfg["indicators"]
+    tonnes = gld_tonnes_now(cfg)
+    if tonnes is None:
+        return Signal("SPDR GLD tonaj", YOK, "AUM/fiyat çekilemedi")
+
+    con = db.connect(cfg)
+    today = util.to_local(util.utcnow(), cfg.get("timezone_offset_hours", 3)).date().isoformat()
+    con.execute("INSERT OR REPLACE INTO gld_tonnage(date,tonnes) VALUES(?,?)", (today, tonnes))
+    con.commit()
+    # trend: lookback gün öncesine en yakın snapshot
+    rows = con.execute("SELECT date,tonnes FROM gld_tonnage ORDER BY date").fetchall()
+    con.close()
+    if len(rows) < 2:
+        return Signal("SPDR GLD tonaj", YOK,
+                      f"{tonnes:.0f} ton (1. gözlem — trend için arşiv birikiyor)")
+    prev = rows[max(0, len(rows) - 1 - ic["trend_lookback_days"])]["tonnes"]
+    pct = (tonnes / prev - 1.0) * 100.0 if prev else 0.0
+    lbl = label_gld(pct, ic["thresholds"]["gld_ton_pct"])
+    return Signal("SPDR GLD tonaj", lbl, f"{tonnes:.0f} ton, {pct:+.2f}%")
 
 
 def real_deposit_signal(cfg: dict, reel_net_pct: Optional[float]) -> Signal:

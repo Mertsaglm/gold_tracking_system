@@ -47,7 +47,8 @@ def fetch_series(cfg: dict, series_code: str,
     field = series_code.replace(".", "_")
     for it in items:
         raw = it.get(field) or it.get(series_code)
-        out.append({"date": it.get("Tarih"), "value": _parse_evds_value(raw)})
+        out.append({"date": to_iso_date(it.get("Tarih")),
+                    "value": _parse_evds_value(raw)})
     return out
 
 
@@ -59,6 +60,43 @@ def _parse_evds_value(raw) -> Optional[float]:
         return float(str(raw).strip())
     except ValueError:
         return None
+
+
+def to_iso_date(raw) -> Optional[str]:
+    """EVDS tarih formatlarını sıralanabilir ISO'ya (YYYY-MM-DD) çevirir.
+
+    Günlük/haftalık: 'GG-AA-YYYY'  -> 'YYYY-MM-DD'  (ör. 07-07-2026 -> 2026-07-07)
+    Aylık:           'YYYY-A'/'YYYY-AA' -> 'YYYY-MM-01' (ör. 2016-1 -> 2016-01-01)
+    Çeyreklik:       'YYYY-Q1' vb.  -> 'YYYY-01-01' (çeyrek başı ayına)
+    Zaten ISO ise dokunmaz.
+    """
+    if raw is None:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    # Zaten ISO (YYYY-MM-DD)
+    if len(s) == 10 and s[4] == "-" and s[7] == "-" and s[:4].isdigit():
+        return s
+    parts = s.replace("/", "-").split("-")
+    try:
+        if len(parts) == 3 and len(parts[0]) <= 2:          # GG-AA-YYYY
+            d, m, y = parts
+            return f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
+        if len(parts) == 3 and len(parts[0]) == 4:           # YYYY-AA-GG (zaten ISO-benzeri)
+            y, m, d = parts
+            return f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
+        if len(parts) == 2 and len(parts[0]) == 4:           # YYYY-AA (aylık) veya YYYY-Qn
+            y, mp = parts
+            if mp.upper().startswith("Q"):                   # çeyreklik
+                q = int(mp[1:])
+                return f"{int(y):04d}-{(q - 1) * 3 + 1:02d}-01"
+            return f"{int(y):04d}-{int(mp):02d}-01"
+        if len(parts) == 1 and len(parts[0]) == 4:           # yıllık YYYY
+            return f"{int(parts[0]):04d}-01-01"
+    except (ValueError, IndexError):
+        pass
+    return s  # tanınmadıysa ham bırak (bozmaktansa)
 
 
 # ---------- Keşif (kurulumun parçası) ----------

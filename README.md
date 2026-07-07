@@ -64,12 +64,28 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 copy .env.example .env      # doldur
 
-.\.venv\Scripts\python.exe -m pytest -q                 # 31 test
-.\.venv\Scripts\python.exe -m src.evds_job backfill     # EVDS 5 yıl (tek sefer)
+.\.venv\Scripts\python.exe -m pytest -q                 # 61 test
+.\.venv\Scripts\python.exe -m src.evds_job backfill     # EVDS 10 yıl (tek sefer)
+.\.venv\Scripts\python.exe -m src.history build         # tarihsel günlük ons×kur (2016+)
+.\.venv\Scripts\python.exe -m src.backtest              # backtest_raporu.md
 .\.venv\Scripts\python.exe -m src.collector             # toplayıcı (Ctrl+C durur)
-.\.venv\Scripts\python.exe -m src.report                # rapor + Telegram
+.\.venv\Scripts\python.exe -m src.report                # rapor + sinyaller + Telegram
 .\.venv\Scripts\python.exe -m src.telegram_bot          # bot (ayrı terminal)
 ```
+
+### On-demand analiz komutları (7/24 gerektirmez)
+```powershell
+.\.venv\Scripts\python.exe -m src.history build         # history_daily (yfinance ons × EVDS kur)
+.\.venv\Scripts\python.exe -m src.history prim          # aylık külçe prim proxy + saflık tespiti
+.\.venv\Scripts\python.exe -m src.history quality       # eksik gün / aykırı değer taraması
+.\.venv\Scripts\python.exe -m src.backtest              # rejim + DCA + out-of-sample raporu
+.\.venv\Scripts\python.exe -m src.signals               # sinyal JSON (gerekçe+güven+geçersizlik)
+.\.venv\Scripts\python.exe -m src.signals alerts        # bildirim eşik değerlendirmesi
+.\.venv\Scripts\python.exe -m src.calculators 100000 12 30   # enstrüman net karşılaştırma
+.\.venv\Scripts\python.exe -m src.calculators bilezik 20 20  # bilezik başabaş
+```
+
+**Telegram komutları:** `/durum` · `/rapor` · `/net <tutar> <ay> [altın%]` · `/bilezik <gram> <işçilik%>`
 
 Linux/macOS'ta `.venv/bin/python`.
 
@@ -101,8 +117,10 @@ python3 -m venv .venv
 .venv/bin/pip install -U pip && .venv/bin/pip install -r requirements.txt
 cp .env.example .env && nano .env            # EVDS + Telegram doldur
 
-.venv/bin/python -m pytest -q                # doğrula
-.venv/bin/python -m src.evds_job backfill    # EVDS tarihsel (tek sefer)
+.venv/bin/python -m pytest -q                # doğrula (61 test)
+.venv/bin/python -m src.evds_job backfill    # EVDS tarihsel (tek sefer, ~7500 satır)
+.venv/bin/python -m src.history build        # history_daily (backtest için, tek sefer)
+.venv/bin/python -m src.backtest             # backtest_raporu.md (opsiyonel doğrulama)
 .venv/bin/python -m src.evds_discover        # evds_series.json
 ```
 

@@ -64,6 +64,19 @@ CREATE TABLE IF NOT EXISTS reports (
     path TEXT,
     created_utc TEXT
 );
+
+CREATE TABLE IF NOT EXISTS history_daily (
+    date        TEXT PRIMARY KEY,     -- ISO YYYY-MM-DD
+    ons_usd     REAL,
+    usdtry      REAL,
+    gram_teorik REAL,
+    ons_source  TEXT                  -- 'XAUUSD=X' | 'GC=F'
+);
+
+CREATE TABLE IF NOT EXISTS gld_tonnage (
+    date   TEXT PRIMARY KEY,          -- ISO YYYY-MM-DD
+    tonnes REAL
+);
 """
 
 

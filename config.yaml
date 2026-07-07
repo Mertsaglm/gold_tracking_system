@@ -28,8 +28,9 @@ sources:
 
   yfinance:
     poll_seconds: 300                   # gecikmeli + rate-limit; 5 dk yeterli
-    ons_ticker: "GC=F"                  # ons XAU/USD (futures proxy)
+    ons_ticker: "GC=F"                  # ons XAU/USD (futures proxy — canlı)
     ons_fallback_ticker: "XAUUSD=X"
+    ons_hist_primary: "XAUUSD=X"        # tarihsel için spot tercih (fallback GC=F)
     usdtry_ticker: "TRY=X"
 
   evds:
@@ -89,10 +90,40 @@ instruments:
     tam:      { gross_g: 7.216, milyem: 0.916 }
     cumhuriyet: { gross_g: 7.216, milyem: 0.916 }
 
+# ----------------- Enstrüman maliyet/vergi modeli (Bölüm 4) -----------------
+# Tüm oranlar buradan; 2026 ortası. Değişebilir — mali müşavirle doğrula.
+instrument_costs:
+  varsayilan_altin_getiri_yillik_pct: 30.0   # karşılaştırma senaryosu (nötr varsayım)
+  banka_hesap:
+    alis_makas_pct: 0.5
+    satis_makas_pct: 0.5
+    bsmv_pct: 0.2            # fiziki teslimatsız kaydi altında binde 2
+  altin_fonu:
+    yonetim_ucreti_yillik_pct: 1.0
+    stopaj_pct: 15.0         # kâr üzerinden (26 Mart 2026'da %7.5'ten yükseldi)
+  fiziki_gram:
+    alis_satis_makas_pct: 3.0   # kuyumcu round-trip makas
+  altins1:
+    komisyon_pct: 0.2       # alış+satış her biri
+
 # ----------------- Hesap / istatistik -----------------
 stats:
   zscore_min_samples: 60                # arşiv < 60 gün ise "yetersiz veri"
   prim_sane_band_pct: 3.0               # |prim| bu bandın dışındaysa uyarı
+
+# ----------------- Backtest (Bölüm 2) -----------------
+backtest:
+  start: "2016-01-01"
+  oos_split: "2023-01-01"               # out-of-sample: öncesi fit, sonrası test
+  horizons_days: { "1ay": 21, "3ay": 63, "6ay": 126 }
+  weak_n_threshold: 15                  # N < bu ise "istatistiksel olarak zayıf"
+  gma_window: 200                       # ons trend eşiği
+  real_rate_trend_days: 63              # DFII10 trend penceresi (~3 ay)
+  kur_vol_window: 60                    # gerçekleşen kur oynaklığı penceresi (gün)
+  # 60g yıllıklaştırılmış kur oynaklığı eşiği: altı "baskılanıyor", üstü "serbest".
+  # TL yönetilen dönemlerde <%15, serbest/şok dönemlerde >%25 tarihsel gözlem.
+  kur_vol_annual_threshold_pct: 20.0
+  dca_monthly_try: 1000                 # aylık DCA tutarı (nominal karşılaştırma)
 
 # ----------------- Kadran / gösterge uzlaşı paneli (rapor E.2) -----------------
 # Her gösterge altın açısından olumlu(+1)/nötr(0)/olumsuz(-1) etiketlenir.
@@ -101,7 +132,7 @@ indicators:
   real_rate_series: "DFII10"            # ABD 10Y TIPS reel faiz
   dxy_series: "DTWEXBGS"                # geniş dolar endeksi (FRED)
   dxy_ticker: "DX-Y.NYB"               # yedek (yfinance)
-  gld_csv: "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv"
+  gld_ticker: "GLD"                     # tonaj = AUM/altın_fiyatı (eski CSV artık PDF)
   ons_ticker: "GC=F"
   trend_lookback_days: 21               # trend için ~1 ay
   thresholds:
@@ -114,6 +145,12 @@ indicators:
 # ----------------- Rapor / Telegram -----------------
 report:
   hour_local: 20                        # gün sonu raporu saati (TR)
+
+# ----------------- Bildirim eşikleri (rehber 6.2; zamanlayıcı Oracle'da) -----------------
+alerts:
+  prim_abs_pct: 1.5                     # |prim| > bu -> bildirim
+  prim_z: 2.0                           # |z| > bu
+  daily_move_atr: 2.0                   # günlük hareket > N × ATR
 telegram:
   enabled: true
   # token + chat_id .env'den (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)

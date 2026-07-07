@@ -113,6 +113,34 @@ def _cmd_durum(cfg: dict) -> str:
     )
 
 
+def _cmd_net(cfg: dict, text: str) -> str:
+    from . import calculators as clc
+    parts = text.split()
+    try:
+        amount = float(parts[1]) if len(parts) > 1 else 100000.0
+        months = int(parts[2]) if len(parts) > 2 else 12
+        gold = float(parts[3]) if len(parts) > 3 else None
+    except ValueError:
+        return "Kullanım: /net <tutar> <ay> [altın%]  (ör. /net 100000 12 30)"
+    res = clc.compare_instruments(cfg, amount, months, gold)
+    be = clc.break_even_month(cfg, amount, gold)
+    out = clc.format_compare(res)
+    out += f"\nBanka↔fon kırılım: {be} ay" if be else "\nKırılım yok."
+    return out
+
+
+def _cmd_bilezik(cfg: dict, text: str) -> str:
+    from . import calculators as clc
+    parts = text.split()
+    try:
+        brut = float(parts[1]) if len(parts) > 1 else 20.0
+        isc = float(parts[2]) if len(parts) > 2 else 20.0
+        price = float(parts[3]) if len(parts) > 3 else (clc._latest_has_price(cfg) or 6200.0)
+    except ValueError:
+        return "Kullanım: /bilezik <gram> <işçilik%> [gramfiyat]  (ör. /bilezik 20 20)"
+    return clc.format_bilezik(clc.bilezik_basabas(cfg, brut, isc, price))
+
+
 def _cmd_rapor(cfg: dict) -> str:
     con = db.connect(cfg)
     row = con.execute("SELECT path FROM reports ORDER BY date DESC LIMIT 1").fetchone()
@@ -152,8 +180,15 @@ def run_bot(cfg: dict) -> None:
                     send_message(cfg, _cmd_durum(cfg), chat_id=cid, parse_mode="HTML")
                 elif text.startswith("/rapor"):
                     send_message(cfg, _cmd_rapor(cfg), chat_id=cid)
+                elif text.startswith("/net"):
+                    send_message(cfg, _cmd_net(cfg, text), chat_id=cid)
+                elif text.startswith("/bilezik"):
+                    send_message(cfg, _cmd_bilezik(cfg, text), chat_id=cid)
                 elif text.startswith("/yardim") or text.startswith("/help"):
-                    send_message(cfg, "Komutlar: /durum, /rapor", chat_id=cid)
+                    send_message(cfg, "Komutlar:\n/durum · /rapor\n"
+                                      "/net <tutar> <ay> [altın%] — enstrüman karşılaştırma\n"
+                                      "/bilezik <gram> <işçilik%> [gramfiyat] — başabaş",
+                                 chat_id=cid)
         except Exception as e:
             log.warning("bot döngü hata: %s", e)
             time.sleep(5)

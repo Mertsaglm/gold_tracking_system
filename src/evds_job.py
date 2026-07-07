@@ -81,10 +81,10 @@ def daily_update(cfg: dict) -> dict:
 
 
 def _latest(con, code: str):
-    """En yeni (tarihe göre) değer. EVDS tarih formatları karışık; son eklenen mantıklı."""
+    """En yeni değer (tarihe göre; tarihler ISO YYYY-MM-DD, sıralanabilir)."""
     row = con.execute(
         "SELECT date,value FROM evds_daily WHERE series_code=? AND value IS NOT NULL "
-        "ORDER BY rowid DESC LIMIT 1", (code,)
+        "ORDER BY date DESC LIMIT 1", (code,)
     ).fetchone()
     return (row["date"], row["value"]) if row else (None, None)
 
@@ -93,7 +93,7 @@ def _tufe_yoy(con, code: str):
     """Aylık TÜFE endeksinden yıllık değişim (son / 13 önceki - 1)."""
     rows = con.execute(
         "SELECT value FROM evds_daily WHERE series_code=? AND value IS NOT NULL "
-        "ORDER BY rowid", (code,)
+        "ORDER BY date", (code,)
     ).fetchall()
     if len(rows) < 13:
         return None

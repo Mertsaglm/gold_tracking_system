@@ -162,6 +162,15 @@ Sinyalleri tekil değil, rejim kombinasyonu olarak değerlendir. Örnek rejim ma
 2021-2025 dönemi B ve A arasında gidip geldi; "kur baskılanırken prim düşer, seçim/serbestleşme
 sonrası tek seferde telafi gelir" örüntüsü (2023 seçim sonrası gibi) rejim analizinin ana bulgusudur.
 
+> **✅ FAZ 2 BACKTEST İLE DOĞRULANDI (2016→2026, teorik has gram, 3 ay ileri getiri):**
+> Rejim A (897 gün): gram TL medyan **+11.3%**, kazanma %88 — "birikim penceresi" iddiası DOĞRULANDI.
+> Rejim D (796 gün): medyan **+11.5%**, kazanma %91 — anomali rejimi güçlü, "MB alım rejiminde altın
+> yükselir" DOĞRULANDI. Rejim C (498 gün): medyan +8.1% (beklenenden iyi — "en zayıf rejim" iddiası
+> KISMEN ÇÜRÜTÜLDÜ; kur şoku katkısı). Rejim B (26 gün): N düşük, istatistiksel olarak zayıf.
+> Dolar bazlı (ons) getiriler çok daha düşük (A: +5.0%, D: +2.8%) — TL getirisinin büyük kısmı kur.
+> Ons 200GMA üstüne kırılım sinyali (37 kez): 6 ay sonra gram TL medyan **+23.1%**, kazanma %97.
+> _(Kaynak: `reports/backtest_raporu.md`. Gram = teorik has; canlı prim arşivi dolunca yenilenecek.)_
+
 > **Dipnot — Rejim D (merkez bankası alım rejimi):** Kadran panelindeki "reel faiz ↑ / DXY ↑ →
 > ons ↓" mantığı, merkez bankalarının (TCMB, PBoC, RCB dahil) rekor fiziki altın aldığı dönemlerde
 > **bozulur**. 2022-2024'te ABD reel faizleri yükselirken ve dolar güçlüyken ons tarihsel
@@ -246,12 +255,27 @@ altın: aralık). Bu dürüstlük ürünün güvenilirlik farkı olur.
 - Aynısını çeyrek/gram makası için: "çeyrek primi şu an %X, tarihsel dağılımda p85 → fiziki alacaksan
   gram/külçe al, çeyrek alma; düğün sezonu sonrası prim normalleşince çevir."
 
+> **⏳ FAZ 2 — HENÜZ TEST EDİLEMEDİ:** Günlük Kapalıçarşı prim z-skoru için canlı arşiv gerekiyor
+> (şu an <60 geçerli kayıt → sinyal motoru "veri_bekliyor" diyor). Aylık külçe proxy ortalamaya
+> dönüşü kabaca gösteriyor ama günlük prim mean-reversion iddiası **doğrulanmadı**; arşiv dolunca
+> (Oracle'da) backtest'e eklenecek.
+
 ### 3.3 DCA (düzenli birikim) optimizasyonu
 
 Backtest edilecek hipotezler: ay içi gün etkisi (genelde zayıf/istatistiksel olarak anlamsız — bunu
 dürüstçe raporla), prim-koşullu alım (prim < medyan iken al — genelde anlamlı fark yaratır),
 ATR-düşüş koşullu alım (haftalık düşüş > 1 ATR ise o haftanın payını öne çek).
 Çıktı: "koşulsuz DCA vs koşullu DCA son 5 yıl fark: +X puan, maksimum geri çekilme: Y".
+
+> **✅ FAZ 2 BACKTEST (2016→2026, aylık DCA):**
+> - **"Altın enflasyona karşı korudu mu?" → EVET, ama dönemsel.** Tüm dönem: koşulsuz gram DCA
+>   nominal +1736%, **TÜFE-reel +43%**; TL mevduat (net) nominal +368%, reel çok gerido.
+>   In-sample (2016-2022): gram reel **+14%**, mevduat reel **−61%** — altın korudu, mevduat eritti.
+> - **ÇÜRÜTÜLEN:** 2023+ out-of-sample'da koşulsuz gram reel **−15%** (o dönem TÜFE'yi yenemedi);
+>   mevduat +117% nominal ile öne geçti. Yani "altın her zaman korur" YANLIŞ — rejime bağlı.
+> - **Prim-koşullu alım:** in-sample'da koşulsuza göre daha iyi (reel +32% vs +14%) ama
+>   out-of-sample'da DAHA KÖTÜ (+33% vs +148% nominal) — **aylık külçe proxy sinyali OOS'ta
+>   dayanıksız.** Günlük canlı prim arşivi dolunca yeniden test edilmeli. (Kaynak: `backtest_raporu.md`.)
 
 ### 3.4 Kademe ve zarar-kes (ATR bazlı)
 

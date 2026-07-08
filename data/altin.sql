@@ -1,7 +1,7 @@
 -- Altin DB dump (deterministik, diff'lenebilir). Sema koddan gelir.
 -- Restore: python -m src.restore_db
 
--- ticks: 211 satır
+-- ticks: 285 satır
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T15:32:13.113034+00:00', 'yfinance', 'ons_usd', NULL, 4156.60009765625, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T15:32:13.113034+00:00', 'yfinance', 'usdtry', NULL, 46.83599853515625, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T15:32:14.732494+00:00', 'truncgil', 'ceyrek', 10018.75, 10249.98, '');
@@ -180,41 +180,115 @@ INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'gram_altin', 6236.67, 6237.41, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'gram_altin', 6236.67, 6237.41, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'gram_altin', 6236.67, 6237.41, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'gram_altin', 6236.67, 6237.41, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'gram_has_altin', 6205.49, 6206.22, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'gram_has_altin', 6205.49, 6206.22, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'gram_has_altin', 6205.49, 6206.22, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'gram_has_altin', 6205.49, 6206.22, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'ons_usd', NULL, 4152.60009765625, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'ons_usd', NULL, 4152.60009765625, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'ons_usd', NULL, 4152.60009765625, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'ons_usd', NULL, 4152.60009765625, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'usd', 46.8257, 46.8382, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'usd', 46.8257, 46.8382, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'usd', 46.8257, 46.8382, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'usd', 46.8257, 46.8382, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'usdtry', NULL, 46.830299377441406, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'usdtry', NULL, 46.830299377441406, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'usdtry', NULL, 46.830299377441406, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:20:09.845421+00:00', 'gh_actions', 'usdtry', NULL, 46.830299377441406, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'gram_altin', 6236.67, 6237.41, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'gram_altin', 6236.67, 6237.41, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'gram_altin', 6236.67, 6237.41, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'gram_has_altin', 6205.49, 6206.22, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'gram_has_altin', 6205.49, 6206.22, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'gram_has_altin', 6205.49, 6206.22, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'ons_usd', NULL, 4153.0, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'ons_usd', NULL, 4153.0, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'ons_usd', NULL, 4153.0, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'usd', 46.8257, 46.8382, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'usd', 46.8257, 46.8382, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'usd', 46.8257, 46.8382, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'usdtry', NULL, 46.8307991027832, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'usdtry', NULL, 46.8307991027832, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T18:30:01.159951+00:00', 'gh_actions', 'usdtry', NULL, 46.8307991027832, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'gram_altin', 6213.25, 6214.22, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'gram_altin', 6213.25, 6214.22, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'gram_has_altin', 6182.19, 6183.15, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'gram_has_altin', 6182.19, 6183.15, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'ons_usd', NULL, 4137.10009765625, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'ons_usd', NULL, 4137.10009765625, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'usd', 46.8238, 46.8389, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'usd', 46.8238, 46.8389, '');
 INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'usdtry', NULL, 46.83089828491211, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T19:03:42.457263+00:00', 'gh_actions', 'usdtry', NULL, 46.83089828491211, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T20:28:54.455046+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T20:28:54.455046+00:00', 'gh_actions', 'gram_altin', 6192.76, 6193.71, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T20:28:54.455046+00:00', 'gh_actions', 'gram_has_altin', 6161.8, 6162.74, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T20:28:54.455046+00:00', 'gh_actions', 'ons_usd', NULL, 4119.7998046875, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T20:28:54.455046+00:00', 'gh_actions', 'usd', 46.8231, 46.8396, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T20:28:54.455046+00:00', 'gh_actions', 'usdtry', NULL, 46.826698303222656, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T21:56:45.700354+00:00', 'gh_actions', 'ons_usd', NULL, 4116.60009765625, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T21:56:45.700354+00:00', 'gh_actions', 'usdtry', NULL, 46.83639907836914, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T23:08:11.086630+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T23:08:11.086630+00:00', 'gh_actions', 'gram_altin', 6171.5, 6172.46, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T23:08:11.086630+00:00', 'gh_actions', 'gram_has_altin', 6140.64, 6141.6, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T23:08:11.086630+00:00', 'gh_actions', 'ons_usd', NULL, 4108.60009765625, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T23:08:11.086630+00:00', 'gh_actions', 'usd', 46.8143, 46.8707, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T23:08:11.086630+00:00', 'gh_actions', 'usdtry', NULL, 46.82310104370117, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T00:12:15.051059+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T00:12:15.051059+00:00', 'gh_actions', 'gram_altin', 6173.63, 6174.59, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T00:12:15.051059+00:00', 'gh_actions', 'gram_has_altin', 6142.76, 6143.72, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T00:12:15.051059+00:00', 'gh_actions', 'ons_usd', NULL, 4108.7998046875, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T00:12:15.051059+00:00', 'gh_actions', 'usd', 46.8491, 46.863, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T00:12:15.051059+00:00', 'gh_actions', 'usdtry', NULL, 46.852298736572266, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T03:47:56.947953+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T03:47:56.947953+00:00', 'gh_actions', 'gram_altin', 6214.92, 6215.82, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T03:47:56.947953+00:00', 'gh_actions', 'gram_has_altin', 6183.84, 6184.74, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T03:47:56.947953+00:00', 'gh_actions', 'ons_usd', NULL, 4138.60009765625, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T03:47:56.947953+00:00', 'gh_actions', 'usd', 46.847, 46.8627, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T03:47:56.947953+00:00', 'gh_actions', 'usdtry', NULL, 46.843299865722656, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T06:30:27.923512+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T06:30:27.923512+00:00', 'gh_actions', 'gram_altin', 6222.04, 6222.99, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T06:30:27.923512+00:00', 'gh_actions', 'gram_has_altin', 6190.93, 6191.87, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T06:30:27.923512+00:00', 'gh_actions', 'ons_usd', NULL, 4139.7001953125, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T06:30:27.923512+00:00', 'gh_actions', 'usd', 46.8559, 46.8603, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T06:30:27.923512+00:00', 'gh_actions', 'usdtry', NULL, 46.852699279785156, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T09:14:46.663550+00:00', 'gh_actions', 'ceyrek', 10018.75, 10249.98, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T09:14:46.663550+00:00', 'gh_actions', 'gram_altin', 6110.96, 6111.87, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T09:14:46.663550+00:00', 'gh_actions', 'gram_has_altin', 6080.41, 6081.31, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T09:14:46.663550+00:00', 'gh_actions', 'ons_usd', NULL, 4065.699951171875, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T09:14:46.663550+00:00', 'gh_actions', 'usd', 46.8542, 46.8605, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T09:14:46.663550+00:00', 'gh_actions', 'usdtry', NULL, 46.85380172729492, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T11:19:42.211439+00:00', 'gh_actions', 'ceyrek', 9801.3, 10025.54, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T11:19:42.211439+00:00', 'gh_actions', 'gram_altin', 6102.14, 6103.09, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T11:19:42.211439+00:00', 'gh_actions', 'gram_has_altin', 6071.63, 6072.57, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T11:19:42.211439+00:00', 'gh_actions', 'ons_usd', NULL, 4059.199951171875, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T11:19:42.211439+00:00', 'gh_actions', 'usd', 46.8555, 46.8593, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T11:19:42.211439+00:00', 'gh_actions', 'usdtry', NULL, 46.85200119018555, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T13:06:53.322399+00:00', 'gh_actions', 'ceyrek', 9841.07, 10066.19, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T13:06:53.322399+00:00', 'gh_actions', 'gram_altin', 6134.13, 6135.05, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T13:06:53.322399+00:00', 'gh_actions', 'gram_has_altin', 6103.46, 6104.38, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T13:06:53.322399+00:00', 'gh_actions', 'ons_usd', NULL, 4085.39990234375, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T13:06:53.322399+00:00', 'gh_actions', 'usd', 46.8515, 46.863, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T13:06:53.322399+00:00', 'gh_actions', 'usdtry', NULL, 46.852298736572266, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T15:35:40.744928+00:00', 'gh_actions', 'ceyrek', 9828.1, 10052.93, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T15:35:40.744928+00:00', 'gh_actions', 'gram_altin', 6072.43, 6073.38, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T15:35:40.744928+00:00', 'gh_actions', 'gram_has_altin', 6042.06, 6043.01, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T15:35:40.744928+00:00', 'gh_actions', 'ons_usd', NULL, 4039.0, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T15:35:40.744928+00:00', 'gh_actions', 'usd', 46.8566, 46.8581, '');
+INSERT INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-08T15:35:40.744928+00:00', 'gh_actions', 'usdtry', NULL, 46.852298736572266, '');
 
--- ohlc_1m: 193 satır
+-- ohlc_1m: 249 satır
 INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T15:32', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
 INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T15:32', 'cumhuriyet', 42239.0, 42239.0, 42239.0, 42239.0, 1);
 INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T15:32', 'gram_altin', 6238.75, 6238.75, 6238.75, 6238.75, 1);
@@ -390,26 +464,82 @@ INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T17:13'
 INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T17:13', 'tam', 40874.55, 40874.55, 40874.55, 40874.55, 1);
 INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T17:13', 'usd', 46.8298, 46.8298, 46.8298, 46.8298, 1);
 INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T17:13', 'yarim', 20499.96, 20499.96, 20499.96, 20499.96, 1);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 3);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'gram_altin', 6237.41, 6237.41, 6237.41, 6237.41, 3);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'gram_has_altin', 6206.22, 6206.22, 6206.22, 6206.22, 3);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'ons_usd', 4152.60009765625, 4152.60009765625, 4152.60009765625, 4152.60009765625, 3);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'usd', 46.8382, 46.8382, 46.8382, 46.8382, 3);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'usdtry', 46.830299377441406, 46.830299377441406, 46.830299377441406, 46.830299377441406, 3);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 2);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'gram_altin', 6237.41, 6237.41, 6237.41, 6237.41, 2);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'gram_has_altin', 6206.22, 6206.22, 6206.22, 6206.22, 2);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'ons_usd', 4153.0, 4153.0, 4153.0, 4153.0, 2);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'usd', 46.8382, 46.8382, 46.8382, 46.8382, 2);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'usdtry', 46.8307991027832, 46.8307991027832, 46.8307991027832, 46.8307991027832, 2);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'gram_altin', 6214.22, 6214.22, 6214.22, 6214.22, 1);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'gram_has_altin', 6183.15, 6183.15, 6183.15, 6183.15, 1);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'ons_usd', 4137.10009765625, 4137.10009765625, 4137.10009765625, 4137.10009765625, 1);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'usd', 46.8389, 46.8389, 46.8389, 46.8389, 1);
-INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'usdtry', 46.83089828491211, 46.83089828491211, 46.83089828491211, 46.83089828491211, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 4);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'gram_altin', 6237.41, 6237.41, 6237.41, 6237.41, 4);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'gram_has_altin', 6206.22, 6206.22, 6206.22, 6206.22, 4);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'ons_usd', 4152.60009765625, 4152.60009765625, 4152.60009765625, 4152.60009765625, 4);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'usd', 46.8382, 46.8382, 46.8382, 46.8382, 4);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:20', 'usdtry', 46.830299377441406, 46.830299377441406, 46.830299377441406, 46.830299377441406, 4);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 3);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'gram_altin', 6237.41, 6237.41, 6237.41, 6237.41, 3);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'gram_has_altin', 6206.22, 6206.22, 6206.22, 6206.22, 3);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'ons_usd', 4153.0, 4153.0, 4153.0, 4153.0, 3);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'usd', 46.8382, 46.8382, 46.8382, 46.8382, 3);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T18:30', 'usdtry', 46.8307991027832, 46.8307991027832, 46.8307991027832, 46.8307991027832, 3);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 2);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'gram_altin', 6214.22, 6214.22, 6214.22, 6214.22, 2);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'gram_has_altin', 6183.15, 6183.15, 6183.15, 6183.15, 2);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'ons_usd', 4137.10009765625, 4137.10009765625, 4137.10009765625, 4137.10009765625, 2);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'usd', 46.8389, 46.8389, 46.8389, 46.8389, 2);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T19:03', 'usdtry', 46.83089828491211, 46.83089828491211, 46.83089828491211, 46.83089828491211, 2);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T20:28', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T20:28', 'gram_altin', 6193.71, 6193.71, 6193.71, 6193.71, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T20:28', 'gram_has_altin', 6162.74, 6162.74, 6162.74, 6162.74, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T20:28', 'ons_usd', 4119.7998046875, 4119.7998046875, 4119.7998046875, 4119.7998046875, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T20:28', 'usd', 46.8396, 46.8396, 46.8396, 46.8396, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T20:28', 'usdtry', 46.826698303222656, 46.826698303222656, 46.826698303222656, 46.826698303222656, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T21:56', 'ons_usd', 4116.60009765625, 4116.60009765625, 4116.60009765625, 4116.60009765625, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T21:56', 'usdtry', 46.83639907836914, 46.83639907836914, 46.83639907836914, 46.83639907836914, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T23:08', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T23:08', 'gram_altin', 6172.46, 6172.46, 6172.46, 6172.46, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T23:08', 'gram_has_altin', 6141.6, 6141.6, 6141.6, 6141.6, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T23:08', 'ons_usd', 4108.60009765625, 4108.60009765625, 4108.60009765625, 4108.60009765625, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T23:08', 'usd', 46.8707, 46.8707, 46.8707, 46.8707, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T23:08', 'usdtry', 46.82310104370117, 46.82310104370117, 46.82310104370117, 46.82310104370117, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T00:12', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T00:12', 'gram_altin', 6174.59, 6174.59, 6174.59, 6174.59, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T00:12', 'gram_has_altin', 6143.72, 6143.72, 6143.72, 6143.72, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T00:12', 'ons_usd', 4108.7998046875, 4108.7998046875, 4108.7998046875, 4108.7998046875, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T00:12', 'usd', 46.863, 46.863, 46.863, 46.863, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T00:12', 'usdtry', 46.852298736572266, 46.852298736572266, 46.852298736572266, 46.852298736572266, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T03:47', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T03:47', 'gram_altin', 6215.82, 6215.82, 6215.82, 6215.82, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T03:47', 'gram_has_altin', 6184.74, 6184.74, 6184.74, 6184.74, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T03:47', 'ons_usd', 4138.60009765625, 4138.60009765625, 4138.60009765625, 4138.60009765625, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T03:47', 'usd', 46.8627, 46.8627, 46.8627, 46.8627, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T03:47', 'usdtry', 46.843299865722656, 46.843299865722656, 46.843299865722656, 46.843299865722656, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T06:30', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T06:30', 'gram_altin', 6222.99, 6222.99, 6222.99, 6222.99, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T06:30', 'gram_has_altin', 6191.87, 6191.87, 6191.87, 6191.87, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T06:30', 'ons_usd', 4139.7001953125, 4139.7001953125, 4139.7001953125, 4139.7001953125, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T06:30', 'usd', 46.8603, 46.8603, 46.8603, 46.8603, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T06:30', 'usdtry', 46.852699279785156, 46.852699279785156, 46.852699279785156, 46.852699279785156, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T09:14', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T09:14', 'gram_altin', 6111.87, 6111.87, 6111.87, 6111.87, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T09:14', 'gram_has_altin', 6081.31, 6081.31, 6081.31, 6081.31, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T09:14', 'ons_usd', 4065.699951171875, 4065.699951171875, 4065.699951171875, 4065.699951171875, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T09:14', 'usd', 46.8605, 46.8605, 46.8605, 46.8605, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T09:14', 'usdtry', 46.85380172729492, 46.85380172729492, 46.85380172729492, 46.85380172729492, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T11:19', 'ceyrek', 10025.54, 10025.54, 10025.54, 10025.54, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T11:19', 'gram_altin', 6103.09, 6103.09, 6103.09, 6103.09, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T11:19', 'gram_has_altin', 6072.57, 6072.57, 6072.57, 6072.57, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T11:19', 'ons_usd', 4059.199951171875, 4059.199951171875, 4059.199951171875, 4059.199951171875, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T11:19', 'usd', 46.8593, 46.8593, 46.8593, 46.8593, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T11:19', 'usdtry', 46.85200119018555, 46.85200119018555, 46.85200119018555, 46.85200119018555, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T13:06', 'ceyrek', 10066.19, 10066.19, 10066.19, 10066.19, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T13:06', 'gram_altin', 6135.05, 6135.05, 6135.05, 6135.05, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T13:06', 'gram_has_altin', 6104.38, 6104.38, 6104.38, 6104.38, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T13:06', 'ons_usd', 4085.39990234375, 4085.39990234375, 4085.39990234375, 4085.39990234375, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T13:06', 'usd', 46.863, 46.863, 46.863, 46.863, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T13:06', 'usdtry', 46.852298736572266, 46.852298736572266, 46.852298736572266, 46.852298736572266, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T15:35', 'ceyrek', 10052.93, 10052.93, 10052.93, 10052.93, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T15:35', 'gram_altin', 6073.38, 6073.38, 6073.38, 6073.38, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T15:35', 'gram_has_altin', 6043.01, 6043.01, 6043.01, 6043.01, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T15:35', 'ons_usd', 4039.0, 4039.0, 4039.0, 4039.0, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T15:35', 'usd', 46.8581, 46.8581, 46.8581, 46.8581, 1);
+INSERT INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-08T15:35', 'usdtry', 46.852298736572266, 46.852298736572266, 46.852298736572266, 46.852298736572266, 1);
 
--- prim_history: 26 satır
+-- prim_history: 35 satır
 INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T15:32:14.732494+00:00', 4156.60009765625, 46.83599853515625, 6259.05963300728, 6207.56, 6238.75, -0.8228014434579878, -0.32448377548884855, 0.015466209554251539, -0.0759368583472031, 0, 0, 0, 'tum_bacaklar_taze');
 INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T15:33:15.000223+00:00', 4156.60009765625, 46.83599853515625, 6259.05963300728, 6207.56, 6238.75, -0.8228014434579878, -0.32448377548884855, 0.015466209554251539, -0.0759368583472031, 0, 0, 0, 'tum_bacaklar_taze');
 INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T15:34:15.266399+00:00', 4156.60009765625, 46.83599853515625, 6259.05963300728, 6207.56, 6238.75, -0.8228014434579878, -0.32448377548884855, 0.015466209554251539, -0.0759368583472031, 0, 0, 0, 'tum_bacaklar_taze');
@@ -436,6 +566,15 @@ INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_
 INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T18:20:09.845421+00:00', 4152.60009765625, 46.830299377441406, 6252.275493781281, 6206.22, 6237.41, -0.7366197127284035, -0.23776133658963694, 0.01176308502213592, -0.054362011724018444, 0, 0, 0, 'gh_actions_import');
 INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T18:30:01.159951+00:00', 4153.0, 46.8307991027832, 6252.94432273432, 6206.22, 6237.41, -0.7472371465781391, -0.2484321294504488, 0.01176308502213592, -0.054362011724018444, 0, 0, 0, 'gh_actions_import');
 INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T19:03:42.457263+00:00', 4137.10009765625, 46.83089828491211, 6229.017904128319, 6183.15, 6214.22, -0.7363585212673773, -0.23756400055474636, 0.01552727219793449, 0.31854595078533166, 0, 0, 0, 'gh_actions_import');
+INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T20:28:54.455046+00:00', 4119.7998046875, 46.826698303222656, 6202.413439637629, 6162.74, 6193.71, -0.6396451965631544, -0.14032343574532646, 0.015254119017822974, 0.6507847800813149, 0, 0, 0, 'gh_actions_import');
+INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T23:08:11.086630+00:00', 4108.60009765625, 46.82310104370117, 6185.076953220841, 6141.6, 6172.46, -0.7029331009083095, -0.2039902383796588, 0.01563232765358821, 0.9972348240846252, 0, 0, 0, 'gh_actions_import');
+INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-08T00:12:15.051059+00:00', 4108.7998046875, 46.852298736572266, 6189.234635595097, 6143.72, 6174.59, -0.7353839089139669, -0.23661464554718403, 0.015626933019058938, 0.9623839295407777, 0, 0, 0, 'gh_actions_import');
+INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-08T03:47:56.947953+00:00', 4138.60009765625, 46.843299865722656, 6232.92651961085, 6184.74, 6215.82, -0.7730962246905948, -0.2744540555231545, 0.014553004467766488, 0.2927556203814907, 0, 0, 0, 'gh_actions_import');
+INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-08T06:30:27.923512+00:00', 4139.7001953125, 46.852699279785156, 6235.834328316776, 6191.87, 6222.99, -0.7050272024889281, -0.20597609943628914, 0.015182349710882835, 0.17726751298046128, 0, 0, 0, 'gh_actions_import');
+INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-08T09:14:46.663550+00:00', 4065.699951171875, 46.85380172729492, 6124.508222015865, 6081.31, 6111.87, -0.705333725581081, -0.20635488691865822, 0.014800538081793458, 1.9985196274483918, 0, 0, 0, 'gh_actions_import');
+INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-08T11:19:42.211439+00:00', 4059.199951171875, 46.85200119018555, 6114.481739980457, 6072.57, 6103.09, -0.6854504071278966, -0.18630753128217048, 0.015480640964404404, -0.09131622724314337, 0, 0, 0, 'gh_actions_import');
+INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-08T13:06:53.322399+00:00', 4085.39990234375, 46.852298736572266, 6153.986511339868, 6104.38, 6135.05, -0.8060874239561477, -0.3077112909651958, 0.015072281419154784, -0.2089583811804352, 0, 0, 0, 'gh_actions_import');
+INSERT INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-08T15:35:40.744928+00:00', 4039.0, 46.852298736572266, 6084.092650279386, 6043.01, 6073.38, -0.6752469536685846, -0.1760763830395362, 0.015721878317623613, 0.6716852331785983, 0, 0, 0, 'gh_actions_import');
 
 -- weekend_expectation: 0 satır
 
@@ -8040,8 +8179,9 @@ INSERT INTO evds_daily(date, series_code, value) VALUES('2026-06-12', 'TP.TRY.MT
 INSERT INTO evds_daily(date, series_code, value) VALUES('2026-06-19', 'TP.TRY.MT06', 47.6);
 INSERT INTO evds_daily(date, series_code, value) VALUES('2026-06-26', 'TP.TRY.MT06', 47.43);
 
--- reports: 1 satır
+-- reports: 2 satır
 INSERT INTO reports(date, path, created_utc) VALUES('2026-07-07', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-07-07.md', '2026-07-07T19:46:55.489031+00:00');
+INSERT INTO reports(date, path, created_utc) VALUES('2026-07-08', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-07-08.md', '2026-07-08T17:12:08.677798+00:00');
 
 -- history_daily: 2549 satır
 INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-04', 1075.0999755859375, 2.9233, 101.04464458553299, 'GC=F');
@@ -10594,5 +10734,6 @@ INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES
 INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-06', 4155.10009765625, 46.7178, 6241.010823017868, 'GC=F');
 INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-07', 4157.7998046875, 46.8204, 6258.781011111614, 'GC=F');
 
--- gld_tonnage: 1 satır
+-- gld_tonnage: 2 satır
 INSERT INTO gld_tonnage(date, tonnes) VALUES('2026-07-07', 981.1081828606455);
+INSERT INTO gld_tonnage(date, tonnes) VALUES('2026-07-08', 993.7133874900146);

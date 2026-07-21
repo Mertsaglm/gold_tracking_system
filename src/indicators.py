@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import logging
+import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -83,27 +84,49 @@ def consensus(signals: list[Signal]) -> dict:
 
 
 # ---------- Veri çekiciler (ağ hatasında None) ----------
+# Süreç içi memo. build_panel tek rapor akışında birden çok tüketici tarafından çağrılıyor
+# (report.py + signals.py + aipaket.py) → aynı FRED serisi 3 kez çekiliyordu. Bu hem yavaş
+# hem de Actions'ta zaman aşımı riskini 3'e katlıyordu (20 Tem 2026 log'unda görüldü).
+_FRED_CACHE: dict = {}
+
+
 def _fred_csv(cfg: dict, series_id: str) -> Optional[list[tuple[str, float]]]:
-    try:
-        url = f"{cfg['indicators']['fred_base']}?id={series_id}"
-        r = requests.get(url, timeout=25, headers={"User-Agent": "altin/1.0"})
-        r.raise_for_status()
-        out = []
-        for line in r.text.splitlines()[1:]:
-            parts = line.split(",")
-            if len(parts) < 2:
-                continue
-            d, v = parts[0], parts[-1]
-            if v in (".", "", "NaN"):
-                continue
-            try:
-                out.append((d, float(v)))
-            except ValueError:
-                continue
-        return out or None
-    except Exception as e:
-        log.warning("FRED %s hata: %s", series_id, e)
-        return None
+    """FRED CSV serisi çeker. Ağ hatasında None (gösterge 'veri yok' olur).
+
+    Actions runner'larından fredgraph.csv 25 sn'de yetişmiyordu; timeout config'e
+    taşındı ve yeniden deneme eklendi.
+    """
+    if series_id in _FRED_CACHE:
+        return _FRED_CACHE[series_id]
+    ic = cfg["indicators"]
+    timeout = float(ic.get("fred_timeout_seconds", 60))
+    tries = int(ic.get("fred_retry", 2)) + 1
+    url = f"{ic['fred_base']}?id={series_id}"
+    for attempt in range(1, tries + 1):
+        try:
+            r = requests.get(url, timeout=timeout, headers={"User-Agent": "altin/1.0"})
+            r.raise_for_status()
+            out = []
+            for line in r.text.splitlines()[1:]:
+                parts = line.split(",")
+                if len(parts) < 2:
+                    continue
+                d, v = parts[0], parts[-1]
+                if v in (".", "", "NaN"):
+                    continue
+                try:
+                    out.append((d, float(v)))
+                except ValueError:
+                    continue
+            if out:
+                _FRED_CACHE[series_id] = out
+                return out
+            return None
+        except Exception as e:
+            log.warning("FRED %s hata (deneme %d/%d): %s", series_id, attempt, tries, e)
+            if attempt < tries:
+                time.sleep(2.0 * attempt)          # basit geri çekilme
+    return None
 
 
 def _trend_delta(series: list[tuple[str, float]], lookback: int):

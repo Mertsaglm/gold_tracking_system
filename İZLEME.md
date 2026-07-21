@@ -13,12 +13,32 @@ haftalık **5 dakikalık kontrol listesi** + sorun çıkarsa ne yapacağın.
 |---|---|---|---|---|
 | 1 | Actions yeşil mi? | GitHub → Actions sekmesi | "Altin arsivleyici" ve "Gunluk otonom rapor" son çalışmalar ✅ yeşil | Kırmızı çalışmaya tıkla, log'a bak; genelde geçici (kaynak erişimi) — sonraki tur düzelir |
 | 2 | Günlük rapor düştü mü? | Telegram | Her akşam ~18:45 TR bir rapor | 1 gün gelmezse Actions "Gunluk otonom rapor" son çalışmasına bak |
-| 3 | Kapsama % bantta mı? | Raporun "Veri Kalitesi" satırı | **%80-95 normal** (cron gecikmesi %100'ü imkânsız kılar) | %80 altı sürekliyse Actions arşiv çalışmalarına bak (bkz. #1) |
+| 3 | Kapsama % bantta mı? | Raporun "Veri Kalitesi" satırı | **%60-100 normal** (Actions ritmine göre ölçülür) | Uyarı satırı çıkarsa (kesinti > 270 dk) Actions'a bak (bkz. #1) |
 | 4 | Veri artıyor mu? | Repo → `data/archive/` CSV satır sayısı, `data/altin.sql` diff | Her gün büyüyor | Büyümüyorsa arşiv workflow'u durmuş olabilir (#1) |
 | 5 | Bildirim sayısı makul mü? | Telegram | Günde birkaç, spam yok (tavan 6/gün) | Spam varsa `config.yaml alerts` eşiklerini gevşet |
 | 6 | Z-skor doluyor mu? | Haftalık rapor (pazar) "Arşiv İlerlemesi: X/60 gün" | Her gün ~+1 ilerliyor | ~60'a ulaşınca z-skor bildirimleri kendiliğinden açılır |
 
 Hepsi yeşilse: **hiçbir şey yapma.** Sistem çalışıyor.
+
+### ⚠️ Actions cron'u yazdığından çok daha seyrek çalışır — bu normal
+
+`archive.yml` cron'u `*/15` (günde 96 çalışma) diyor, ama GitHub düşük aktiviteli repolarda
+zamanlanmış iş akışlarını **kısıtlıyor**. 12-21 Temmuz 2026 ölçümü:
+
+| Gün | Çalışma |
+|---|---|
+| 13 Tem | 10 |
+| 14-17 Tem | 14-15 |
+| 18 Tem | 17 |
+| 19 Tem | 16 |
+| 20 Tem | 11 |
+
+Yani **günde 10-17 çalışma, aralar 1-3.5 saat.** Bu bir arıza değil, GitHub'ın kısıtlaması.
+Sağlık metrikleri (`config.yaml alerts.archive_observed_freq_minutes: 90`) buna göre kalibre
+edildi. **Arıza uyarısı ancak kesinti 270 dk'yı aşınca çıkar.**
+
+Daha sık veri istiyorsan tek gerçek çözüm Oracle'a (7/24 collector) geçmek — Actions'ta
+cron sıklığını artırmak işe yaramıyor, GitHub yine kısıtlıyor.
 
 ---
 

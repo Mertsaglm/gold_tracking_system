@@ -44,10 +44,25 @@ def weekend_section(con, cfg, days: int = 3) -> list:
     return out
 
 
+def effective_freq_minutes(cfg) -> float:
+    """Beklenen veri sıklığı (dk) — çalışma moduna göre.
+
+    'actions' modunda NOMİNAL cron değil, GitHub'ın kısıtlama sonrası gerçekte teslim
+    ettiği GÖZLEMLENEN ritim esas alınır; yoksa sağlıklı sistem arızalı raporlanır.
+    'collector' modunda (Oracle 7/24) truncgil poll_seconds geçerlidir.
+    """
+    if cfg.get("runtime_mode", "actions") == "collector":
+        return cfg["sources"]["truncgil"]["poll_seconds"] / 60.0
+    a = cfg["alerts"]
+    return float(a.get("archive_observed_freq_minutes",
+                       a.get("archive_freq_minutes", 15)))
+
+
 def archive_health(cfg, hours: int = 24) -> dict:
     """Arşiv CSV'lerinden son N saatte başarı oranı + en uzun boşluk (Actions sağlığı).
 
-    Her başarılı arşiv çalışması bir CSV satırı ekler → gap ≈ ardışık başarısızlık.
+    Her başarılı arşiv çalışması bir CSV satırı ekler. Boşluk ancak gözlemlenen ritmin
+    tolerans katını AŞARSA arıza sayılır — normal cron kısıtlaması arıza değildir.
     """
     import csv
     import glob
@@ -65,30 +80,36 @@ def archive_health(cfg, hours: int = 24) -> dict:
             except (ValueError, KeyError):
                 continue
     ts.sort()
-    freq = cfg["alerts"].get("archive_freq_minutes", 15)
-    expected = int(hours * 60 / freq)
+    freq = effective_freq_minutes(cfg)
+    expected = int(hours * 60 / freq) if freq else 0
     actual = len(ts)
     max_gap_min = 0.0
     if len(ts) >= 2:
         max_gap_min = max((ts[i] - ts[i - 1]).total_seconds() / 60
                           for i in range(1, len(ts)))
-    consec_fail = int(max_gap_min / freq) - 1 if max_gap_min else 0
+    tol = freq * float(cfg["alerts"].get("archive_gap_tolerance_factor", 4.0))
+    consec_fail = int(max_gap_min / freq) - 1 if (freq and max_gap_min > tol) else 0
     return {"basari": actual, "beklenen": expected,
             "basari_pct": min(100.0, actual / expected * 100) if expected else 0,
             "en_uzun_bosluk_dk": max_gap_min,
+            "tolerans_dk": tol,
             "ardisik_basarisiz": max(0, consec_fail)}
 
 
 def coverage_report(con, cfg, hours: int = 24) -> dict:
-    """Son N saatte veri kapsaması ve en uzun kesinti (PC kapalı delikleri görünür kılar)."""
+    """Son N saatte veri kapsaması ve en uzun kesinti.
+
+    Beklenen kayıt sayısı çalışma moduna göre (bkz. effective_freq_minutes): Actions
+    modunda toplayıcının poll_seconds'ı değil, arşivin gözlemlenen ritmi esastır.
+    """
     from datetime import timedelta
     now = util.utcnow()
     since = util.iso(now - timedelta(hours=hours))
     rows = con.execute(
         "SELECT ts_utc FROM prim_history WHERE ts_utc>=? ORDER BY ts_utc", (since,)
     ).fetchall()
-    poll = cfg["sources"]["truncgil"]["poll_seconds"]
-    expected = int(hours * 3600 / poll)
+    freq_min = effective_freq_minutes(cfg)
+    expected = int(hours * 60 / freq_min) if freq_min else 0
     actual = len(rows)
     cov = min(100.0, actual / expected * 100.0) if expected else 0.0
     max_gap_min = 0.0
@@ -257,8 +278,9 @@ def build_report(cfg: dict) -> str:
     lines.append("## Veri Kalitesi")
     lines.append("")
     cov = coverage_report(con, cfg, 24)
+    _mod = cfg.get("runtime_mode", "actions")
     lines.append(f"- Son 24s veri kapsaması: **%{cov['coverage_pct']:.0f}** "
-                 f"({cov['actual']}/{cov['expected']} beklenen kayıt) · "
+                 f"({cov['actual']}/{cov['expected']} beklenen kayıt, _{_mod}_ ritmi) · "
                  f"en uzun kesinti: **{cov['max_gap_min']:.0f} dk**")
     # arşiv sağlığı (Actions)
     try:
@@ -271,9 +293,13 @@ def build_report(cfg: dict) -> str:
                             f"GitHub Actions kontrol edilmeli.")
     except Exception as e:
         log.warning("arşiv sağlığı hata: %s", e)
-    if cov["coverage_pct"] < 80:
-        lines.append("  - ⚠️ Kapsama düşük (PC kapalı kalmış olabilir); prim z-skoru yalnız "
-                     "FRESH kayıtları saydığı için tarihçe bozulmaz.")
+    # Uyarı ÖNCELİKLE boşluk tabanlı: Actions'ta günlük çalışma sayısı 10-17 arası oynadığı
+    # için sayım oranı tek başına güvenilir bir arıza göstergesi değil.
+    _tol = effective_freq_minutes(cfg) * float(
+        cfg["alerts"].get("archive_gap_tolerance_factor", 3.0))
+    if cov["max_gap_min"] > _tol:
+        lines.append(f"  - ⚠️ {cov['max_gap_min']:.0f} dk'lık kesinti (tolerans {_tol:.0f} dk) — "
+                     "prim z-skoru yalnız FRESH kayıtları saydığı için tarihçe bozulmaz.")
     n_ticks = con.execute("SELECT COUNT(*) FROM ticks").fetchone()[0]
     n_prim = con.execute("SELECT COUNT(*) FROM prim_history").fetchone()[0]
     n_valid = db.count_valid_prim(con)

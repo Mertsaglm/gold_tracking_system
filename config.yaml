@@ -3,6 +3,11 @@
 
 timezone_offset_hours: 3          # Türkiye UTC+3 (sabit, DST yok)
 
+# Çalışma modu — sağlık metrikleri (kapsama / arşiv) buna göre kalibre edilir.
+#   actions   : GitHub Actions cron'u. Zamanlanmış iş akışları kısıtlanır (bkz. alerts).
+#   collector : 7/24 canlı toplayıcı (Oracle). truncgil poll_seconds geçerli olur.
+runtime_mode: "actions"
+
 paths:
   db: "data/altin.sqlite"
   db_dump: "data/altin.sql"             # diff'lenebilir dump (binary DB yerine commit'lenir)
@@ -130,6 +135,10 @@ backtest:
 # Her gösterge altın açısından olumlu(+1)/nötr(0)/olumsuz(-1) etiketlenir.
 indicators:
   fred_base: "https://fred.stlouisfed.org/graph/fredgraph.csv"
+  # Actions runner'larından FRED 25 sn'de yetişmiyordu (20 Tem 2026 log'u: DFII10 + DTWEXBGS
+  # "Read timed out" → panel 5 yerine 3 göstergeyle çalıştı). Timeout + yeniden deneme.
+  fred_timeout_seconds: 60
+  fred_retry: 2
   real_rate_series: "DFII10"            # ABD 10Y TIPS reel faiz
   dxy_series: "DTWEXBGS"                # geniş dolar endeksi (FRED)
   dxy_ticker: "DX-Y.NYB"               # yedek (yfinance)
@@ -166,7 +175,14 @@ alerts:
   cooldown_hours: 24                    # aynı sinyale soğuma
   daily_cap: 6                          # günlük toplam bildirim tavanı
   state_file: "data/alert_state.json"
-  archive_freq_minutes: 15              # arşiv/bildirim sıklığı (public repo: sınırsız)
+  archive_freq_minutes: 15              # NOMİNAL cron (*/15) — archive.yml ile eşleşir
+  # GitHub, düşük aktiviteli repolarda zamanlanmış iş akışlarını kısıtlar: cron */15 (günde 96)
+  # yazsa da gerçekte teslim edilen çok daha seyrek. 12-21 Temmuz 2026 ölçümü: günde 10-17
+  # çalışma (medyan ~15) => ~90-100 dk. Sağlık metrikleri NOMİNAL değil bu GÖZLEMLENEN ritme
+  # göre hesaplanır; aksi halde sağlıklı sistem her gün "13 ardışık çalışma başarısız" der.
+  archive_observed_freq_minutes: 90     # gözlemlenen gerçek ritim (~16 çalışma/gün)
+  archive_gap_tolerance_factor: 3.0     # 90×3=270 dk; bunun altındaki boşluk normal kısıtlama
+  coverage_warn_pct: 40.0               # sayım tabanlı ikincil eşik (asıl uyarı boşluk tabanlı)
 telegram:
   enabled: true
   # token + chat_id .env'den (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)

@@ -17,3 +17,6 @@ logs/
 
 # Binary DB izlenmez; diff'lenebilir dump izlenir (Faz 5)
 data/altin.sqlite
+
+# macOS
+.DS_Store

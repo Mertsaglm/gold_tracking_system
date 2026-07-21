@@ -31,7 +31,7 @@ sources:
     poll_seconds: 300                   # gecikmeli + rate-limit; 5 dk yeterli
     ons_ticker: "GC=F"                  # ons XAU/USD (futures proxy — canlı)
     ons_fallback_ticker: "XAUUSD=X"
-    ons_hist_primary: "XAUUSD=X"        # tarihsel için spot tercih (fallback GC=F)
+    ons_hist_primary: "GC=F"            # tarihsel için GC=F (XAUUSD=X artık 404 veriyor)
     usdtry_ticker: "TRY=X"
 
   evds:

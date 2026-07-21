@@ -4,7 +4,7 @@ Tarih: 2026-07-07 · **79/79 test geçti** (69 → +10 notify) · Repo: **public
 
 ## Tek cümle
 Kullanıcı hiçbir şey çalıştırmadan sistem kendi kendine izliyor, uyarıyor ve raporluyor —
-GitHub Actions üzerinde, Oracle beklenmeden. **Oracle artık "zorunluluk" değil "yükseltme".**
+GitHub Actions üzerinde. **Üretim ortamı budur; ayrı bir sunucu gerekmez.**
 
 | Bölüm | Durum |
 |---|---|
@@ -78,14 +78,15 @@ signals(5) calculators(7) trends(4) notify(10)   → 79 passed
 ```
 
 ## Kapsam dışı / sonraki
-- **İnteraktif bot** (/durum, /net, /aipaket komutları) 7/24 polling gerektirir → Oracle'a not
+- **İnteraktif bot** (/durum, /net, /aipaket komutları) 7/24 polling gerektirir → yerelde
+  `src.telegram_bot` açıkken yanıt verir; Actions push-only çalışır
   düşüldü. Actions push (rapor/bildirim) tarafı tam otonom.
 - Canlı günlük prim z-skoru arşivi doluyor (Actions ile ~her gün +96 nokta); 60 güne ulaşınca
   z-skor bildirimleri de devreye girer.
-- Oracle: artık opsiyonel yükseltme (README'de taşıma + Actions kapatma adımı).
+- Üretim ortamı Actions olarak sabitlendi; ek altyapı gerekmiyor.
 
 ## Kullanıcının yapacakları
 1. (Yok — secrets AI tarafından eklendi.) Telefonuna düşen rapor/bildirimleri izle.
 2. Yerelde çalışırsan önce `git pull`.
-3. Oracle'ı canın istediğinde dene; acelesi yok.
+3. İzleme dönemi başlıyor (bkz. `İZLEME.md`).
 ```

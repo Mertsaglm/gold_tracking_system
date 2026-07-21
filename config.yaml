@@ -5,7 +5,7 @@ timezone_offset_hours: 3          # Türkiye UTC+3 (sabit, DST yok)
 
 # Çalışma modu — sağlık metrikleri (kapsama / arşiv) buna göre kalibre edilir.
 #   actions   : GitHub Actions cron'u. Zamanlanmış iş akışları kısıtlanır (bkz. alerts).
-#   collector : 7/24 canlı toplayıcı (Oracle). truncgil poll_seconds geçerli olur.
+#   collector : 7/24 canlı toplayıcı. truncgil poll_seconds geçerli olur.
 runtime_mode: "actions"
 
 paths:
@@ -223,7 +223,7 @@ trends:
 report:
   hour_local: 20                        # gün sonu raporu saati (TR)
 
-# ----------------- Bildirim eşikleri (rehber 6.2; zamanlayıcı Oracle'da) -----------------
+# ----------------- Bildirim eşikleri (rehber 6.2; zamanlayıcı Actions'ta) -----------------
 alerts:
   prim_abs_pct: 1.5                     # |prim| > bu -> bildirim
   prim_z: 2.0                           # |z| > bu

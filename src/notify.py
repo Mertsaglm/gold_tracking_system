@@ -157,9 +157,9 @@ def build_context(cfg: dict) -> dict:
     cur_theo = fresh["theoretical"] if fresh else latest["theoretical"]
     all_fresh = fresh["all_fresh"] if fresh else (not bool(latest["indicative"]))
     zmin = cfg["stats"]["zscore_min_samples"]
-    n_valid = db.count_valid_prim(con)
+    n_days = db.count_valid_prim_days(con)
     prim_z = None
-    if n_valid >= zmin and cur_prim is not None:
+    if n_days >= zmin and cur_prim is not None:
         series = db.prim_series(con, only_valid=True)
         z = calc.zscore(series, cur_prim, zmin)     # güncel primin arşive karşı z'si
         prim_z = z.value

@@ -10,7 +10,7 @@ Tarih: 2026-07-07 · **91/91 test geçti** (79 → +12) · Repo public
 | 1. Bot komut yetkilendirmesi | ✅ chat_id beyaz liste + 4 test |
 | 2. Repo şişme önlemi (SQL dump) | ✅ dump/restore, binary gitignore, **workflow uçtan uca doğrulandı** |
 | 3. Hafta sonu canlı test hazırlığı | ✅ 5 dry-run test + rapor bölümü (sessiz-kalma dahil) |
-| 4. İZLEME.md | ✅ haftalık checklist + acil durdurma + Oracle geçiş |
+| 4. İZLEME.md | ✅ haftalık checklist + duraklatma + veri konumları |
 | 5. Teslimat | ✅ bu dosya |
 
 ---
@@ -36,7 +36,7 @@ TESLIMAT-FAZ4.md: "chat <10-haneli-id>"  →  "chat <chat_id>"
 
 `telegram_bot.allowed_chats()` + `is_allowed()`: `.env TELEGRAM_CHAT_ID` + config
 `extra_allowed_chat_ids`. Komut işleyicide izinsiz sohbet **sessizce yoksayılır + loglanır**
-(son 3 hane). Oracle'da bot 7/24 açıldığında botu bulan yabancı komut atamaz. **4 test**
+(son 3 hane). Bot açıkken botu bulan yabancı komut atamaz. **4 test**
 (sahip izinli, yabancı engelli, ekstra izinli, int/str chat_id).
 
 ## Bölüm 2 — Repo şişme önlemi (yönetici denetim bulgusu)
@@ -85,7 +85,7 @@ calculators(7) trends(4) notify(10) authz(4) dbdump(3) weekend(5)   → 91 passe
 
 ## Bilinen / sonraki
 - Git geçmişindeki eski chat_id ve 3.2MB DB blob'ları duruyor (bilinçli — rewrite'a değmez).
-- İnteraktif bot komutları hâlâ Oracle bekliyor (Actions push-only).
+- İnteraktif bot komutları yerelde `src.telegram_bot` açıkken çalışır (Actions push-only).
 - Z-skor arşivi doluyor; ~60. günde bildirimleri açılır.
 
 ---
@@ -95,4 +95,4 @@ calculators(7) trends(4) notify(10) authz(4) dbdump(3) weekend(5)   → 91 passe
 Sistem GitHub Actions'ta otonom çalışıyor: 15 dk arşiv+bildirim, günlük rapor, hafta sonu mantığı,
 pazartesi mutabakatı, haftalık özet. Kullanıcı sadece izliyor (bkz. `İZLEME.md`).
 Sonraki temas noktaları: **14 Temmuz** (ilk hafta sonu sınavı sonucu), **~60. gün**
-(z-skor aktivasyonu), **Oracle hesabı** (taşınma görevi). Bu fazdan sonra yeni iş emri beklenmiyor.
+(z-skor aktivasyonu). Bu fazdan sonra yeni iş emri beklenmiyor.

@@ -26,7 +26,7 @@ seviyeler ölçüldü, **yön üstünlüğü çıkmadı ve bu saklanmadı.**
 **Belirti:** her raporda `⚠️ Arşiv uyarısı: ~13 ardışık çalışma başarısız`, kapsama `%1`.
 **Gerçek:** son 60 Actions çalışmasının **60'ı başarılı**, günlük rapor her akşam düşüyor.
 
-**Kök sebep:** metrikler Oracle/collector senaryosuna göre hesaplanıyordu (dakikada bir tick),
+**Kök sebep:** metrikler 7/24 collector senaryosuna göre hesaplanıyordu (dakikada bir tick),
 sistem ise Actions'ta çalışıyor. `archive_health` günde 96 çalışma bekliyordu
 (`archive_freq_minutes: 15`), `coverage_report` günde 1440 kayıt (`poll_seconds: 60`).
 
@@ -176,7 +176,7 @@ az sayıda bağımsız gözlemdi.
 
 ## Bilinen eksikler / sonraki
 - Seviyelerin yön üstünlüğü yok (ölçüldü). Kademe/stop planlaması için kullanılabilir.
-- `/grafik` dahil interaktif bot komutları hâlâ Oracle bekliyor (Actions push-only).
+- `/grafik` dahil interaktif bot komutları yerelde `src.telegram_bot` açıkken çalışır (Actions push-only).
 - Yerel `.venv` Python 3.9.6, Actions 3.12 — şu an çalışıyor (29/32 dosyada
   `from __future__ import annotations`), ama sürüm kayması ileride kırabilir.
 - `signals.evaluate_alerts` ile `notify.evaluate_thresholds` hâlâ ikiz eşik mantığı taşıyor.

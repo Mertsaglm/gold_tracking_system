@@ -49,7 +49,7 @@ def effective_freq_minutes(cfg) -> float:
 
     'actions' modunda NOMİNAL cron değil, GitHub'ın kısıtlama sonrası gerçekte teslim
     ettiği GÖZLEMLENEN ritim esas alınır; yoksa sağlıklı sistem arızalı raporlanır.
-    'collector' modunda (Oracle 7/24) truncgil poll_seconds geçerlidir.
+    'collector' modunda (7/24 canlı toplayıcı) truncgil poll_seconds geçerlidir.
     """
     if cfg.get("runtime_mode", "actions") == "collector":
         return cfg["sources"]["truncgil"]["poll_seconds"] / 60.0
@@ -315,9 +315,10 @@ def build_report(cfg: dict) -> str:
     n_ohlc = con.execute("SELECT COUNT(*) FROM ohlc_1m").fetchone()[0]
     zmin = cfg["stats"]["zscore_min_samples"]
     lines.append(f"- Ham tick: **{n_ticks}** · 1dk OHLC bar: **{n_ohlc}**")
-    lines.append(f"- Prim kaydı: **{n_prim}** (geçerli: {n_valid})")
-    if n_valid < zmin:
-        lines.append(f"- Z-skor: ⏳ **yetersiz veri** ({n_valid}/{zmin} geçerli örnek)")
+    n_days = db.count_valid_prim_days(con)
+    lines.append(f"- Prim kaydı: **{n_prim}** (geçerli: {n_valid} · {n_days} gün)")
+    if n_days < zmin:
+        lines.append(f"- Z-skor: ⏳ **arşiv birikiyor** ({n_days}/{zmin} gün)")
     else:
         series = db.prim_series(con, only_valid=True)
         z = calc.zscore(series[:-1], series[-1], zmin)
@@ -357,10 +358,10 @@ def build_weekly_report(cfg: dict) -> str:
 
     # z-skor arşiv ilerlemesi
     zmin = cfg["stats"]["zscore_min_samples"]
-    n_valid = db.count_valid_prim(con)
+    n_days = db.count_valid_prim_days(con)
     L += ["## Arşiv İlerlemesi", "",
-          f"- Z-skor arşivi: **{n_valid}/{zmin} gün** "
-          f"({'hazır ✅' if n_valid >= zmin else 'birikiyor ⏳'})",
+          f"- Z-skor arşivi: **{n_days}/{zmin} gün** "
+          f"({'hazır ✅' if n_days >= zmin else 'birikiyor ⏳'})",
           f"- Toplam prim kaydı: {con.execute('SELECT COUNT(*) FROM prim_history').fetchone()[0]}",
           ""]
     con.close()

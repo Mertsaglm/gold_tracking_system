@@ -1,12 +1,13 @@
 # TESLIMAT — Faz 1 Kapanışı + Canlıya Alma
 
-Güncelleme: 2026-07-07 · Ortam: Windows (geliştirme), Python 3.12.4, .venv · Hedef: Oracle Cloud
+Güncelleme: 2026-07-07 · Ortam: Windows (geliştirme), Python 3.12.4, .venv
 
 ## Kapsam değişikliği (kullanıcı kararı)
-- **C. Windows 7/24 kalıcı çalıştırma: İPTAL.** Proje Oracle gelince tamamlanmış sayılacak.
+- **C. Windows 7/24 kalıcı çalıştırma: İPTAL.** 7/24 çalıştırma sonraki fazda GitHub Actions'a verildi.
   Kurulan Windows artefaktları temizlendi (aşağıda kanıt).
-- **D. GitHub yedeği: Oracle'a ertelendi (opsiyonel).** Windows'ta 7/24 çalışılmadığı için biriken
-  veri yok → acil değil. Yedekleme kodu repoda hazır; Oracle'da tek adımla açılır.
+- **D. GitHub yedeği: ertelendi (opsiyonel).** Bu fazda biriken veri yok → acil değil.
+  Yedekleme kodu repoda hazır (`backup_db.py`). Kalıcı çözüm sonraki fazda `data/altin.sql`
+  dump'ının repoya commit'lenmesiyle geldi.
 
 ## Özet durum
 
@@ -15,9 +16,9 @@ Güncelleme: 2026-07-07 · Ortam: Windows (geliştirme), Python 3.12.4, .venv ·
 | A. Telegram canlı | ✅ gerçek mesajlar gönderildi (bağlantı testi, rapor, /durum HTML) |
 | B. EVDS canlı | ✅ 12 kod teyit, 5 yıl backfill (7531 satır), günlük job, rapor bağlamı |
 | C. Windows 7/24 | ⛔ iptal (kullanıcı) — temizlendi |
-| D. Yedekleme | ⏸️ Oracle'a ertelendi — kod hazır (`backup_db.py`, `backup.sh`) |
+| D. Yedekleme | ⏸️ ertelendi — kod hazır (`backup_db.py`, `backup.sh`) |
 | E. Rapor zenginleştirme | ✅ dolar-bazlı getiri + kadran paneli + EVDS bağlam + kapsama satırı |
-| F. Dokümantasyon | ✅ README (Oracle-odaklı), PROJE-REHBERI (rejim D + backlog), bu dosya |
+| F. Dokümantasyon | ✅ README, PROJE-REHBERI (rejim D + backlog), bu dosya |
 | Testler | ✅ **31/31 geçti** (22 mevcut + 9 yeni gösterge) |
 
 ---
@@ -100,7 +101,7 @@ Yıl-yıl kapsama doğrulandı (ör. USD ~252/yıl × 12 yıl). **Keşif:** 597 
 ### Süreçte çözülen 2 gerçek hata
 1. **Non-ASCII yol SSL hatası:** proje yolu `altın` içerdiği için `curl_cffi` cacert'i açamıyordu
    (yfinance GMA/GLD çekimi kırık). `util._ensure_ascii_cert()` cacert'i ASCII temp yola kopyalayıp
-   env ayarlıyor. Oracle'da (ASCII yol) devreye girmez.
+   env ayarlıyor. ASCII yolda devreye girmez.
 2. **yfinance `period=300d` geçersiz** → `1y` + fallback ticker.
 
 ## C. Windows 7/24 — iptal & temizlik kanıtı
@@ -108,7 +109,7 @@ Yıl-yıl kapsama doğrulandı (ör. USD ~252/yıl × 12 yıl). **Keşif:** 597 
 - Zamanlanmış görevler silindi: AltinRapor, AltinReconcile, AltinBackup (`SUCCESS ... deleted`).
 - Startup VBS silindi. Kalan `src.*` süreç: **0**.
 - (Not: `supervisor.py` tek-instance kilidiyle repoda kaldı — çapraz platform, opsiyonel.
-  Oracle'da systemd `Restart=always` bu işi üstlenir.)
+  Üretimde bu işi Actions'ın her çalışmayı sıfırdan başlatması üstlenir.)
 
 ## Testler
 ```
@@ -118,7 +119,7 @@ $ .venv/Scripts/python.exe -m pytest -q
 Yeni: `tests/test_indicators.py` (9) — reel faiz/DXY/GMA/GLD/mevduat etiketleme + uzlaşı
 (veri-yok paydadan çıkarma, yön eşiği).
 
-## Oracle dağıtımı (F)
+## Dağıtım (F)
 `deploy/` systemd birimleri: collector, bot, **evds.timer (15:30 UTC)**, report.timer (15:45 UTC =
 18:45 TR), backup.timer (opsiyonel). Shape planı: **Ampere A1 (ARM64)**, kapasite yoksa
 **AMD E2.1.Micro**. "VM gelince taşınma" adımları README'de (repo + DB kopyası + systemd).
@@ -127,7 +128,7 @@ Yeni: `tests/test_indicators.py` (9) — reel faiz/DXY/GMA/GLD/mevduat etiketlem
 - **SPDR GLD tonaj CSV** ayrıştırılamadı (URL güncel format vermedi) → gösterge "veri yok",
   uzlaşı paydasından çıkıyor (tasarım gereği). v2: doğru GLD kaynağı.
 - 1 hafta repo saf serisi yok → AOFM proxy (yeterli).
-- 7/24 çalıştırma Oracle'da; şu an veri birikmeden bekliyor.
+- 7/24 çalıştırma sonraki fazda GitHub Actions'a verildi.
 - Sinyal/bildirim motoru, backtest, AI katmanı: v2/v3 (bkz. PROJE-REHBERI backlog).
 
 ## Tekrar üretmek

@@ -265,10 +265,13 @@ altın: aralık). Bu dürüstlük ürünün güvenilirlik farkı olur.
 - Aynısını çeyrek/gram makası için: "çeyrek primi şu an %X, tarihsel dağılımda p85 → fiziki alacaksan
   gram/külçe al, çeyrek alma; düğün sezonu sonrası prim normalleşince çevir."
 
-> **⏳ FAZ 2 — HENÜZ TEST EDİLEMEDİ:** Günlük Kapalıçarşı prim z-skoru için canlı arşiv gerekiyor
-> (şu an <60 geçerli kayıt → sinyal motoru "veri_bekliyor" diyor). Aylık külçe proxy ortalamaya
-> dönüşü kabaca gösteriyor ama günlük prim mean-reversion iddiası **doğrulanmadı**; arşiv dolunca
-> (Oracle'da) backtest'e eklenecek.
+> **⏳ ARŞİV BEKLİYOR:** Günlük Kapalıçarşı prim z-skoru kendi canlı arşivimizi gerektirir
+> (7 Temmuz 2026'da sıfırdan başladı). Kapı **60 geçerli gün** sayar — kayıt değil: gün içinde ~10
+> örnek alınıyor ve bunlar otokorelasyonlu, kayıt saymak bağımsız gözlem sayısını şişirir.
+> Eşik dolana kadar sinyal motoru `veri_bekliyor` der; dolduğunda z-skor sinyali ve `z > 2`
+> bildirimi kendiliğinden devreye girer (kod hazır). Aylık külçe proxy ortalamaya dönüşü kabaca
+> gösteriyor ama günlük prim mean-reversion iddiası **doğrulanmadı**; arşiv dolunca backtest'e
+> eklenecek.
 
 ### 3.3 DCA (düzenli birikim) optimizasyonu
 
@@ -287,7 +290,7 @@ ATR-düşüş koşullu alım (haftalık düşüş > 1 ATR ise o haftanın payın
 >   **ölü-nakit artefaktıydı.** Adil kurulumda (atlanan ay nakdi mevduatta): tüm dönem reel
 >   **+40% vs koşulsuz +43%** (hafif KÖTÜ); OOS reel **−20% vs −15%** (yine kötü). Aylık külçe
 >   proxy prim sinyali üstünlük sağlamıyor (OOS'ta 38/43 ay atlandı, ort. 12 ay bekleme).
->   Günlük canlı prim arşivi dolunca (Oracle/Actions) yeniden test edilecek. (`backtest_raporu.md`.)
+>   Günlük canlı prim arşivi dolunca yeniden test edilecek. (`backtest_raporu.md`.)
 
 ### 3.4 Kademe ve zarar-kes (ATR bazlı)
 
@@ -492,8 +495,8 @@ kullanıcı güveni açısından "kesin strateji" iddiasından daha ikna edicidi
 ### Backlog (MVP Faz 1 tamamlandı — sıradakiler)
 
 **MVP Faz 1 (bitti):** veri toplayıcı, durum makinesi, prim/makas/dekompozisyon/dolar-bazlı getiri,
-EVDS makro bağlam + 5 yıl backfill, gösterge uzlaşı paneli, günlük rapor + Telegram botu, dönen loglar,
-Oracle systemd dağıtımı. Hedef ortam Oracle Always Free.
+EVDS makro bağlam + 5 yıl backfill, gösterge uzlaşı paneli, günlük rapor + Telegram botu, dönen loglar.
+Üretim ortamı: GitHub Actions.
 
 **v2 — Bildirim & sinyal motoru:**
 - Eşik bazlı bildirim (prim |>%1.5| veya z>2, makas > p90, günlük hareket > 2 ATR, çeyrek primi z>2).

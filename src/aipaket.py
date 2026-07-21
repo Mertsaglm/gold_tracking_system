@@ -55,13 +55,14 @@ def build_package(cfg: dict) -> dict:
 
     # z-skor durumu
     zmin = cfg["stats"]["zscore_min_samples"]
-    n_valid = db.count_valid_prim(con)
-    if n_valid >= zmin:
+    n_days = db.count_valid_prim_days(con)
+    if n_days >= zmin:
         series = db.prim_series(con, only_valid=True)
         z = calc.zscore(series[:-1], series[-1], zmin)
-        pkt["prim_zskoru"] = {"deger": z.value, "n": z.n}
+        pkt["prim_zskoru"] = {"deger": z.value, "n": z.n, "gun": n_days}
     else:
-        pkt["prim_zskoru"] = {"durum": "veri_bekliyor", "mevcut": n_valid, "gereken": zmin}
+        pkt["prim_zskoru"] = {"durum": "veri_bekliyor",
+                              "mevcut_gun": n_days, "gereken_gun": zmin}
 
     # EVDS makro
     try:
@@ -97,22 +98,22 @@ def build_package(cfg: dict) -> dict:
         log.warning("rejim hata: %s", e)
 
     # veri kalitesi
-    pkt["veri_kalitesi"] = _veri_kalitesi(cfg, con, latest, n_valid, zmin)
+    pkt["veri_kalitesi"] = _veri_kalitesi(cfg, con, latest, n_days, zmin)
     con.close()
     return pkt
 
 
-def _veri_kalitesi(cfg, con, latest, n_valid, zmin) -> dict:
+def _veri_kalitesi(cfg, con, latest, n_days, zmin) -> dict:
     hist = con.execute("SELECT COUNT(*) FROM history_daily").fetchone()[0]
     evds = con.execute("SELECT COUNT(*) FROM evds_daily").fetchone()[0]
     return {
         "canli_prim_kaydi": db.latest_prim(con) is not None,
         "bacak_durumu": latest["reason"] if latest else "veri yok",
         "indicative": bool(latest["indicative"]) if latest else None,
-        "zskor_arsivi": f"{n_valid}/{zmin} ({'hazır' if n_valid >= zmin else 'birikiyor'})",
+        "zskor_arsivi": f"{n_days}/{zmin} gün ({'hazır' if n_days >= zmin else 'birikiyor'})",
         "history_daily_gun": hist,
         "evds_satir": evds,
-        "uyari": "Eksik/indicative alanlara güvenme; canlı arşiv Oracle/Actions ile dolar.",
+        "uyari": "Eksik/indicative alanlara güvenme; canlı arşiv Actions ile dolar.",
     }
 
 

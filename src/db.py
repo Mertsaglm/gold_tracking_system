@@ -177,3 +177,16 @@ def count_valid_prim(con) -> int:
     return con.execute(
         "SELECT COUNT(*) FROM prim_history WHERE indicative=0 AND weekend=0"
     ).fetchone()[0]
+
+
+def count_valid_prim_days(con) -> int:
+    """Geçerli prim arşivinin kapsadığı farklı gün sayısı.
+
+    Z-skor kapısı bunu sayar, kaydı değil: gün içinde ~10 örnek alınıyor ve bunlar
+    birbirinin tekrarı (otokorelasyon). Kayıt saymak bağımsız gözlem sayısını
+    olduğundan büyük gösterir; z-skorun dağılım tabanı gün cinsindendir.
+    """
+    return con.execute(
+        "SELECT COUNT(DISTINCT date(ts_utc)) FROM prim_history "
+        "WHERE indicative=0 AND weekend=0"
+    ).fetchone()[0]

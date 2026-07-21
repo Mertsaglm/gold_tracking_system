@@ -2,7 +2,7 @@
 
 Her sinyal PROJE-REHBERI 6.3 şemasıyla: gerekçe + güven + geçersizlik koşulu.
 Backtest köprüsü: tarihsel karşılığı varsa istatistik iliştirir, yoksa açıkça belirtir.
-Bildirim eşik değerlendirmesi (6.2) kod olarak hazır; zamanlayıcı Oracle'a bırakılmıştır.
+Bildirim eşik değerlendirmesi (6.2); zamanlayıcı GitHub Actions'tadır.
 """
 from __future__ import annotations
 
@@ -68,17 +68,17 @@ def build_signals(cfg: dict) -> dict:
     zmin = cfg["stats"]["zscore_min_samples"]
 
     # 1) Prim z-skoru (canlı arşiv) ----------------------------------------
-    n_valid = db.count_valid_prim(con)
+    n_days = db.count_valid_prim_days(con)
     if latest is None:
         out.append(_signal("prim_zskoru", "veri_bekliyor", ["birikimci"],
                            ["Henüz prim verisi yok."], "yok",
                            "Toplayıcı çalışıp arşiv birikince geçerli olur.", "—"))
-    elif n_valid < zmin:
+    elif n_days < zmin:
         out.append(_signal("prim_zskoru", "veri_bekliyor", ["birikimci", "makasçı"],
-                           [f"Canlı prim arşivi yetersiz ({n_valid}/{zmin} geçerli kayıt).",
+                           [f"Canlı prim arşivi yetersiz ({n_days}/{zmin} gün).",
                             f"Güncel prim {latest['prim_pct']:+.2f}% ama z-skor için tarihçe eksik."],
                            "yok",
-                           "Arşiv 60+ geçerli kayda ulaşınca z-skor sinyali devreye girer.", "—"))
+                           f"Arşiv {zmin} güne ulaşınca z-skor sinyali devreye girer.", "—"))
     else:
         series = db.prim_series(con, only_valid=True)
         z = calc.zscore(series[:-1], series[-1], zmin)
@@ -153,7 +153,7 @@ def build_signals(cfg: dict) -> dict:
     return {"n": len(out), "signals": out}
 
 
-# ---------- Bildirim eşik değerlendirmesi (rehber 6.2) — kod hazır, zamanlayıcı Oracle'da ----------
+# ---------- Bildirim eşik değerlendirmesi (rehber 6.2) — zamanlayıcı Actions'ta ----------
 def evaluate_alerts(cfg: dict) -> list[dict]:
     con = db.connect(cfg)
     latest = db.latest_prim(con)
@@ -169,8 +169,8 @@ def evaluate_alerts(cfg: dict) -> list[dict]:
     if latest["prim_pct"] is not None and abs(latest["prim_pct"]) > prim_abs:
         alerts.append({"tip": "prim_sapma", "deger": latest["prim_pct"],
                        "mesaj": f"Prim %{latest['prim_pct']:+.2f} (|>{prim_abs}|)"})
-    n_valid = db.count_valid_prim(con)
-    if n_valid >= cfg["stats"]["zscore_min_samples"]:
+    n_days = db.count_valid_prim_days(con)
+    if n_days >= cfg["stats"]["zscore_min_samples"]:
         series = db.prim_series(con, only_valid=True)
         z = calc.zscore(series[:-1], series[-1], cfg["stats"]["zscore_min_samples"])
         if z.value is not None and abs(z.value) > z_thr:

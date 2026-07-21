@@ -1,6 +1,6 @@
 # TESLIMAT — Faz 2: Kritik Düzeltme + Backtest + Sinyal + Hesaplayıcılar
 
-Tarih: 2026-07-07 · Ortam: Windows (geliştirme), Python 3.12.4, .venv · Hedef: Oracle
+Tarih: 2026-07-07 · Ortam: Windows (geliştirme), Python 3.12.4, .venv
 
 ## Özet
 
@@ -90,7 +90,7 @@ rejim → "zayıf rejim" (C) · güven: orta
 - Backtest karşılığı olmayanlar açıkça **"tarihsel doğrulaması yok"** yazıyor.
 - Sinyaller günlük rapora **"Sinyaller" bölümü** olarak girdi ve **Telegram'a gönderildi** (kanıt: log).
 - Bildirim eşik değerlendirmesi (`evaluate_alerts`, rehber 6.2) kod olarak hazır; şu an tetik yok
-  (`[]`); zamanlayıcı Oracle'a bırakıldı.
+  (`[]`); zamanlayıcı sonraki fazda Actions'a bağlandı.
 
 ## Bölüm 4 — Hesaplayıcılar (`src/calculators.py`)
 
@@ -108,7 +108,7 @@ Fon %15 stopajla en geride; ALTINS1 en düşük maliyetle önde. Tüm oranlar `c
 
 Eski `spdrgoldshares.com` arşiv CSV'si artık **PDF** dönüyor (denendi, doğrulandı). Çözüm:
 **yfinance GLD.info `totalAssets` / altın_ons / (ons/ton) = 973 ton** (GLD için doğru mertebede).
-Günlük snapshot `gld_tonnage` tablosuna yazılıyor; trend için arşiv birikince (Oracle'da) %değişim
+Günlük snapshot `gld_tonnage` tablosuna yazılıyor; trend için arşiv birikince %değişim
 hesaplanacak — şu an "1. gözlem, veri birikiyor" (dürüst; paydadan çıkıyor).
 
 ## Bölüm 7 — Dokümantasyon
@@ -132,7 +132,7 @@ history_daily 2549 (2016+)  ·  gld_tonnage 1  ·  prim_history 23  ·  ticks 17
 
 ## Bilinen eksikler / sonraki
 - Canlı günlük Kapalıçarşı prim arşivi <60 kayıt → prim z-skoru ve günlük prim mean-reversion
-  backtest'i Oracle'da arşiv dolunca yapılacak.
+  backtest'i canlı arşiv dolunca yapılacak.
 - Ons kaynağı GC=F (futures); spot XAU ücretsiz kaynağı bulunursa prim tabanı iyileşir.
 - GLD tonaj trendi arşiv birikimine bağlı.
 - v3: AI sentez katmanı, Google Trends kalabalık göstergesi (bkz. rehber backlog).

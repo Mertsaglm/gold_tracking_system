@@ -153,6 +153,64 @@ indicators:
     reel_faiz_yuksek: 8.0               # > 8% -> altın olumsuz (mevduat rekabetçi)
     trends_z: 2.0                       # arama ilgisi z > 2 -> kalabalık yoğun (kontrarian olumsuz)
 
+# ----------------- Grafik yorumu / teknik analiz (Bölüm 6) -----------------
+# TÜM teknik hesap ons USD (GC=F) GERÇEK OHLC üzerinde yapılır.
+# gram TL için OHLC TÜRETİLMEZ: high_ons × high_usd aynı ana ait değildir (senkron
+# artefaktı → şişmiş ATR + hiç işlem görmemiş "fitil"ler). Ayrıca TL serisi enflasyonla
+# yapısal olarak yukarı kayar; 2 yıl önceki "direnç" bugün anlamsızdır. TL yalnızca
+# "ons seviyesinin bugünkü kurla izdüşümü" olarak, kullanılan kur yazılarak gösterilir.
+chart:
+  enabled: true
+  ohlc:
+    start: "2016-01-01"                 # history_daily ile aynı başlangıç
+    symbols:                            # gerçek OHLC canlı doğrulandı (21 Tem 2026)
+      ons: "GC=F"                       # ~2650 günlük bar
+      kur: "TRY=X"                      # ~2745 günlük bar (hacim 0)
+    guncelleme_lookback_gun: 10         # artımlı çekimde yeniden yazılan son N gün
+    # daily.yml 15:35 UTC'de koşuyor, CME altın ~21:00 UTC'de kapanıyor → o günün barı
+    # YARIM. Yarım bar üzerinde pivot/ATR hesaplamak gürültüyü sinyal diye sunmak olur.
+    son_bar_kapanmamis_atla: true
+  analiz:
+    pencere_gun: 504                    # ~2 işlem yılı (birincil pencere)
+    ikincil_pencere_gun: 252            # ~1 yıl — pencere kararlılığı çapraz kontrolü
+  pivot:
+    lookback_bar: 10                    # fraktal yarı-pencere (k) → 21 barlık pencere
+    # Kalibrasyon (21 Tem 2026 ölçümü): 2 yıllık ons aralığı %138 genişlikte (2.352→5.586)
+    # ve yalnız 30 pivot var. Güçlü trendde yatay seviyeler doğal olarak az tekrar eder:
+    # tolerans %1'de en büyük küme 2 dokunuş. min_dokunus=3 => HİÇ seviye çıkmıyordu.
+    # 2 dokunuş bir seviyenin tanım gereği asgarisidir (bir doğru için iki nokta);
+    # zayıflığı gizlenmiyor — dokunuş sayısı ve skor (sqrt) raporda görünür.
+    min_dokunus: 2
+    kume_atr_carpani: 1.0               # tolerans = max(ATR% × bu, min_tolerans_pct) ≈ 1 ATR
+    min_tolerans_pct: 0.4               # düşük oynaklıkta tolerans tabanı (%)
+    yaricil_omur_gun: 180               # tazelik ağırlığı: 0.5 ** (yaş / bu)
+    karma_seviye_carpani: 1.25          # hem destek hem direnç olmuş seviyeye skor primi
+    gosterilecek_seviye: 3              # üstte/altta kaç seviye yazılsın
+  gostergeler:
+    rsi_window: 14
+    atr_window: 14
+    bollinger_window: 20
+    bollinger_k: 2.0
+    yapisal_swing_sayisi: 2             # HH/HL için karşılaştırılan son swing adedi
+    thresholds:
+      rsi_asiri_alim: 70.0
+      rsi_asiri_satim: 30.0
+      bollinger_ust_pctb: 1.0
+      bollinger_alt_pctb: 0.0
+      seviye_yakin_atr: 1.0             # |mesafe| < 1×ATR -> "seviyeye yakın"
+      zirve_yakin_atr: 1.0              # zirveye bu kadar yakınsa "üstte direnç YOK" uyarısı
+      atr_rejim_p_dusuk: 33.0           # ATR% persentili < bu -> düşük oynaklık
+      atr_rejim_p_yuksek: 66.0
+  dogrulama:
+    yeniden_hesap_bar: 21               # walk-forward'da seviyeler kaç barda bir kurulur
+    min_anlamli_fark_puan: 1.0          # |taban farkı| < bu puan -> "kenar yok"
+    edge_cache_file: "data/grafik_edge.json"
+    rapor_dosyasi: "grafik_dogrulama.md"
+  # Grafik göstergeleri fiyat türevi ve birbiriyle korelasyonlu; ana panele 4 ayrı oy
+  # olarak girerlerse panel makro kılığında bir momentum göstergesine dönüşür (ons_gma
+  # zaten orada). Bu yüzden AYRI bir "grafik uzlaşısı" hesaplanır; ana panele tek oy girer.
+  panele_katil: true
+
 # ----------------- Google Trends kalabalık göstergesi (Bölüm 3) -----------------
 trends:
   keywords: ["gram altın", "altın fiyatları"]

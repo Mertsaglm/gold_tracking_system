@@ -1,0 +1,104 @@
+{
+  "Desteğe yakın": {
+    "1ay": {
+      "fark": -0.12774142914256936,
+      "n": 50,
+      "hukum": "kenar yok"
+    },
+    "3ay": {
+      "fark": -1.6108137632113162,
+      "n": 24,
+      "hukum": "zayıf kanıt: -1.6p"
+    },
+    "6ay": {
+      "fark": 3.1958053860159694,
+      "n": 14,
+      "hukum": "ölçüm yetersiz (N=14)"
+    }
+  },
+  "Dirence yakın": {
+    "1ay": {
+      "fark": 0.610157454745619,
+      "n": 51,
+      "hukum": "kenar yok"
+    },
+    "3ay": {
+      "fark": -0.9367964442708487,
+      "n": 21,
+      "hukum": "kenar yok"
+    },
+    "6ay": {
+      "fark": 1.6600069382276104,
+      "n": 13,
+      "hukum": "ölçüm yetersiz (N=13)"
+    }
+  },
+  "RSI aşırı satım": {
+    "1ay": {
+      "fark": 2.148455044892017,
+      "n": 16,
+      "hukum": "zayıf kanıt: +2.1p"
+    },
+    "3ay": {
+      "fark": -5.274513027663002,
+      "n": 8,
+      "hukum": "ölçüm yetersiz (N=8)"
+    },
+    "6ay": {
+      "fark": -2.4192882466160253,
+      "n": 6,
+      "hukum": "ölçüm yetersiz (N=6)"
+    }
+  },
+  "RSI aşırı alım": {
+    "1ay": {
+      "fark": 0.6461730199318949,
+      "n": 32,
+      "hukum": "kenar yok"
+    },
+    "3ay": {
+      "fark": -3.0128313148138575,
+      "n": 20,
+      "hukum": "zayıf kanıt: -3.0p"
+    },
+    "6ay": {
+      "fark": 4.372099214406877,
+      "n": 14,
+      "hukum": "ölçüm yetersiz (N=14)"
+    }
+  },
+  "Bollinger alt": {
+    "1ay": {
+      "fark": 0.5508297628146086,
+      "n": 40,
+      "hukum": "kenar yok"
+    },
+    "3ay": {
+      "fark": -1.6184342243911187,
+      "n": 23,
+      "hukum": "zayıf kanıt: -1.6p"
+    },
+    "6ay": {
+      "fark": -0.19626886358771145,
+      "n": 14,
+      "hukum": "ölçüm yetersiz (N=14)"
+    }
+  },
+  "Bollinger üst": {
+    "1ay": {
+      "fark": 0.6161815488609612,
+      "n": 58,
+      "hukum": "kenar yok"
+    },
+    "3ay": {
+      "fark": -1.045674161730048,
+      "n": 30,
+      "hukum": "zayıf kanıt: -1.0p"
+    },
+    "6ay": {
+      "fark": 2.3459801521686803,
+      "n": 16,
+      "hukum": "zayıf kanıt: +2.3p"
+    }
+  }
+}

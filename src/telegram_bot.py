@@ -203,11 +203,18 @@ def run_bot(cfg: dict) -> None:
                 elif text.startswith("/aipaket"):
                     from . import aipaket
                     send_message(cfg, aipaket.build_prompt(cfg), chat_id=cid)
+                elif text.startswith("/grafik"):
+                    from . import chart
+                    # refresh=False: uzun yoklama döngüsü 30 sn'lik yfinance çağrısında
+                    # asılmasın; günlük OHLC'yi daily_job zaten güncelliyor.
+                    _t = chart.format_chart_md(chart.build_chart(cfg, refresh=False))
+                    send_message(cfg, _t or "Grafik verisi yok.", chat_id=cid)
                 elif text.startswith("/yardim") or text.startswith("/help"):
                     send_message(cfg, "Komutlar:\n/durum · /rapor\n"
                                       "/net <tutar> <ay> [altın%] — enstrüman karşılaştırma\n"
                                       "/bilezik <gram> <işçilik%> [gramfiyat] — başabaş\n"
-                                      "/aipaket — AI'a yapıştırılacak veri paketi",
+                                      "/aipaket — AI'a yapıştırılacak veri paketi\n"
+                                      "/grafik — destek/direnç + gösterge teyidi",
                                  chat_id=cid)
         except Exception as e:
             log.warning("bot döngü hata: %s", e)

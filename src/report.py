@@ -274,6 +274,15 @@ def build_report(cfg: dict) -> str:
     except Exception as e:
         log.warning("sinyal bölümü hata: %s", e)
 
+    # ---- Grafik yorumu (Bölüm 6) ----
+    try:
+        from . import chart
+        _cm = chart.format_chart_md(chart.build_chart(cfg))
+        if _cm:                                   # veri yoksa SESSİZ
+            lines.append(_cm)
+    except Exception as e:
+        log.warning("grafik bölümü hata: %s", e)
+
     # ---- Veri kalitesi ----
     lines.append("## Veri Kalitesi")
     lines.append("")

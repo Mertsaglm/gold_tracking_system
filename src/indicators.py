@@ -264,4 +264,17 @@ def build_panel(cfg: dict, reel_net_pct: Optional[float] = None) -> dict:
         signals.append(trends_signal(cfg))
     except Exception as e:
         log.warning("trends göstergesi hata: %s", e)
+    # Grafik göstergeleri (yapı/RSI/%B/seviye) fiyat türevi ve birbiriyle korelasyonlu;
+    # panele 4 ayrı oy olarak girerlerse panel makro kılığında bir momentum göstergesine
+    # döner (ons_gma zaten burada). Bu yüzden TEK toplu oy olarak girer.
+    if cfg.get("chart", {}).get("panele_katil"):
+        try:
+            from .chart import build_chart
+            c = build_chart(cfg)
+            if not c.get("yok"):
+                signals.append(Signal("Grafik teknik uzlaşısı", c["uzlasi"]["yon"],
+                                      "skor %+d/%d" % (c["uzlasi"]["score"],
+                                                       c["uzlasi"]["n"])))
+        except Exception as e:
+            log.warning("grafik göstergesi hata: %s", e)
     return {"signals": signals, "consensus": consensus(signals)}

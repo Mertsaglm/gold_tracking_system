@@ -77,6 +77,19 @@ CREATE TABLE IF NOT EXISTS gld_tonnage (
     date   TEXT PRIMARY KEY,          -- ISO YYYY-MM-DD
     tonnes REAL
 );
+
+-- Günlük GERÇEK OHLC (Bölüm 6 — grafik yorumu). history_daily yalnız kapanış tutar ve
+-- gram_teorik türetilmiş fiyattır; destek/direnç + hakiki ATR için yüksek/düşük şart.
+-- Not: gram TL için OHLC TÜRETİLMEZ (high_ons × high_usd aynı ana ait değildir).
+CREATE TABLE IF NOT EXISTS ohlc_daily (
+    date   TEXT NOT NULL,             -- ISO YYYY-MM-DD (borsa yerel günü)
+    symbol TEXT NOT NULL,             -- 'GC=F' (ons) | 'TRY=X' (kur)
+    o REAL, h REAL, l REAL, c REAL,
+    v REAL,                           -- TRY=X'te 0; GC=F'te ön-vade kontrat hacmi (GÜVENİLMEZ)
+    source TEXT,                      -- 'yfinance'
+    PRIMARY KEY (date, symbol)
+);
+CREATE INDEX IF NOT EXISTS idx_ohlcd_sym_date ON ohlc_daily(symbol, date);
 """
 
 

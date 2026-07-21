@@ -35,7 +35,14 @@ def run(cfg: dict) -> dict:
     except Exception as e:
         log.warning("evds hata: %s", e)
 
-    # 3) Pazartesi mutabakat
+    # 3) Günlük OHLC (grafik yorumu için) — artımlı, son N günü yeniden yazar
+    try:
+        from .ohlc_hist import update_ohlc_daily
+        result["ohlc"] = update_ohlc_daily(cfg)
+    except Exception as e:
+        log.warning("ohlc hata: %s", e)
+
+    # 4) Pazartesi mutabakat
     if weekday == 0:
         try:
             from .reconcile import reconcile
@@ -43,7 +50,7 @@ def run(cfg: dict) -> dict:
         except Exception as e:
             log.warning("mutabakat hata: %s", e)
 
-    # 4) Rapor (pazar → haftalık derin) + Telegram
+    # 5) Rapor (pazar → haftalık derin) + Telegram
     from .report import build_report, build_weekly_report, save_report
     try:
         text = build_weekly_report(cfg) if weekday == 6 else build_report(cfg)

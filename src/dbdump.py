@@ -25,6 +25,7 @@ _TABLES = [
     ("reports", "date", []),
     ("history_daily", "date", []),
     ("gld_tonnage", "date", []),
+    ("ohlc_daily", "symbol, date", []),
 ]
 
 

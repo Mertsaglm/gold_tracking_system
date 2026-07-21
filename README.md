@@ -14,6 +14,7 @@ Windows yalnızca geliştirme/yerel test içindir.
 - **Durum makinesi:** her bacak `FRESH / STALE / CLOSED_WEEKEND / CLOSED_HOLIDAY`. Prim yalnız üç bacak FRESH iken **geçerli**; forex kapalıyken `indicative` (z-skor/backtest'ten dışlanır). Hafta sonu beklenti serisi + pazartesi mutabakatı.
 - **Makro bağlam (EVDS):** politika faizi, net mevduat faizi, TÜFE, 12 ay enflasyon beklentisi, **reel net mevduat faizi**.
 - **Gösterge uzlaşı paneli:** ABD 10Y reel faiz (FRED), DXY (FRED), ons 50/200 GMA (yfinance), TL reel net mevduat (EVDS), SPDR GLD tonaj — her biri olumlu/nötr/olumsuz + toplam uzlaşı skoru.
+- **Grafik yorumu (Faz 6):** gerçek günlük OHLC (`ohlc_daily`, 2016+) üzerinde fraktal swing pivot → ATR ölçekli kümeleme ile **destek/direnç bantları**, dönemsel zirve/dip, RSI/Bollinger/trend yapısı ile **çapraz teyit çetelesi**. Seviyeler ons USD'de hesaplanır, TL'ye **bugünkü kurla izdüşüm** olarak çevrilir (TL'de seviye türetilmez — enflasyon kayması). **Ölçüm sonucu: seviyelerin yön üstünlüğü YOK** (1 ay, N=50, taban farkı −0.1p) — bu yüzden kademe/stop planlaması için sunulur, yön iddiası olarak değil (bkz. `TESLIMAT-FAZ6.md`).
 - **Rapor:** gün sonu markdown → dosya + Telegram (düz metin). Bot komutları: `/durum` (HTML), `/rapor`.
 - **Loglama:** `logs/` altında dönen dosya logları (5 MB × 5).
 - **Kapsama:** rapor "son 24s veri kapsaması %X, en uzun kesinti Y dk" satırı — çalışmadığı dönemler görünür; z-skor yalnız FRESH kayıtları sayar.
@@ -34,6 +35,8 @@ src/
   db.py              SQLite şema + erişim
   sources/           truncgil.py, yf.py, evds.py
   collector.py       ana toplayıcı döngü
+  ohlc_hist.py       günlük gerçek OHLC (yfinance → ohlc_daily); grafik katmanının verisi
+  chart.py           destek/direnç + gösterge teyidi + dürüst doğrulama harness'i
   evds_job.py        EVDS backfill + günlük güncelleme + rapor bağlamı
   reconcile.py       pazartesi hafta sonu mutabakatı
   report.py          gün sonu markdown raporu
@@ -84,11 +87,14 @@ copy .env.example .env      # doldur
 .\.venv\Scripts\python.exe -m src.calculators 100000 12 30   # enstrüman net karşılaştırma
 .\.venv\Scripts\python.exe -m src.calculators bilezik 20 20  # bilezik başabaş
 .\.venv\Scripts\python.exe -m src.aipaket               # AI'a yapıştırılacak veri paketi + prompt
+.\.venv\Scripts\python.exe -m src.ohlc_hist backfill     # günlük OHLC (2016+, tek sefer)
+.\.venv\Scripts\python.exe -m src.chart                  # destek/direnç + gösterge teyidi
+.\.venv\Scripts\python.exe -m src.chart validate         # grafik_dogrulama.md (yavaş, elle)
 .\.venv\Scripts\python.exe -m src.trends                # Google Trends kalabalık göstergesi
 .\.venv\Scripts\python.exe -m src.import_actions        # Actions CSV arşivini ana DB'ye aktar
 ```
 
-**Telegram komutları:** `/durum` · `/rapor` · `/net <tutar> <ay> [altın%]` · `/bilezik <gram> <işçilik%>` · `/aipaket`
+**Telegram komutları:** `/durum` · `/rapor` · `/net <tutar> <ay> [altın%]` · `/bilezik <gram> <işçilik%>` · `/aipaket` · `/grafik`
 
 ## GitHub arşivleyici (Actions — kesintisiz canlı arşiv)
 

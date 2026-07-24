@@ -14,15 +14,21 @@ from . import calc, db, util
 log = logging.getLogger("history")
 
 
-def _yf_ons_daily(cfg: dict, start: str):
-    """yfinance günlük ons kapanışı. Birincil XAUUSD=X, fallback GC=F. {date:price}, source."""
+def _yf_ons_daily(cfg: dict, start: str, min_days: int = 200):
+    """yfinance günlük ons kapanışı. Birincil XAUUSD=X, fallback GC=F. {date:price}, source.
+
+    min_days: kabul için asgari gün sayısı — kırık/boş yanıtı elemek için sanity-check.
+    Varsayılan 200, tam-geçmiş (2016+) backfill'e göre; kısa pencereli artımlı
+    güncellemeler (bkz. update_recent) daha küçük bir eşik geçirmeli, yoksa
+    geçerli kısa yanıt bile reddedilir.
+    """
     import yfinance as yf
     for tk in (cfg["sources"]["yfinance"].get("ons_hist_primary", "XAUUSD=X"),
                cfg["sources"]["yfinance"]["ons_ticker"]):
         try:
             h = yf.Ticker(tk).history(start=start, interval="1d")
             close = h["Close"].dropna()
-            if len(close) >= 200:
+            if len(close) >= min_days:
                 out = {}
                 for ts, v in close.items():
                     out[ts.strftime("%Y-%m-%d")] = float(v)
@@ -40,14 +46,14 @@ def _evds_usd_map(con, code: str) -> dict:
     return {r["date"]: r["value"] for r in rows}
 
 
-def build_history_daily(cfg: dict, start: str = "2016-01-01") -> dict:
+def build_history_daily(cfg: dict, start: str = "2016-01-01", min_days: int = 200) -> dict:
     from . import logging_setup
     logging_setup.setup("history", cfg)
     con = db.connect(cfg)
     troy = cfg["instruments"]["troy_ounce_gram"]
     usd_code = cfg["sources"]["evds"]["series"]["usdtry_sell"]
 
-    ons_map, source = _yf_ons_daily(cfg, start)
+    ons_map, source = _yf_ons_daily(cfg, start, min_days)
     usd_map = _evds_usd_map(con, usd_code)
     if not ons_map or not usd_map:
         log.warning("history: ons(%d) veya usd(%d) eksik", len(ons_map), len(usd_map))
@@ -71,6 +77,21 @@ def build_history_daily(cfg: dict, start: str = "2016-01-01") -> dict:
     con.close()
     return {"rows": n, "start": rng[0], "end": rng[1], "ons_source": source,
             "ons_days": len(ons_map), "usd_days": len(usd_map)}
+
+
+def update_recent(cfg: dict, days: int = 45) -> dict:
+    """history_daily'yi günceller (son `days` gün, INSERT OR REPLACE — idempotent).
+
+    daily_job.py'den ÇAĞRILMASI GEREKİR: bu tablo başka hiçbir otomatik iş
+    tarafından yazılmıyordu (yalnız elle `python -m src.history build`), bu
+    yüzden 2026-07-07'den sonra donmuş kaldı — notify.py'nin ATR/günlük hareket
+    alarmları o tarihten beri yanlış (sabit) referansla hesaplanıyordu.
+    45 gün, ATR(14) penceresine yetecek tampon bırakır.
+    """
+    from datetime import timedelta
+    start = (util.utcnow() - timedelta(days=days)).date().isoformat()
+    # kısa pencerede 200 gün asla dolmaz; küçük ama boş/kırık yanıtı eleyen bir taban
+    return build_history_daily(cfg, start=start, min_days=min(20, days))
 
 
 def _monthly_avg_theoretical(con) -> dict:

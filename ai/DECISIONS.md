@@ -6,6 +6,44 @@
 
 ---
 
+## #004 — 2026-07-24 — history_daily donmuş bulundu (17 gün) → ATR/günlük-hareket alarmları yanlış hesaplıyordu
+
+**Bağlam:** Mert "botun çıktıları mantıklı mı" diye sordu. Telegram export'undaki 7
+"hareket > 2.0×ATR" alarmının HEPSİ birebir aynı `ATR(75)` yazıyordu (08-21 Tem
+arası). DB'de doğrulandı: `history_daily` tablosunun son satırı **2026-07-07**
+— 17 gündür donmuş. Kök neden: bu tablo YALNIZCA `src/history.py::build_history_daily`
+(elle çalıştırılan tek seferlik backfill script'i) tarafından yazılıyordu;
+`daily_job.py`'nin otomatik pipeline'ında hiç çağrılmıyordu. Sonuç: notify.py'nin
+ATR(14) ve "günlük hareket" (dünkü kapanışa göre) hesapları 17 gündür sabit/yanlış
+referanstan besleniyordu — alarmların KENDİSİ (soğuma/tavan/format) doğru
+çalışıyordu ama İÇERİĞİ (eşik değeri) yanlıştı.
+
+**Seçenekler:**
+- A) Dokunma, bir dahaki elle `history build` çalıştırmayı bekle → aynı hata tekrarlar
+- B) `history_daily`'yi `daily_job.py`'ye bağla (artımlı, son ~45 gün, idempotent) →
+  kendi kendini onarır, bir daha donmaz
+
+**Karar:** B. `history.update_recent(cfg, days=45)` eklendi, `daily_job.py`'de
+EVDS adımından sonra çağrılıyor (EVDS günlük USD kuru gerektiği için). Ayrıca
+`_yf_ons_daily`'deki sabit `min_days=200` sanity-check'i parametrik yapıldı —
+kısa pencereli artımlı çağrı bu eşiği hiç geçemiyordu (kendi içinde ikinci bir
+gizli hata). `build_history_daily`'nin varsayılanı (200) korunarak geriye dönük
+uyumluluk sağlandı.
+
+**Neden:** En basit, kendi kendini onaran çözüm; dış bağımlılık yok, mevcut
+günlük pipeline'a ince bir adım. Elle hatırlamaya güvenmek [[ölçüm kültürü]]ne
+aykırı — otomatik olmalı.
+
+**Doğrulama:** 148/148 test geçti. Canlı DB'de çalıştırıldı: `history_daily`
+07-07→07-24 arası 12 eksik günü doldurdu, ATR 75(donuk)→80.5(taze) değişti.
+`data/altin.sql` dump'ı yalnız history_daily satırlarını içeriyor (diff kontrol
+edildi — başka tabloya dokunmadı).
+
+**Tekrar gözden geçir:** `update_recent` günlerce başarısız kalırsa (log'da
+"history hata") kaynak (yfinance/EVDS) tarafında kalıcı bir sorun var demektir.
+
+---
+
 ## #003 — 2026-07-24 — Veri kapsaması: platform kısıtını kabul et, veri kalitesini iyileştir
 
 **Bağlam:** Raporlar "kapsama %62" gösteriyordu. Ölçüm (17 gün, 231 kayıt):

@@ -42,6 +42,13 @@ def run(cfg: dict) -> dict:
     except Exception as e:
         log.warning("ohlc hata: %s", e)
 
+    # 3b) history_daily (ATR + günlük hareket alarmlarının kaynağı) — artımlı
+    try:
+        from .history import update_recent
+        result["history"] = update_recent(cfg)
+    except Exception as e:
+        log.warning("history hata: %s", e)
+
     # 4) Pazartesi mutabakat
     if weekday == 0:
         try:

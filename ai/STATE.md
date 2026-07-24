@@ -14,18 +14,24 @@
   throttling, platform kısıtı; %7 geçersiz kayıt → retry ile düşürüldü). Karar DECISIONS #003
 - 2026-07-24 — [#3] giden mesaj logu (outbox JSONL): `send_message` → `data/telegram_outbox.jsonl`,
   archive.yml commit'liyor. 144 test geçiyor
+- 2026-07-24 — [#2] Telegram export denetlendi: 21 alarm + 24 rapor, soğuma/tavan/
+  hafta-sonu-bastırma kuralları ihlalsiz, rapor↔repo %100 eşleşti
+- 2026-07-24 — İÇERİK denetimi: `history_daily` 17 gündür donuktu (07-07'de kalmış,
+  hiçbir otomatik iş beslemiyordu) → ATR/günlük-hareket alarmları 17 gün yanlış
+  eşikle çalışıyordu. `history.update_recent()` yazıldı, daily_job'a bağlandı,
+  canlı DB'de doğrulandı (ATR 75→80.5), dump commit'lendi. DECISIONS #004, LESSONS L-002
 
 ## 🔨 Devam Edenler
 - _(yok)_
 
 ## 🧱 Bloklar / Bekleyenler
-- [#2] Telegram bildirim geçmişi denetimi — kullanıcının Desktop JSON export'u bekleniyor (BLOKLU)
+- _(yok)_
 
 ## 🎯 Sıradaki 3 İş
-1. Birkaç Actions turu sonra retry etkisini ölç: yeni CSV'de geçersiz kayıt oranı
-   %7'den düştü mü + outbox doğru birikiyor mu — DoD: oran ölçüldü, outbox commit'lendi
-2. Telegram export gelince 🔔 bildirim dökümü + rapor çapraz kontrol —
-   DoD: bildirim geçmişi denetlendi, boşluk/çift varsa raporlandı
+1. Bir sonraki Actions günlük çalışmasında `history` adımının log'da hatasız
+   geçtiğini doğrula — DoD: `daily_job` sonucunda `result["history"]["rows"]>0` veya 0 (güncel)
+2. `telegram çıktısı.json` kökte, git'e eklenmemiş — public repo'ya gitmemesi için
+   gitignore'a mı alınsın, kullanıcı karar versin — DoD: karar alındı, uygulandı
 3. `Proje Yardımcısı/` alt klasörünü temizle (kök kanonik, gereksiz kopya) —
    DoD: alt klasör kaldırıldı, sistem hâlâ kökten çalışıyor
 

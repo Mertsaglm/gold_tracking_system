@@ -22600,7 +22600,7 @@ INSERT INTO reports(date, path, created_utc) VALUES('2026-07-22', '/home/runner/
 INSERT INTO reports(date, path, created_utc) VALUES('2026-07-23', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-07-23.md', '2026-07-23T17:18:40.501208+00:00');
 INSERT INTO reports(date, path, created_utc) VALUES('2026-07-24', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-07-24.md', '2026-07-24T17:25:13.291672+00:00');
 
--- history_daily: 2549 satır
+-- history_daily: 2561 satır
 INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-04', 1075.0999755859375, 2.9233, 101.04464458553299, 'GC=F');
 INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-05', 1078.4000244140625, 2.9475, 102.19385094467796, 'GC=F');
 INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-06', 1091.9000244140625, 2.9803, 104.62462649067037, 'GC=F');
@@ -25149,7 +25149,19 @@ INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES
 INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-01', 4068.300048828125, 46.6586, 6102.892801304192, 'GC=F');
 INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-02', 4112.7001953125, 46.6706, 6171.084569405809, 'GC=F');
 INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-06', 4155.10009765625, 46.7178, 6241.010823017868, 'GC=F');
-INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-07', 4157.7998046875, 46.8204, 6258.781011111614, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-07', 4145.2998046875, 46.8204, 6239.964625928591, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-08', 4070.89990234375, 46.8367, 6130.103032600636, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-09', 4130.60009765625, 46.8536, 6222.246020275999, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-10', 4104.10009765625, 46.8697, 6184.451390563488, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-13', 3997.0, 46.8927, 6026.0183485339485, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-14', 4061.10009765625, 46.9966, 6136.223872229993, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-16', 3985.60009765625, 47.0098, 6023.8366493742205, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-17', 4012.699951171875, 47.0517, 6070.200945913342, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-20', 4010.300048828125, 47.0705, 6068.994462007035, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-21', 4071.10009765625, 47.1787, 6175.1685000467505, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-22', 4146.89990234375, 47.1983, 6292.75713835281, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-23', 4046.60009765625, 47.2158, 6142.832909628868, 'GC=F');
+INSERT INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-24', 4054.699951171875, 47.2317, 6157.201425268466, 'GC=F');
 
 -- gld_tonnage: 18 satır
 INSERT INTO gld_tonnage(date, tonnes) VALUES('2026-07-07', 981.1081828606455);

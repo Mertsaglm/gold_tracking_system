@@ -6,6 +6,26 @@
 
 ---
 
+## L-002 — 2026-07-24 — "Elle bir kere çalıştırılan" script'ler sessizce donar
+
+**Olay:** `history_daily` tablosu yalnızca elle çalıştırılan bir backfill
+script'i (`src/history.py`) tarafından yazılıyordu, otomatik günlük pipeline'a
+hiç bağlı değildi. 17 gün boyunca donuk kaldı ve bunu fark eden hiçbir alarm
+yoktu — botun kendi mesajları (ATR(75) tekrarı) tek işaretti, onu da elle
+export inceleyince gördük.
+
+**Ders:** "Bir kere elle çalıştırdım, gerisi otomatik" varsayımı yanlıştır —
+o script otomatik pipeline'a bağlı DEĞİLSE, üretilen veri günün birinde donar
+ve hiçbir hata fırlatmaz (sessiz bozulma). Bir tabloyu/dosyayı besleyen HER
+script'in ya otomatik pipeline'a bağlı olduğunu ya da neden bağlı olmadığını
+(gerçekten tek seferlik mi?) doğrula.
+
+**Kural:** Yeni bir veri kaynağı/tablo eklenince sor: "Bunu kim, ne sıklıkla
+güncelliyor?" Cevap "kimse / elle" ise ya otomatiğe bağla ya da STATE.md'ye
+"manuel bakım gerekir" diye açıkça yaz.
+
+---
+
 ## L-001 — 2026-07-24 — Yerel repo üretimin gerisinde kalır
 
 **Olay:** Denetimde yerel checkout'a bakıldı; veri 21 Tem'de "durmuş" göründü.

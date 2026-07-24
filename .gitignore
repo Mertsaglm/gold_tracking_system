@@ -20,3 +20,9 @@ data/altin.sqlite
 
 # macOS
 .DS_Store
+
+# Kişisel profil — public repo'ya girmesin (yerel/araçlar arası kalır)
+ai/PROFILE.md
+
+# Usta sistem kaynak şablonu (kök kanonik; alt klasör gereksiz kopya)
+Proje Yardımcısı/

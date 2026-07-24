@@ -6,6 +6,26 @@
 
 ---
 
+## L-003 — 2026-07-24 — Metrik değişince "sistem bozuldu" sanılır; taban çizgisini ölç
+
+**Olay:** "Kapsama %16'dan %62'ye çıktı, arşiv düzensiz çalışıyor, kesinti
+545 dk" diye bir arıza iddiası geldi. Ölçünce ham toplama hızının 07-08'den
+beri sabit olduğu (medyan 13 kayıt/gün) görüldü — değişen tek şey metriğin
+PAYDASI'ydı (07-21 kalibrasyon commit'i). Ayrıca "545 dk kesinti" altyapı
+arızası değil, kaynağın boş dönmesiydi.
+
+**Ders:** Bir sağlık metriğindeki sıçrama, çoğu zaman sistemin değil ÖLÇÜMÜN
+değiştiğini gösterir. Rapor çıktısındaki yüzdelere bakıp arıza teşhisi koyma;
+altındaki HAM sayıya (kaç kayıt/gün) ve metrik formülünün ne zaman
+değiştiğine (git log) bak.
+
+**Kural:** "X bozuldu" iddiasında önce ham taban çizgisini zaman serisi olarak
+çıkar; sonra metrik tanımının değiştiği commit'i ara. İkisi de temizse iddia
+düşer. Ayrıca: iki farklı olguyu benzer kelimelerle raporlama ("kesinti" vs
+"boşluk") — okuyanı yanıltır, yanlış alarm üretir.
+
+---
+
 ## L-002 — 2026-07-24 — "Elle bir kere çalıştırılan" script'ler sessizce donar
 
 **Olay:** `history_daily` tablosu yalnızca elle çalıştırılan bir backfill

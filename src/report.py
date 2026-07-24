@@ -96,6 +96,32 @@ def archive_health(cfg, hours: int = 24) -> dict:
             "ardisik_basarisiz": max(0, consec_fail)}
 
 
+def classify_gap(prim_gap_min: float, collection_gap_min, tol_min: float):
+    """Boşluğun ARIZA mı yoksa KAYNAK KALİTESİ mi olduğunu ayırır (saf, testli).
+
+    İki farklı şey aynı kelimeyle ("kesinti") raporlanınca yanlış alarm doğuyordu:
+    - prim boşluğu  : prim_history'deki boşluk — kaynak boş dönerse de büyür
+    - çekim boşluğu : Actions gerçekten çalışmadıysa büyür (arşiv CSV'si)
+    Örn. 2026-07-22'de prim boşluğu 545 dk raporlandı ama Actions tam zamanında
+    çalışmıştı (çekim boşluğu 217 dk); fark, truncgil'in boş dönmesiydi.
+
+    Döner: (seviye, mesaj) — seviye "ok" | "kaynak" | "ariza".
+    """
+    if prim_gap_min <= tol_min:
+        return ("ok", None)
+    # Actions çekimi sağlıklıysa sorun altyapıda değil, kaynak verisinde
+    if collection_gap_min is not None and collection_gap_min <= tol_min:
+        return ("kaynak",
+                f"{prim_gap_min:.0f} dk prim boşluğu (tolerans {tol_min:.0f} dk) — "
+                f"Actions düzenli çalıştı (çekim boşluğu {collection_gap_min:.0f} dk); "
+                "boşluk kaynağın boş dönmesinden. Prim z-skoru yalnız FRESH "
+                "kayıtları saydığı için tarihçe bozulmaz.")
+    return ("ariza",
+            f"{prim_gap_min:.0f} dk'lık çekim kesintisi (tolerans {tol_min:.0f} dk) — "
+            "GitHub Actions kontrol edilmeli. Prim z-skoru yalnız FRESH kayıtları "
+            "saydığı için tarihçe bozulmaz.")
+
+
 def coverage_report(con, cfg, hours: int = 24) -> dict:
     """Son N saatte veri kapsaması ve en uzun kesinti.
 
@@ -290,15 +316,17 @@ def build_report(cfg: dict) -> str:
     _mod = cfg.get("runtime_mode", "actions")
     lines.append(f"- Son 24s veri kapsaması: **%{cov['coverage_pct']:.0f}** "
                  f"({cov['actual']}/{cov['expected']} beklenen kayıt, _{_mod}_ ritmi) · "
-                 f"en uzun kesinti: **{cov['max_gap_min']:.0f} dk**")
-    # arşiv sağlığı (Actions)
+                 f"en uzun **prim** boşluğu: **{cov['max_gap_min']:.0f} dk**")
+    # arşiv sağlığı (Actions) — çekim boşluğu, prim boşluğundan AYRI ölçülür
+    _cekim_gap = None
     try:
         h = archive_health(cfg, 24)
+        _cekim_gap = h["en_uzun_bosluk_dk"]
         lines.append(f"- Arşiv sağlığı (Actions): **{h['basari']}/{h['beklenen']}** çalışma "
-                     f"(%{h['basari_pct']:.0f}) · en uzun boşluk {h['en_uzun_bosluk_dk']:.0f} dk")
+                     f"(%{h['basari_pct']:.0f}) · en uzun **çekim** boşluğu {_cekim_gap:.0f} dk")
         if h["ardisik_basarisiz"] >= 3:
             lines.insert(3, f"> ⚠️ **Arşiv uyarısı:** ~{h['ardisik_basarisiz']} ardışık çalışma "
-                            f"başarısız (en uzun boşluk {h['en_uzun_bosluk_dk']:.0f} dk). "
+                            f"başarısız (en uzun çekim boşluğu {_cekim_gap:.0f} dk). "
                             f"GitHub Actions kontrol edilmeli.")
     except Exception as e:
         log.warning("arşiv sağlığı hata: %s", e)
@@ -306,9 +334,10 @@ def build_report(cfg: dict) -> str:
     # için sayım oranı tek başına güvenilir bir arıza göstergesi değil.
     _tol = effective_freq_minutes(cfg) * float(
         cfg["alerts"].get("archive_gap_tolerance_factor", 3.0))
-    if cov["max_gap_min"] > _tol:
-        lines.append(f"  - ⚠️ {cov['max_gap_min']:.0f} dk'lık kesinti (tolerans {_tol:.0f} dk) — "
-                     "prim z-skoru yalnız FRESH kayıtları saydığı için tarihçe bozulmaz.")
+    _seviye, _mesaj = classify_gap(cov["max_gap_min"], _cekim_gap, _tol)
+    if _mesaj:
+        _ikon = "ℹ️" if _seviye == "kaynak" else "⚠️"
+        lines.append(f"  - {_ikon} {_mesaj}")
     n_ticks = con.execute("SELECT COUNT(*) FROM ticks").fetchone()[0]
     n_prim = con.execute("SELECT COUNT(*) FROM prim_history").fetchone()[0]
     n_valid = db.count_valid_prim(con)

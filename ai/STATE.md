@@ -21,6 +21,12 @@
   eşikle çalışıyordu. `history.update_recent()` yazıldı, daily_job'a bağlandı,
   canlı DB'de doğrulandı (ATR 75→80.5), dump commit'lendi. DECISIONS #004, LESSONS L-002
 
+- 2026-07-24 — "toplama kesintiye uğruyor" iddiası araştırıldı: **iddia düştü**
+  (toplama hızı 07-08'den beri sabit ~13/gün; %16-17 rakamları 07-21 öncesi eski
+  metrikten; 545 dk "kesinti" arıza değil kaynak boşluğu; z-skor düzenli ilerliyor
+  16/60). Gerçek kusur yanıltıcı metrik etiketiydi → `classify_gap()` eklendi.
+  DECISIONS #005, LESSONS L-003
+
 ## 🔨 Devam Edenler
 - _(yok)_
 

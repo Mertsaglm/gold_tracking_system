@@ -6,6 +6,50 @@
 
 ---
 
+## #005 — 2026-07-24 — "Kesinti" metriği yanlış alarm üretiyordu: prim boşluğu ≠ çekim kesintisi
+
+**Bağlam:** "Toplama otomasyonu düzenli kesintiye uğruyor, kapsama %62-81'e
+düşüyor, arşiv sağlığı %16-17, en uzun kesinti 545 dk" iddiası araştırıldı.
+Ölçüm sonucu iddianın TAMAMI yanlış çıktı, ama kaynağında gerçek bir metrik
+kusuru bulundu:
+
+- **Toplama hızı sabit:** 07-08'den beri medyan **13 kayıt/gün** (min 10, max 17).
+  Hiçbir bozulma/trend yok — "düzenli kesinti" yok.
+- **%16-17 ve %1-2 rakamları eski:** 07-21'deki `7d1171f` kalibrasyon commit'inden
+  ÖNCEki raporlardan. O tarihe kadar beklenen kayıt nominal cron'a göre (96/gün)
+  hesaplanıyordu; gerçek ritim ~90 dk olduğu için oran yapay olarak düşük çıkıyordu.
+  Kalibrasyondan sonra aynı toplama hızı %62-81 olarak görünüyor. Metrik düzeldi,
+  sistem zaten aynıydı.
+- **545/457 dk "kesinti" ARIZA DEĞİL:** O pencerelerde Actions tam zamanında
+  çalışmıştı (çekim boşluğu 217/216 dk, tolerans 270 dk altında). Boşluk,
+  truncgil'in boş dönmesinden — CSV satırı var ama `gram_has_sell` boş, prim
+  hesaplanamıyor. Geçersizler günün her saatine dağılmış (sistematik saat deseni
+  YOK) → geçici hatalar → DECISIONS #003'teki kaynak-retry tam da bunu hedefliyor.
+- **Z-skor takılı değil:** 60 gün eşiği, sayaç düzenli ilerliyor (07-22'de 14 →
+  07-23'te 15 → 07-24'te 16). Takvim meselesi, arıza değil; ~Eylül'de olgunlaşır.
+
+**Gerçek kusur:** Rapor iki FARKLI olguyu neredeyse eşanlamlı kelimelerle
+yazıyordu — "en uzun kesinti" (prim_history boşluğu, kaynak boşsa da büyür) ve
+"en uzun boşluk" (Actions çekim boşluğu). Üstelik uyarı satırı prim boşluğuna
+bakıp "kesinti" diyordu → altyapı arızası sanılıyordu. Bu belirsizlik bu
+araştırmayı tetikleyen yanlış alarmın ta kendisi.
+
+**Karar:** `report.classify_gap()` saf fonksiyonu eklendi (testli): prim boşluğu
+toleransı aşsa bile çekim boşluğu sağlıklıysa "kaynak kalitesi" (ℹ️) der,
+"Actions kontrol edilmeli" (⚠️) DEMEZ. Etiketler netleştirildi: "en uzun **prim**
+boşluğu" / "en uzun **çekim** boşluğu". Çekim de durmuşsa gerçek arıza uyarısı
+korunur; arşiv sağlığı okunamazsa güvenli tarafta kalıp uyarır.
+
+**Neden:** Sistemde düzeltilecek bir arıza YOK; düzeltilecek olan yanıltıcı
+metrikti. Yanlış alarm, alarm yorgunluğu ve boşa araştırma maliyeti üretir.
+Değişiklik küçük, saf, testli ve geri alınabilir.
+
+**Tekrar gözden geçir:** Kaynak-retry (#003) birkaç gün çalıştıktan sonra
+geçersiz kayıt oranı ölçülsün; %7'den belirgin düşmezse truncgil için yedek
+kaynak (fallback) gündeme gelir.
+
+---
+
 ## #004 — 2026-07-24 — history_daily donmuş bulundu (17 gün) → ATR/günlük-hareket alarmları yanlış hesaplıyordu
 
 **Bağlam:** Mert "botun çıktıları mantıklı mı" diye sordu. Telegram export'undaki 7

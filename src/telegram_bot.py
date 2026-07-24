@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import html
+import json
 import logging
 import re
 import time
@@ -86,6 +87,27 @@ def _md_to_plain(text: str) -> str:
     return text
 
 
+def _outbox_append(cfg: dict, cid: str, payload: str,
+                   parse_mode: str | None, parts: int) -> None:
+    """Gönderilen mesajı JSONL arşivine ekler (best-effort; gönderimi ASLA bloklamaz).
+
+    Amaç: Telegram export'una gerek kalmadan botun gönderdiği her mesaj (rapor,
+    alarm) repoda birikir. chat_id gizlilik için son 3 haneye kısaltılır.
+    """
+    tg = cfg.get("telegram", {})
+    if not tg.get("outbox_enabled"):
+        return
+    try:
+        rec = {"ts_utc": util.utcnow().isoformat(), "chat": str(cid)[-3:],
+               "mode": parse_mode or "plain", "parts": parts, "text": payload}
+        path = util.abspath(tg.get("outbox_file", "data/telegram_outbox.jsonl"))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:                       # audit yazımı gönderimi bozmaz
+        log.warning("outbox yazılamadı: %s", e)
+
+
 def send_message(cfg: dict, text: str, chat_id: str | None = None,
                  parse_mode: str | None = None) -> int:
     """Düz metin (varsayılan) veya HTML gönderir. Gönderilen parça sayısını döner."""
@@ -100,6 +122,7 @@ def send_message(cfg: dict, text: str, chat_id: str | None = None,
         n += 1
     # chat_id loglanmaz (gizlilik); son 3 hane yeter
     log.info("telegram: %d parça gönderildi (chat=…%s, mode=%s)", n, str(cid)[-3:], parse_mode or "plain")
+    _outbox_append(cfg, cid, payload, parse_mode, n)   # gönderileni repoya arşivle
     return n
 
 

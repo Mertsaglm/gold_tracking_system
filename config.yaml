@@ -17,6 +17,11 @@ paths:
 
 # ----------------- Veri kaynakları -----------------
 sources:
+  # Arşiv çekiminde bir kaynak boş/başarısız dönerse kısa aralıkla tekrar dener.
+  # GitHub cron sıklığını (throttling) DEĞİŞTİRMEZ; çalışan turlarda veri
+  # kalitesini artırır — truncgil transient hataları ~%7 geçersiz kayıt yaratıyordu.
+  fetch_retries: 3
+  fetch_retry_backoff_s: 4
   truncgil:
     url: "https://finans.truncgil.com/v3/today.json"
     poll_seconds: 60
@@ -248,6 +253,11 @@ telegram:
   # Komut yetkilendirmesi: TELEGRAM_CHAT_ID her zaman izinli.
   # Ek izinli sohbetler (opsiyonel); izinli değilse komut sessizce yoksayılır.
   extra_allowed_chat_ids: []
+  # Giden mesaj arşivi: gönderilen her mesajı (rapor/alarm) JSONL'a yazar →
+  # Telegram export'una gerek kalmadan repoda birikir. chat_id son 3 haneye kısılır.
+  # NOT: public repo — içerik rapor/alarm (hassas değil); istemezsen gitignore'la.
+  outbox_enabled: true
+  outbox_file: "data/telegram_outbox.jsonl"
 
 # ----------------- Supervisor (7/24 watchdog) -----------------
 supervisor:

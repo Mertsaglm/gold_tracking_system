@@ -8,6 +8,7 @@ CSV: data/archive/YYYY-MM.csv  (canlı toplayıcıyla AYNI alan adları → impo
 from __future__ import annotations
 
 import csv
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,10 +22,34 @@ FIELDS = ["ts_utc", "ons_usd", "usdtry",
           "usd_buy", "usd_sell"]
 
 
+def _retry(fetch_fn, ok_fn, retries: int, backoff: float):
+    """Kaynak boş/başarısız dönerse kısa aralıkla tekrar dener.
+
+    retries=0 → tek deneme (eski davranışla birebir aynı). İlk başarılı sonucu
+    döner; tüm denemeler başarısızsa son (en iyi çaba) sonucu döner — çökme yok.
+    GitHub cron sıklığını değil, çalışan turdaki veri kalitesini iyileştirir.
+    """
+    res = fetch_fn()
+    tries = 0
+    while not ok_fn(res) and tries < retries:
+        tries += 1
+        if backoff > 0:
+            time.sleep(backoff)
+        res = fetch_fn()
+    return res
+
+
 def fetch_row(cfg: dict) -> dict:
     ts = datetime.now(timezone.utc).isoformat()
-    tc = truncgil.fetch(cfg)
-    yfs = yf.fetch(cfg)
+    sc = cfg.get("sources", {})
+    retries = int(sc.get("fetch_retries", 0))
+    backoff = float(sc.get("fetch_retry_backoff_s", 0))
+    # truncgil boş dönerse (gram/çeyrek eksik → geçersiz kayıt) tekrar dene
+    tc = _retry(lambda: truncgil.fetch(cfg), lambda s: s.ok, retries, backoff)
+    # yfinance: ons ve kur ikisi de gelmeli
+    yfs = _retry(lambda: yf.fetch(cfg),
+                 lambda s: s.ons_usd is not None and s.usdtry is not None,
+                 retries, backoff)
     def bs(sym):
         return tc.bs(sym) if tc.ok else (None, None)
     ga_b, ga_s = bs("gram_altin")

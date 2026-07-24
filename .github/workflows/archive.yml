@@ -59,6 +59,7 @@ jobs:
           git config user.name "altin-archiver"
           git config user.email "actions@github.com"
           git add data/archive/ data/alert_state.json
+          if [ -f data/telegram_outbox.jsonl ]; then git add data/telegram_outbox.jsonl; fi
           if ! git diff --cached --quiet; then
             git commit -m "archive: $(date -u +%Y-%m-%dT%H:%MZ)"
             for i in 1 2 3; do

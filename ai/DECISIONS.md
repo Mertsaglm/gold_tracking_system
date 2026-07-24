@@ -6,6 +6,35 @@
 
 ---
 
+## #003 — 2026-07-24 — Veri kapsaması: platform kısıtını kabul et, veri kalitesini iyileştir
+
+**Bağlam:** Raporlar "kapsama %62" gösteriyordu. Ölçüm (17 gün, 231 kayıt):
+GitHub Actions `*/15` cron'unu gerçekte medyan ~94 dk'da çalıştırıyor (6 kat seyrek) —
+throttling. Ayrı olarak kayıtların ~%7'si truncgil transient hatasından geçersiz
+(gram/çeyrek boş; yfinance/ons hep dolu).
+
+**Seçenekler:**
+- A) Dış cron servisi → `workflow_dispatch` ile ~15 dk garanti → zamanlamayı düzeltir
+  AMA dış bağımlılık + GitHub PAT'i 3. tarafta (güvenlik yüzeyi); "ayrı sunucu/servis
+  yok" kısıtına aykırı
+- B) Tur-içi çoklu örnekleme → kayıt sayısını şişirir ama kapsama metriğini
+  anlamsızlaştırır (kümelenmiş örnek; 90 dk kör nokta durur) — metriği kandırır
+- C) Platform kısıtını KABUL et (~90 dk kişisel monitör için yeterli — YAGNI) +
+  gerçek ücretsiz kazanç olan VERİ KALİTESİNİ iyileştir: kaynak retry
+
+**Karar:** C. GitHub cron throttling ücretsiz düzeltilemez ve ~90 dk bu kullanım için
+yeterli. `archive_fetch`'e kaynak-retry eklendi (`sources.fetch_retries=3`,
+`fetch_retry_backoff_s=4`) → %7 geçersiz kayıt düşer. Kapsama metriği dürüst
+bırakıldı (şişirilmedi). Dış altyapı reddedildi.
+
+**Neden:** Mert'in kısıtı ücretsiz + ayrı sunucu yok + basit. Retry hepsini karşılar;
+dış cron+PAT karşılamaz. Metriği şişirmek [[ölçüm kültürü]]ne aykırı.
+
+**Tekrar gözden geçir:** Sub-90-dk anomali tespiti kanıtlanmış ihtiyaç olursa
+(gün-içi sert hareketler kaçırılıyorsa) dış tetikleyici (A) yeniden masada.
+
+---
+
 ## #002 — 2026-07-24 — Usta sistemi proje köküne + tüm IDE köprüleri
 
 **Bağlam:** Claude Code aboneliği bitince altın projesi Codex, Antigravity, GLM,

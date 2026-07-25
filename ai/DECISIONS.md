@@ -6,6 +6,90 @@
 
 ---
 
+## #006 — 2026-07-25 — Backlog kapatma: FRED yedeği, z-skor kuru provası, çeyrek primi, tek kaynak eşik
+
+Dört açık iş sırayla kapatıldı. Her biri önce **ölçüldü**, sonra karar verildi.
+
+### A) FRED 18 gündür ölü → DXY'ye yedek, reel faize YEDEK YOK
+
+**Ölçüm:** FRED (`fredgraph.csv`) 2026-07-07'den beri üretimde **hiç** yanıt vermedi
+(tüm raporlarda "veri yok"). 2026-07-25'te yerelden de doğrulandı: hem `fredgraph.csv`
+hem `data/*.txt` zaman aşımına düşüyor, User-Agent'tan bağımsız → engelleme değil,
+endpoint ölü. Panel 7 göstergenin **5'iyle** karar veriyordu.
+
+**Karar:**
+- **DXY:** yfinance `DX-Y.NYB` yedeği (config'de zaten tanımlıydı ama **hiç
+  çağrılmıyordu** — ölü ayar). İkisi de dolar gücünü ölçer ve panel yalnız ~1 aylık
+  yüzde değişimi kullandığı için sepet farkı yön bilgisini bozmaz. Kullanılan kaynak
+  raporda yazılır — sessiz ikame yok. Panel **5/7 → 6/7**.
+- **Reel faiz:** yedek KOYULMADI. `^TNX` nominal getiridir, TIPS reel getirisi değil;
+  nominali "reel faiz" diye sunmak ölçümü sahtelemek olurdu (Faz 3/6 kültürü).
+  Gösterge dürüstçe "veri yok" kalır ve paydadan düşer.
+- **İsraf:** eski ayar (60 sn × 3 deneme × 2 seri) her rapor çalışmasında **6 dakikaya
+  kadar** boşuna bekletiyordu. 15 sn × 2 denemeye çekildi → ölçülen 360s → 66s.
+
+### B) Z-skor kuru provası (dry-run) — Eylül'ü riskten arındırır
+
+**Sorun:** 60 günlük kapı ~Eylül'de açılacak ve `z > 2` bildirimi o ana dek **hiç**
+ateşlenmemiş olacak. Kalibrasyonsuz açılırsa beklenmedik sıklıkta alarm günlük tavanı
+(6) doldurup diğer bildirimleri bastırabilir.
+
+**Karar:** `signals.zscore_dry_run()` — kapıyı yok sayarak z'yi hesaplar, **bildirim
+göndermez**, `data/zskor_prova.jsonl`'a günde 1 satır yazar (daily_job adım 3c).
+
+**Prova ilk günden değerli bir şey ölçtü:** kapı GÜN sayıyor (Faz 7) ama z hâlâ TÜM
+KAYITLAR üzerinden hesaplanıyor. İki taban karşılaştırıldı:
+
+| Taban | z | std |
+|---|---|---|
+| Kayıt (mevcut) | +0.92 | 0.118 |
+| Gün (kapıyla tutarlı) | **+1.36** | 0.081 |
+
+Gün tabanında std daha küçük (gün içi gürültü ortalanıyor) → aynı sapma **daha büyük z**
+üretiyor. Doğru tabana geçilirse eşik **daha sık** tetiklenecek. Kapı açılmadan bilmek
+tam olarak provanın amacıydı. Hangi tabanın kullanılacağı kapı açılmadan önce, birikmiş
+prova verisine bakılarak kararlaştırılacak.
+
+### C) Çeyrek primi kuralı sessizce ölüydü
+
+**Ölçüm:** `config.yaml`'da `quarter_z` eşiği, `notify.evaluate_thresholds`'ta kuralı
+vardı — ama `build_context` her seferinde `"quarter_z": None` döndürüyordu
+("şimdilik pas" yorumu). Veri mevcuttu (238 kayıt, 16 gün, -1.51%…+2.00%). Yani
+**var sanılan bir alarm hiç ateşlenemiyordu** (LESSONS L-002).
+
+**Karar:** `quarter_z` prim z ile **aynı 60 günlük kapıya** bağlandı; kapı açılınca
+kendiliğinden hesaplanır. **Sezon düzeltmesi YOK** ve bu açıkça yazıldı: ziynet
+talebinde yıllık örüntü olabilir ama düzeltme yıllar süren arşiv ister; düz z sezonu
+"anomali" sanabilir. Sınır gizlenmiyor.
+
+Denetimde **yarım bağlama** yakalandı: `quarter_z` yalnız alarm yoluna (`notify`)
+bağlanmıştı; rapor onu göstermiyordu ve kuru prova onu ölçmüyordu. Yani kapı
+açıldığında "çeyrek |z| > 2" alarmı gelecek ama tetikleyen sayı raporda hiç
+görünmeyecekti — düzeltilen hatanın aynısının yeni bir kopyası. İkisi de kapatıldı:
+rapor artık çeyrek z'sini yazıyor ve prova çeyreği de ölçüyor
+(ilk ölçüm: çeyrek kayıt z=−0.85, gün z=−1.38).
+
+### D) İkiz eşik mantığı — tek kaynağa indirildi
+
+**Ölçüm:** İki kopya **zaten ayrışmıştı**. Üretim (`notify.evaluate_thresholds`,
+Actions çağırıyor) **5 kural** uyguluyordu; CLI (`signals.evaluate_alerts`) yalnız
+**3'ünü** biliyordu — `makas` ve `ceyrek_prim` eksikti.
+
+**Karar:** `signals.evaluate_alerts` artık `notify`'ı çağırıp çıktıyı CLI biçimine
+dönüştüren ince bir sarmalayıcı. Eşik değiştirmek isteyen **tek yere** bakar.
+Ayrışmanın tekrarını engelleyen testler yazıldı.
+
+**Doğrulama:** 170/170 test (153 → +17). DXY canlı ölçüldü (`+0.02% · kaynak DX-Y.NYB`),
+kuru prova gerçek DB'de çalıştırıldı, `quarter_z` kapı açılınca hesaplanıyor (eşik
+geçici düşürülerek doğrulandı), CLI eşik çıktısı üretimle birebir aynı kural kümesini
+veriyor.
+
+**Tekrar gözden geçir:** FRED geri gelirse DXY otomatik olarak FRED'e döner (yedek
+yalnız FRED boşken devreye girer). Kapı açılmadan önce prova verisi okunup z tabanı
+(kayıt mı gün mü) kararlaştırılmalı.
+
+---
+
 ## #005 — 2026-07-24 — "Kesinti" metriği yanlış alarm üretiyordu: prim boşluğu ≠ çekim kesintisi
 
 **Bağlam:** "Toplama otomasyonu düzenli kesintiye uğruyor, kapsama %62-81'e

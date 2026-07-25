@@ -65,6 +65,33 @@ kayıtlar hariç).
 Senin yapman gereken bir şey yok — kod hazır, yalnız arşivin dolmasını bekliyor. İlerlemeyi
 haftalık pazar raporundaki "Arşiv İlerlemesi" satırından takip et.
 
+### Kapı ne zaman açılır? (2026-07-25 hesabı)
+
+16 geçerli gün / 18 takvim günü = **0.89 gün/gün** hız. Kalan 44 gün ÷ 0.89 ≈ 49 takvim
+günü → **~12 Eylül 2026**. Bu bir tahmindir; **gerçek ilerlemeyi rapordan oku.**
+
+**Kapı açılmadan ~1 hafta önce (≈5 Eylül) yapılacak kritik iş var:** `data/zskor_prova.jsonl`
+okunup z'nin hangi tabanda hesaplanacağına karar verilmeli (aşağıya bak). Tam liste
+`ai/STATE.md` → **TAKVİM** bölümünde.
+
+### Kuru prova (dry-run) nedir, neden var?
+
+Kapı açıldığı gün `z > 2` bildirimi **ilk kez** ateşlenecek ve o ana dek hiç
+denenmemiş olacak. Kalibrasyonsuz açılırsa beklenmedik sıklıkta alarm günlük tavanı
+(6) doldurup diğer bildirimleri bastırabilir.
+
+Bu yüzden sistem her gün "z ne olurdu" sorusunu hesaplayıp `data/zskor_prova.jsonl`'a
+yazıyor — **bildirim göndermeden.** Prova iki tabanı karşılaştırıyor:
+
+| Taban | Nedir | 2026-07-25 ölçümü |
+|---|---|---|
+| **kayıt** | tüm prim kayıtları (mevcut hesap) | prim z=+0.92 · çeyrek z=−0.85 |
+| **gün** | günlük ortalamalar (kapıyla tutarlı) | prim z=**+1.36** · çeyrek z=**−1.38** |
+
+Gün tabanında std daha küçük (gün içi tekrar örnekleme ortalanıyor) → aynı sapma
+daha büyük z üretiyor, yani **daha sık tetikler**. Hangisinin kullanılacağı kapı
+açılmadan, birikmiş prova verisine bakılarak kararlaştırılacak.
+
 ---
 
 ## Hafta sonu davranışı
@@ -99,6 +126,7 @@ Bu hiçbir veriyi silmez — yalnız otomatik çalışmayı durdurur.
 | Ana veritabanı | `data/altin.sql` (metin dump, commit'lenir) → `src/restore_db.py` ile SQLite'a açılır |
 | Bildirim durumu | `data/alert_state.json` (soğuma + günlük tavan sayacı) |
 | Giden Telegram mesajları | `data/telegram_outbox.jsonl` — bota gönderilen her rapor/alarm (denetim için; Telegram export'una gerek yok) |
+| Z-skor kuru provası | `data/zskor_prova.jsonl` — günde 1 satır; kapı açılmadan "z ne olurdu" kaydı (bildirim göndermez) |
 | Raporlar | `reports/rapor_YYYY-MM-DD.md` |
 
 SQLite binary'si repoya girmez; dump sayesinde repo şişmez ve geçmiş diff'lenebilir kalır.

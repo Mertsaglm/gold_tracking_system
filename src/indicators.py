@@ -145,7 +145,11 @@ def real_rate_signal(cfg: dict) -> Signal:
     s = _fred_csv(cfg, ic["real_rate_series"])
     td = _trend_delta(s, ic["trend_lookback_days"]) if s else None
     if not td:
-        return Signal("ABD 10Y reel faiz", YOK, "FRED verisi yok")
+        # Bilerek YEDEK KOYULMADI: ^TNX nominal getiridir, TIPS reel getirisi değil.
+        # Nominali "reel faiz" diye sunmak ölçümü sahtelemek olurdu (bkz. Faz 3/6
+        # kültürü). Eksik gösterge panelin paydasından düşer — dürüst davranış.
+        return Signal("ABD 10Y reel faiz", YOK,
+                      "FRED erişilemedi (reel getirinin ücretsiz muadili yok)")
     latest, prev, delta = td
     delta_bps = delta * 100.0  # yüzde puanı -> bps
     lbl = label_real_rate(delta_bps, ic["thresholds"]["real_rate_bps"])
@@ -153,16 +157,42 @@ def real_rate_signal(cfg: dict) -> Signal:
                   f"{prev:.2f}% → {latest:.2f}% ({delta_bps:+.0f}bps/~1ay)")
 
 
+def _yf_series(ticker: str, period: str = "6mo") -> Optional[list[tuple[str, float]]]:
+    """yfinance kapanış serisi → _fred_csv ile aynı biçim: [(tarih, değer)]."""
+    try:
+        import yfinance as yf
+        h = yf.Ticker(ticker).history(period=period, interval="1d")
+        close = h["Close"].dropna()
+        if close.empty:
+            return None
+        return [(ts.strftime("%Y-%m-%d"), float(v)) for ts, v in close.items()]
+    except Exception as e:
+        log.warning("yf %s hata: %s", ticker, e)
+        return None
+
+
 def dxy_signal(cfg: dict) -> Signal:
+    """Dolar endeksi. Birincil FRED (DTWEXBGS, geniş ticaret ağırlıklı);
+    FRED erişilemezse yfinance ICE DXY (DX-Y.NYB).
+
+    İkisi aynı kavramı (dolar gücü) ölçer ve panel yalnız ~1 aylık YÜZDE
+    DEĞİŞİMİ kullandığı için sepet farkı yön bilgisini bozmaz. Hangi kaynağın
+    kullanıldığı raporda yazılır — sessiz ikame yapılmaz.
+    """
     ic = cfg["indicators"]
+    kaynak = "FRED"
     s = _fred_csv(cfg, ic["dxy_series"])
+    if not s and ic.get("dxy_ticker"):
+        s = _yf_series(ic["dxy_ticker"])
+        kaynak = ic["dxy_ticker"]
     td = _trend_delta(s, ic["trend_lookback_days"]) if s else None
     if not td:
-        return Signal("Dolar endeksi (DXY)", YOK, "veri yok")
+        return Signal("Dolar endeksi (DXY)", YOK, "FRED ve yedek kaynak erişilemedi")
     latest, prev, delta = td
     pct = (latest / prev - 1.0) * 100.0 if prev else 0.0
     lbl = label_dxy(pct, ic["thresholds"]["dxy_pct"])
-    return Signal("Dolar endeksi (DXY)", lbl, f"{pct:+.2f}% (~1ay)")
+    ek = "" if kaynak == "FRED" else f" · kaynak {kaynak}"
+    return Signal("Dolar endeksi (DXY)", lbl, f"{pct:+.2f}% (~1ay){ek}")
 
 
 def ons_gma_signal(cfg: dict) -> Signal:

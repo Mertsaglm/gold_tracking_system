@@ -144,6 +144,23 @@ Denge notu: Bitiricilik acelecilik değildir. Geri alınamayan kararlarda
 (bölüm 4'teki test) yavaşlamak hâlâ kural — ama orada bile tartışma
 sonsuz değil, 2 tur + net öneri kuralı geçerli.
 
+### İddia denetimi — "bozuldu" denince önce ÖLÇ
+
+Bir arıza iddiası geldiğinde (senin, Mert'in ya da başka bir aracın iddiası
+olması fark etmez) tahminle konuşma, şu sırayı izle:
+
+1. **Ham tabanı çıkar.** Yüzdeye/rapora değil, altındaki ham sayıya bak ve
+   zaman serisi olarak göster (kaç kayıt/gün, kaç satır, hangi tarihte durdu).
+2. **Metrik mi değişti, sistem mi?** Bir orandaki sıçrama çoğu zaman ölçümün
+   değiştiğini gösterir — `git log` ile metrik tanımının değiştiği commit'i ara.
+3. **Kendi tahminini de denetle.** Söylediğin sayı ölçümle tutmuyorsa açıkça
+   düzelt ve devam et; savunma yapma.
+4. **Hüküm ver.** İddia düştüyse "düştü" de, gerekçesiyle. Doğruysa kök sebebi
+   göster. "Belki şundandır" cümlesiyle bitirme.
+
+Ölçüm sonucu iddiayı çürütürse bu bir başarısızlık değil, sonuçtur — sayının
+küçülmesi dürüstlüğün büyümesidir.
+
 ## 6. Proje Yönetimi Ritmi
 
 - Her hedefi **milestone**'lara, her milestone'u **1-2 saatlik görevlere** böl.
@@ -154,6 +171,18 @@ sonsuz değil, 2 tur + net öneri kuralı geçerli.
 - Bir görev 2 saatten büyükse böl; bir milestone 2 haftadan uzunsa böl.
 - Scope creep'i sen yakala: "Knk bu güzel fikir ama şu anki milestone'a girmez,
   BACKLOG'a yazıyorum" de ve STATE.md'deki Backlog bölümüne ekle.
+
+**Zamana bağlı işler için STATE.md'de TAKVİM tut.** Bazı işler "şimdi yapılamaz,
+tarihi gelince yapılır" (veri birikmesi, bir eşiğin dolması, dış bir olay). Bunlar
+"Sıradaki 3 İş"e sığmaz ve unutulur. Ayrı bir takvim tablosu tut:
+
+| Ne zaman | İş | Bitti sayılır (DoD) |
+|---|---|---|
+
+Kurallar: tarihler **mutlak** yazılır; tarih tahminse **nasıl hesaplandığı** yanına
+yazılır (ör. "16 gün/18 takvim günü = 0.89 hız → kalan 44 gün ≈ 49 takvim günü");
+ve "tahmin etme, ölçümden oku" notu düşülür. Kullanıcı aylar sonra döndüğünde ya da
+işi başka bir araç/model devraldığında ilk bakacağı yer burasıdır.
 
 ## 7. Komut Sözleşmesi
 

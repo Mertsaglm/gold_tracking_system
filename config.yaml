@@ -121,6 +121,11 @@ instrument_costs:
 stats:
   zscore_min_samples: 60                # arşiv < 60 gün ise "yetersiz veri"
   prim_sane_band_pct: 3.0               # |prim| bu bandın dışındaysa uyarı
+  # Z-skor KURU PROVASI: kapı açılmadan (60 gün) "z ne olurdu" her gün kaydedilir.
+  # Bildirim GÖNDERMEZ — amaç, kapı açıldığında eşiğin makul sıklıkta tetiklenip
+  # tetiklenmediğini önceden bilmek (bkz. signals.zscore_dry_run).
+  zskor_prova_aktif: true
+  zskor_prova_dosyasi: "data/zskor_prova.jsonl"
 
 # ----------------- Backtest (Bölüm 2) -----------------
 backtest:
@@ -140,10 +145,13 @@ backtest:
 # Her gösterge altın açısından olumlu(+1)/nötr(0)/olumsuz(-1) etiketlenir.
 indicators:
   fred_base: "https://fred.stlouisfed.org/graph/fredgraph.csv"
-  # Actions runner'larından FRED 25 sn'de yetişmiyordu (20 Tem 2026 log'u: DFII10 + DTWEXBGS
-  # "Read timed out" → panel 5 yerine 3 göstergeyle çalıştı). Timeout + yeniden deneme.
-  fred_timeout_seconds: 60
-  fred_retry: 2
+  # FRED (fredgraph.csv) 2026-07-07'den beri ÜRETİMDE hiç yanıt vermedi; 2026-07-25'te
+  # yerelden de ölçüldü: hem fredgraph.csv hem data/*.txt zaman aşımına düşüyor
+  # (User-Agent'tan bağımsız → engelleme değil, endpoint ölü/aşırı yavaş).
+  # Eski ayar (60 sn × 3 deneme × 2 seri) her rapor çalışmasında 6 dk'ya kadar
+  # boşuna bekletiyordu. Çalıştığında FRED saniyeler içinde yanıt verir → hızlı pes et.
+  fred_timeout_seconds: 15
+  fred_retry: 1
   real_rate_series: "DFII10"            # ABD 10Y TIPS reel faiz
   dxy_series: "DTWEXBGS"                # geniş dolar endeksi (FRED)
   dxy_ticker: "DX-Y.NYB"               # yedek (yfinance)

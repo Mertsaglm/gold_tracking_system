@@ -141,11 +141,17 @@ def _ctx_from_csv(cfg, con, row) -> dict:
     prim = calc.prim_pct(gram_has, theo)
     gh_b = f("gram_has_buy")
     spread = calc.spread_pct(gh_b, gram_has) if gh_b else None
+    ceyrek = f("ceyrek_sell")
+    quarter = None
+    if ceyrek and gram_has:
+        c = inst["coins"]["ceyrek"]
+        quarter = calc.quarter_prim_pct(ceyrek, gram_has, c["gross_g"], c["milyem"])
     ts = datetime.fromisoformat(row["ts_utc"]).astimezone(timezone.utc)
     cal = MarketCalendar(cfg)
     all_fresh = not (cal.is_weekend_closed_forex(ts) or cal.is_us_gold_holiday(ts))
     return {"ons": ons, "usd": usd, "gram_has": gram_has, "theoretical": theo,
-            "prim": prim, "spread": spread, "all_fresh": all_fresh, "ts": ts}
+            "prim": prim, "spread": spread, "quarter": quarter,
+            "all_fresh": all_fresh, "ts": ts}
 
 
 def build_context(cfg: dict) -> dict:
@@ -182,13 +188,25 @@ def build_context(cfg: dict) -> dict:
     atr = _atr_from_history(con)
     yrow = con.execute("SELECT gram_teorik FROM history_daily ORDER BY date DESC LIMIT 1").fetchone()
     daily_move = abs(cur_theo - yrow["gram_teorik"]) if (yrow and cur_theo) else None
+    # Çeyrek primi z'si — prim z ile AYNI kapıya tabi (tutarlılık).
+    # Kapı açılana dek None; bu artık "unutulmuş" değil, gerekçesi yazılı bir bekleme.
+    # SEZON DÜZELTMESİ YOK: ziynet talebinde (düğün sezonu vb.) yıllık örüntü olabilir
+    # ama düzeltme için yıllar süren arşiv gerekir. Düz z, sezonu "anomali" sanabilir —
+    # bu sınır rapora da yazılır, sessizce güçlü sinyal gibi sunulmaz.
+    cur_quarter = fresh.get("quarter") if fresh else (
+        latest["quarter_prim_pct"] if latest is not None else None)
+    quarter_z = None
+    if n_days >= zmin and cur_quarter is not None:
+        qseries = db.prim_series(con, only_valid=True, column="quarter_prim_pct")
+        if qseries:
+            quarter_z = calc.zscore(qseries, cur_quarter, zmin).value
     con.close()
     return {
         "all_fresh": all_fresh,
         "prim": cur_prim, "prim_z": prim_z,
         "spread": cur_spread, "spread_p90": spread_p90,
         "daily_move": daily_move, "atr": atr,
-        "quarter_z": None,                    # sezon-düzeltmeli z: arşiv büyüyünce (şimdilik pas)
+        "quarter": cur_quarter, "quarter_z": quarter_z,
     }
 
 

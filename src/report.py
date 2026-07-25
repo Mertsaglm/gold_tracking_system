@@ -352,6 +352,14 @@ def build_report(cfg: dict) -> str:
         series = db.prim_series(con, only_valid=True)
         z = calc.zscore(series[:-1], series[-1], zmin)
         lines.append(f"- Prim z-skoru: **{_fmt(z.value, '', 2)}** (n={z.n})")
+        # Çeyrek z'si de gösterilir: kapı açılınca "çeyrek |z| > 2" bildirimi
+        # ateşlenebiliyor; tetikleyen sayının raporda görünmemesi tutarsızlık olurdu.
+        qser = db.prim_series(con, only_valid=True, column="quarter_prim_pct")
+        if len(qser) >= 2:
+            qz = calc.zscore(qser[:-1], qser[-1], zmin)
+            if qz.value is not None:
+                lines.append(f"- Çeyrek primi z-skoru: **{_fmt(qz.value, '', 2)}** "
+                             f"(n={qz.n}) · _sezon düzeltmesi yok_")
     lines.append("")
     lines.append("---")
     lines.append("_Genel bilgilendirme amaçlıdır; yatırım tavsiyesi değildir._")

@@ -46,7 +46,9 @@ jobs:
         run: |
           git config user.name "altin-daily"
           git config user.email "actions@github.com"
-          git add data/ reports/          # data/altin.sqlite gitignore'da; data/altin.sql izlenir
+          # data/altin.sqlite gitignore'da; data/altin.sql, telegram_outbox.jsonl,
+          # zskor_prova.jsonl izlenir
+          git add data/ reports/
           if ! git diff --cached --quiet; then
             git commit -m "daily: rapor $(date -u +%Y-%m-%d)"
             for i in 1 2 3; do

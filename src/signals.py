@@ -18,6 +18,69 @@ log = logging.getLogger("signals")
 UYARI = "Genel bilgilendirme amaçlıdır; yatırım tavsiyesi değildir."
 
 
+def zscore_dry_run(cfg: dict, con) -> dict:
+    """Z-skoru KAPIYI YOK SAYARAK hesaplar — sadece ölçüm, bildirim GÖNDERMEZ.
+
+    Amaç: 60 günlük kapı açıldığında (~2026 Eylül) `z > 2` bildirimi ilk kez
+    ateşlenecek ve o ana dek hiç denenmemiş olacak. Kalibrasyonsuz açılırsa
+    beklenmedik sıklıkta alarm günlük tavanı (6) doldurup diğer bildirimleri
+    bastırabilir. Bu fonksiyon her gün "z ne olurdu" sorusunu kayda geçirir;
+    kapı açılmadan dağılım ve tetiklenme sıklığı bilinir.
+
+    İKİ TABAN ölçülür çünkü tutarsızlık var: kapı GÜN sayıyor (Faz 7) ama
+    mevcut z hesabı TÜM KAYITLAR üzerinden yapılıyor. Gün içi ~10 örnek
+    birbirinin tekrarı olduğundan std'yi bozar. Hangisinin doğru olduğunu
+    kapı açılmadan bu prova gösterir.
+    """
+    zmin = cfg["stats"]["zscore_min_samples"]
+    esik = cfg.get("alerts", {}).get("prim_z", 2.0)
+    n_days = db.count_valid_prim_days(con)
+
+    def _z(seri: list[float]):
+        """Kapıyı yok sayar (min_samples=2) — amaç ölçüm, sinyal değil."""
+        if len(seri) < 3:
+            return None, None, None
+        z = calc.zscore(seri[:-1], seri[-1], 2)
+        return z.value, z.mean, z.std
+
+    kayitlar = db.prim_series(con, only_valid=True)
+    gunluk = [v for _, v in db.prim_daily_means(con)]
+    z_kayit, mu_k, sd_k = _z(kayitlar)
+    z_gun, mu_g, sd_g = _z(gunluk)
+
+    # Çeyrek primi z'si de aynı kapıya tabi ve o da kapı açılana dek HİÇ
+    # ateşlenmemiş olacak → aynı kalibrasyon riski, aynı prova.
+    q_kayit = db.prim_series(con, only_valid=True, column="quarter_prim_pct")
+    q_gunluk = [v for _, v in db.prim_daily_means(con, column="quarter_prim_pct")]
+    qz_kayit, _, _ = _z(q_kayit)
+    qz_gun, _, _ = _z(q_gunluk)
+    q_esik = cfg.get("alerts", {}).get("quarter_z", 2.0)
+
+    return {
+        "ceyrek_z_esigi": q_esik,
+        "ceyrek_z_kayit": qz_kayit,
+        "ceyrek_z_gun": qz_gun,
+        "ceyrek_tetiklenir_kayit": (qz_kayit is not None and abs(qz_kayit) > q_esik),
+        "ceyrek_tetiklenir_gun": (qz_gun is not None and abs(qz_gun) > q_esik),
+        "gun": n_days,
+        "esik_gun": zmin,
+        "kapi_acik": n_days >= zmin,
+        "n_kayit": len(kayitlar),
+        "n_gun": len(gunluk),
+        "z_esigi": esik,
+        # mevcut yöntem: tüm kayıtlar
+        "z_kayit_tabani": z_kayit,
+        "ort_kayit": mu_k,
+        "std_kayit": sd_k,
+        "tetiklenir_kayit": (z_kayit is not None and abs(z_kayit) > esik),
+        # önerilen taban: günlük ortalamalar (kapıyla tutarlı)
+        "z_gun_tabani": z_gun,
+        "ort_gun": mu_g,
+        "std_gun": sd_g,
+        "tetiklenir_gun": (z_gun is not None and abs(z_gun) > esik),
+    }
+
+
 def _signal(sinyal, yon, profil, gerekce, guven, gecersizlik, ufuk, backtest=None):
     return {
         "sinyal": sinyal, "yon": yon, "profil": profil,
@@ -155,39 +218,22 @@ def build_signals(cfg: dict) -> dict:
 
 # ---------- Bildirim eşik değerlendirmesi (rehber 6.2) — zamanlayıcı Actions'ta ----------
 def evaluate_alerts(cfg: dict) -> list[dict]:
-    con = db.connect(cfg)
-    latest = db.latest_prim(con)
-    alerts = []
-    if latest is None:
-        con.close()
-        return alerts
-    th = cfg.get("alerts", {})
-    prim_abs = th.get("prim_abs_pct", 1.5)
-    z_thr = th.get("prim_z", 2.0)
-    atr_mult = th.get("daily_move_atr", 2.0)
+    """Eşik değerlendirmesinin CLI görünümü — `python -m src.signals alerts`.
 
-    if latest["prim_pct"] is not None and abs(latest["prim_pct"]) > prim_abs:
-        alerts.append({"tip": "prim_sapma", "deger": latest["prim_pct"],
-                       "mesaj": f"Prim %{latest['prim_pct']:+.2f} (|>{prim_abs}|)"})
-    n_days = db.count_valid_prim_days(con)
-    if n_days >= cfg["stats"]["zscore_min_samples"]:
-        series = db.prim_series(con, only_valid=True)
-        z = calc.zscore(series[:-1], series[-1], cfg["stats"]["zscore_min_samples"])
-        if z.value is not None and abs(z.value) > z_thr:
-            alerts.append({"tip": "prim_z", "deger": z.value,
-                           "mesaj": f"Prim z={z.value:+.2f} (|>{z_thr}|)"})
-    # günlük hareket > N×ATR (history_daily'den)
-    hist = con.execute(
-        "SELECT gram_teorik FROM history_daily ORDER BY date DESC LIMIT 20").fetchall()
-    prices = [r["gram_teorik"] for r in reversed(hist)]
-    atr = atr_proxy(prices)
-    if atr and len(prices) >= 2:
-        move = abs(prices[-1] - prices[-2])
-        if move > atr_mult * atr:
-            alerts.append({"tip": "gunluk_hareket", "deger": move,
-                           "mesaj": f"Günlük hareket {move:.0f}₺ > {atr_mult}×ATR"})
-    con.close()
-    return alerts
+    TEK KAYNAK: kural mantığı `notify.evaluate_thresholds`'tadır; burası yalnız
+    onu çağırıp CLI çıktısına dönüştürür.
+
+    Neden: bu fonksiyonun kendi kopyası vardı ve sessizce AYRIŞMIŞTI — üretim
+    (notify) 5 kural uygularken burası yalnız 3'ünü biliyordu (`makas` ve
+    `ceyrek_prim` eksikti). İki ayrı yerde tutulan eşik mantığı er geç ayrışır;
+    eşik değiştirmek isteyen tek yere bakmalı.
+    """
+    from . import notify
+    ctx = notify.build_context(cfg)
+    return [
+        {"tip": a["tip"], "deger": a["deger"], "mesaj": a["gerekce"]}
+        for a in notify.evaluate_thresholds(ctx, cfg)
+    ]
 
 
 def format_signals_md(result: dict) -> str:

@@ -16,6 +16,31 @@ from . import util
 log = logging.getLogger("daily_job")
 
 
+def _zskor_prova(cfg: dict) -> dict:
+    """Kuru prova ölçümünü JSONL'a ekler (append-only, günde 1 satır).
+
+    Bildirim göndermez; yalnız "kapı açık olsaydı z ne olurdu" kaydını tutar.
+    """
+    import json
+
+    from . import db, signals
+    st = cfg.get("stats", {})
+    if not st.get("zskor_prova_aktif"):
+        return {"aktif": False}
+    con = db.connect(cfg)
+    try:
+        olcum = signals.zscore_dry_run(cfg, con)
+    finally:
+        con.close()
+    olcum["ts_utc"] = util.utcnow().isoformat()
+    path = util.abspath(st.get("zskor_prova_dosyasi", "data/zskor_prova.jsonl"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(olcum, ensure_ascii=False) + "\n")
+    return {k: olcum[k] for k in ("gun", "z_kayit_tabani", "z_gun_tabani",
+                                  "tetiklenir_kayit", "tetiklenir_gun")}
+
+
 def run(cfg: dict) -> dict:
     from . import logging_setup
     logging_setup.setup("daily_job", cfg)
@@ -52,6 +77,12 @@ def run(cfg: dict) -> dict:
         result["history"] = update_recent(cfg)
     except Exception as e:
         log.warning("history hata: %s", e)
+
+    # 3c) Z-skor kuru provası — kapı açılmadan dağılımı kaydet (bildirim YOK)
+    try:
+        result["zskor_prova"] = _zskor_prova(cfg)
+    except Exception as e:
+        log.warning("zskor prova hata: %s", e)
 
     # 4) Pazartesi mutabakat
     if weekday == 0:

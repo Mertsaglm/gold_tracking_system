@@ -190,3 +190,19 @@ def count_valid_prim_days(con) -> int:
         "SELECT COUNT(DISTINCT date(ts_utc)) FROM prim_history "
         "WHERE indicative=0 AND weekend=0"
     ).fetchone()[0]
+
+
+def prim_daily_means(con, column: str = "prim_pct") -> list[tuple[str, float]]:
+    """Geçerli primin GÜNLÜK ortalaması: [(tarih, ortalama)].
+
+    Kapı gün sayarken (count_valid_prim_days) z-skorun dağılım tabanı da gün
+    cinsinden olmalı; gün içi ~10 örnek birbirinin tekrarıdır ve std'yi
+    otokorelasyonlu gürültüyle bozar. Kuru prova iki tabanı karşılaştırır
+    (bkz. signals.zscore_dry_run).
+    """
+    rows = con.execute(
+        f"SELECT date(ts_utc) d, AVG({column}) FROM prim_history "
+        f"WHERE {column} IS NOT NULL AND indicative=0 AND weekend=0 "
+        "GROUP BY d ORDER BY d"
+    ).fetchall()
+    return [(r[0], r[1]) for r in rows]

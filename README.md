@@ -22,9 +22,11 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
   Hafta sonu beklenti serisi + pazartesi mutabakatı.
 - **Makro bağlam (EVDS):** politika faizi, net mevduat faizi, TÜFE, 12 ay enflasyon beklentisi,
   **reel net mevduat faizi**.
-- **Gösterge uzlaşı paneli:** ABD 10Y reel faiz (FRED), DXY (FRED), ons 50/200 GMA (yfinance),
-  TL reel net mevduat (EVDS), SPDR GLD tonaj, Google Trends — her biri olumlu/nötr/olumsuz +
-  toplam uzlaşı skoru.
+- **Gösterge uzlaşı paneli:** ABD 10Y reel faiz (FRED), DXY (FRED → yedek yfinance
+  `DX-Y.NYB`), ons 50/200 GMA (yfinance), TL reel net mevduat (EVDS), SPDR GLD tonaj,
+  Google Trends — her biri olumlu/nötr/olumsuz + toplam uzlaşı skoru. Verisi gelmeyen
+  gösterge **paydadan düşer** (uydurma yapılmaz); reel faiz için bilerek yedek
+  konulmadı — `^TNX` nominal getiridir, TIPS reel getirisi değil.
 - **Grafik yorumu:** gerçek günlük OHLC üzerinde fraktal swing pivot → ATR ölçekli kümeleme ile
   **destek/direnç bantları**, dönemsel zirve/dip, RSI/Bollinger/trend yapısı ile **çapraz teyit
   çetelesi**. Seviyeler ons USD'de hesaplanır, TL'ye **bugünkü kurla izdüşüm** olarak çevrilir.
@@ -47,7 +49,7 @@ holidays_tr.yaml     TR/US tatil takvimi (yılda bir güncelle)
 evds_series.json     keşif çıktısı (teyitli + bulunan kodlar)
 
 AGENTS.md            AI yardımcı ("Usta") kanonik kuralları — araçtan bağımsız
-CLAUDE.md · GEMINI.md · .github/copilot-instructions.md · .kiro/steering/
+CLAUDE.md · GEMINI.md · .github/copilot-instructions.md
                      IDE köprüleri; hepsi AGENTS.md'ye yönlendirir
 ai/                  proje hafızası: PROJECT · STATE · DECISIONS · LESSONS (+ PROFILE, git'e girmez)
 
@@ -158,7 +160,14 @@ dağılımı hiçbir yerde satılmıyor, bu yüzden arşiv 7 Temmuz 2026'da sıf
 |---|---|
 | Eşik | `config.yaml stats.zscore_min_samples: 60` gün |
 | Kapı açılana kadar | Sinyal `veri_bekliyor`, rapor `⏳ arşiv birikiyor (N/60 gün)` yazar |
-| Kapı açıldığında | Prim z-skor sinyali ve `z > 2` bildirimi kendiliğinden devreye girer — kod hazır, ek iş yok |
+| Kapı açıldığında | Prim z-skor sinyali, çeyrek primi z'si ve `z > 2` bildirimi kendiliğinden devreye girer — kod hazır, ek iş yok |
+
+**Kuru prova (dry-run):** Kapı açılmadan `z ne olurdu` her gün ölçülüp
+`data/zskor_prova.jsonl`'a yazılır (bildirim gönderilmez). Amaç, eşiğin kapı
+açıldığında makul sıklıkta tetiklenip tetiklenmediğini önceden bilmek. Prova iki
+tabanı karşılaştırır: **tüm kayıtlar** (mevcut hesap) ve **günlük ortalamalar**
+(kapıyla tutarlı taban) — gün içi tekrar örnekleme std'yi bozduğu için ikisi farklı
+z üretir.
 
 Haftalık pazar raporundaki "Arşiv İlerlemesi" satırı ilerlemeyi gösterir.
 
@@ -227,7 +236,6 @@ davranış üretilir — köprü dosyaları yalnızca AGENTS.md'ye yönlendirir:
 | Claude Code / GLM | `CLAUDE.md` |
 | Antigravity | `GEMINI.md` |
 | VS Code (Copilot) | `.github/copilot-instructions.md` |
-| Kiro | `.kiro/steering/usta.md` |
 
 Sohbete `/durum`, `/baslat`, `/karar`, `/plan`, `/kapat` yazmak yeterli (araç özelliği değil,
 AGENTS.md'de tanımlı sözleşme). Kararların gerekçesi `ai/DECISIONS.md`'de ADR olarak tutulur.

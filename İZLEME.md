@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | 1 | Actions yeşil mi? | GitHub → Actions | "Altin arsivleyici" ve "Gunluk otonom rapor" son çalışmalar ✅ | Kırmızı çalışmanın log'una bak; kaynak erişimi kaynaklıysa sonraki tur düzelir |
 | 2 | Günlük rapor düştü mü? | Telegram | Her akşam ~18:45 TR bir rapor | 1 gün gelmezse "Gunluk otonom rapor" son çalışmasına bak |
-| 3 | Kapsama bantta mı? | Raporun "Veri Kalitesi" satırı | **%60-100** (Actions ritmine göre ölçülür) | Uyarı satırı çıkarsa (kesinti > 270 dk) Actions'a bak (#1) |
+| 3 | Kapsama bantta mı? | Raporun "Veri Kalitesi" satırı | **%60-100** (Actions ritmine göre ölçülür) | ⚠️ çıkarsa Actions'a bak (#1); ℹ️ çıkarsa bir şey yapma (aşağıya bak) |
 | 4 | Veri artıyor mu? | `data/archive/` CSV satır sayısı, `data/altin.sql` diff | Her gün büyüyor | Büyümüyorsa arşiv workflow'u duraklatılmış olabilir (#1) |
 | 5 | Bildirim sayısı makul mü? | Telegram | Günde birkaç, tavan 6/gün | Fazlaysa `config.yaml alerts` eşiklerini gevşet |
 | 6 | Z-skor arşivi ilerliyor mu? | Haftalık pazar raporu → "Arşiv İlerlemesi: N/60 gün" | Her geçerli gün +1 | Bkz. aşağıdaki bölüm |
@@ -29,8 +29,20 @@ zamanlanmış iş akışlarını kısıtlar. Ölçülen gerçek: **günde 10-17 
 
 Sağlık metrikleri bu gözlemlenen ritme göre kalibre edilmiştir
 (`config.yaml alerts.archive_observed_freq_minutes: 90`), yani kapsama %60-100 normal banttır ve
-uyarı ancak kesinti 270 dk'yı aşınca çıkar. Cron sıklığını artırmak sonucu değiştirmez —
+uyarı ancak boşluk 270 dk'yı aşınca çıkar. Cron sıklığını artırmak sonucu değiştirmez —
 kısıtlama GitHub tarafındadır.
+
+### İki boşluk türü karıştırılmamalı
+
+Rapor iki farklı şeyi ayrı ayrı yazar; hangisinin çıktığına bak:
+
+| Satır | Ne ölçer | Ne yapmalısın |
+|---|---|---|
+| **çekim** boşluğu | Actions gerçekten çalıştı mı | ⚠️ uyarı çıkarsa Actions'a bak |
+| **prim** boşluğu | Prim hesaplanabilen kayıtlar arası boşluk — kaynak (Truncgil) boş dönerse Actions sorunsuz çalışsa da büyür | ℹ️ satırı çıkarsa **bir şey yapma**; kaynak-retry devrede, sonraki tur toparlar |
+
+Yani "545 dk prim boşluğu" tek başına arıza demek değildir; Actions o sırada tam zamanında
+çalışmış olabilir. Rapor bunu kendisi ayırt edip doğru ikonu koyar.
 
 ---
 
@@ -86,6 +98,7 @@ Bu hiçbir veriyi silmez — yalnız otomatik çalışmayı durdurur.
 | Canlı arşiv (ham) | `data/archive/YYYY-MM.csv` — her Actions çalışması bir satır ekler |
 | Ana veritabanı | `data/altin.sql` (metin dump, commit'lenir) → `src/restore_db.py` ile SQLite'a açılır |
 | Bildirim durumu | `data/alert_state.json` (soğuma + günlük tavan sayacı) |
+| Giden Telegram mesajları | `data/telegram_outbox.jsonl` — bota gönderilen her rapor/alarm (denetim için; Telegram export'una gerek yok) |
 | Raporlar | `reports/rapor_YYYY-MM-DD.md` |
 
 SQLite binary'si repoya girmez; dump sayesinde repo şişmez ve geçmiş diff'lenebilir kalır.

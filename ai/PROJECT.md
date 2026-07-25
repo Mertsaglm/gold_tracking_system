@@ -27,8 +27,10 @@ günlük rapor + anlık anomali bildirimini Telegram'a basan; GitHub Actions
 ## Kapsam Dışı (Ne YOK)
 - Yatırım tavsiyesi (her rapor "genel bilgilendirme amaçlıdır" ibaresiyle biter)
 - Otomatik alım-satım / emir iletimi
-- Ayrı sunucu / 7x24 servis — Oracle Cloud iptal edildi (2026-07-21), yalnız
-  GitHub Actions cron
+- Ayrı sunucu / 7x24 servis — **şimdilik** yok, üretim GitHub Actions cron.
+  Oracle Cloud'a geçiş düşünüldü ama **ertelendi (iptal değil)**; masada duran bir
+  seçenek. Bu yüzden `deploy/` systemd dosyaları ve `runtime_mode: collector`
+  silinmez — o senaryonun hazır altyapısıdır.
 
 ## Kısıtlar
 - **Bütçe:** ücretsiz kalmalı — üretim GitHub Actions (public repo, sınırsız dk)

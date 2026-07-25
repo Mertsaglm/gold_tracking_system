@@ -6,6 +6,21 @@
 
 ---
 
+## L-004 — 2026-07-24 — Kural dosyaları alt klasörde çalışmaz
+
+**Olay:** Usta sistemi `Proje Yardımcısı/` alt klasörüne kopyalanmıştı. Hiçbir
+IDE alt klasördeki AGENTS.md/CLAUDE.md'yi otomatik okumadığı için sistem atıl
+kaldı — hata vermiyor, sadece sessizce devreye girmiyordu.
+
+**Ders:** Araç konvansiyonuna bağlı dosyaların (kural, config, manifest) YERİ
+işlevin parçasıdır. Yanlış yerdeki doğru dosya = yok hükmünde.
+
+**Kural:** Kural/köprü dosyalarını daima proje köküne koy; kurduktan sonra
+"gerçekten yükleniyor mu?" diye test et (`/durum` yazıp STATE.md'yi okuyor mu),
+dosyanın varlığını görmek yeterli değil.
+
+---
+
 ## L-003 — 2026-07-24 — Metrik değişince "sistem bozuldu" sanılır; taban çizgisini ölç
 
 **Olay:** "Kapsama %16'dan %62'ye çıktı, arşiv düzensiz çalışıyor, kesinti

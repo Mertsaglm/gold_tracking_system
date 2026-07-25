@@ -97,6 +97,12 @@ def _save_state(cfg, state) -> None:
 
 
 def _atr_from_history(con, window=14):
+    """ATR(14) — kapanış-kapanış yaklaşımı, history_daily'den.
+
+    history_daily'yi daily_job her gün tazeler (`history.update_recent`). Tazelenmezse
+    ATR sabit kalır ve "günlük hareket" alarmı yanlış eşikle çalışır — bir dönem
+    böyle oldu, bkz. ai/DECISIONS.md #004.
+    """
     rows = con.execute(
         "SELECT gram_teorik FROM history_daily ORDER BY date DESC LIMIT ?", (window + 1,)
     ).fetchall()

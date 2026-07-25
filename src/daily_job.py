@@ -1,7 +1,11 @@
 """Bölüm 2 — Otonom günlük rapor orkestratörü (Actions).
 
-import_actions → EVDS günlük → (pazartesi mutabakat) → rapor (pazar: haftalık) → Telegram.
+import_actions → EVDS günlük → OHLC → history_daily → (pazartesi mutabakat)
+→ rapor (pazar: haftalık) → Telegram.
 Actions'ta günde bir çalışır; DB + rapor commit'lenir (workflow tarafından).
+
+history_daily adımı ATR ve "günlük hareket" alarmlarının kaynağını tazeler; buraya
+bağlı olmadığı için bir dönem donuk kalmıştı (bkz. ai/DECISIONS.md #004).
 """
 from __future__ import annotations
 

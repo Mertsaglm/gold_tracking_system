@@ -29,11 +29,14 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
   **destek/direnç bantları**, dönemsel zirve/dip, RSI/Bollinger/trend yapısı ile **çapraz teyit
   çetelesi**. Seviyeler ons USD'de hesaplanır, TL'ye **bugünkü kurla izdüşüm** olarak çevrilir.
   Ölçüm sonucu: seviyelerin yön üstünlüğü yok — kademe/stop planlaması için sunulur, yön iddiası
-  olarak değil (bkz. `TESLIMAT-FAZ6.md`).
+  olarak değil (ölçüm: `docs/TESLIMAT-ARSIV.md` → Faz 6).
 - **Rapor:** gün sonu markdown → dosya + Telegram. Bot komutları: `/durum`, `/rapor`.
 - **Loglama:** `logs/` altında dönen dosya logları (5 MB × 5).
-- **Kapsama:** rapor "son 24s veri kapsaması %X, en uzun kesinti Y dk" satırı; z-skor yalnız FRESH
-  kayıtları sayar.
+- **Kapsama:** rapor "son 24s veri kapsaması %X" satırı; **prim boşluğu** (kaynak boş dönerse de
+  büyür) ile **çekim boşluğu** (Actions gerçekten durdu mu) ayrı raporlanır — ikisi karışmasın
+  diye. z-skor yalnız FRESH kayıtları sayar.
+- **Giden mesaj arşivi:** Telegram'a gönderilen her mesaj `data/telegram_outbox.jsonl`'a yazılır
+  (denetim için; Telegram export'una gerek kalmaz).
 
 ## Proje yapısı
 
@@ -42,25 +45,50 @@ config.yaml          tüm eşik/URL/oran (kod içine sabit gömülmez)
 holidays_tr.yaml     TR/US tatil takvimi (yılda bir güncelle)
 .env                 EVDS + Telegram kimlikleri (git'e girmez)
 evds_series.json     keşif çıktısı (teyitli + bulunan kodlar)
+
+AGENTS.md            AI yardımcı ("Usta") kanonik kuralları — araçtan bağımsız
+CLAUDE.md · GEMINI.md · .github/copilot-instructions.md · .kiro/steering/
+                     IDE köprüleri; hepsi AGENTS.md'ye yönlendirir
+ai/                  proje hafızası: PROJECT · STATE · DECISIONS · LESSONS (+ PROFILE, git'e girmez)
+
 src/
+  # --- Üretim yolu (GitHub Actions bunları çağırır) ---
+  archive_fetch.py   15 dk arşiv çekimi → CSV (kaynak boşsa retry)
+  notify.py          eşik değerlendirme + soğuma/tavan → Telegram bildirimi
+  daily_job.py       günlük orkestratör: import → EVDS → OHLC → history → rapor → Telegram
+  dbdump.py          SQLite ↔ diff'lenebilir metin dump (restore_db.py geri yükler)
+
+  # --- Çekirdek hesap ve veri ---
   util.py            TR sayı ayrıştırma, zaman, config/env, SSL cacert ASCII fix
   calc.py            teorik gram, prim, makas, çeyrek primi, dekompozisyon, z-skor
-  indicators.py      kadran/uzlaşı paneli (FRED/yfinance/GLD + etiketleme)
-  market_calendar.py forex seansı + tatil + gündüz/gece
-  state_machine.py   FRESH/STALE/CLOSED_* + prim geçerliliği
   db.py              SQLite şema + erişim
   sources/           truncgil.py, yf.py, evds.py
-  collector.py       ana toplayıcı döngü
+  market_calendar.py forex seansı + tatil + gündüz/gece
+  state_machine.py   FRESH/STALE/CLOSED_* + prim geçerliliği
+  history.py         tarihsel günlük ons×kur → history_daily (ATR'nin kaynağı; daily_job tazeler)
   ohlc_hist.py       günlük gerçek OHLC (yfinance → ohlc_daily); grafik katmanının verisi
-  chart.py           destek/direnç + gösterge teyidi + doğrulama harness'i
   evds_job.py        EVDS backfill + günlük güncelleme + rapor bağlamı
+  import_actions.py  Actions CSV arşivini ana DB'ye aktarır
   reconcile.py       pazartesi hafta sonu mutabakatı
+
+  # --- Analiz ve çıktı ---
+  indicators.py      kadran/uzlaşı paneli (FRED/yfinance/GLD + etiketleme)
+  chart.py           destek/direnç + gösterge teyidi + doğrulama harness'i
+  signals.py         sinyal üretimi (gerekçe + güven + geçersizlik)
+  backtest.py        rejim / DCA / out-of-sample ölçümleri
+  calculators.py     enstrüman karşılaştırma + bilezik başabaş
+  trends.py          Google Trends kalabalık göstergesi
+  aipaket.py         AI'a yapıştırılacak veri paketi
   report.py          gün sonu markdown raporu
-  telegram_bot.py    gönderim + /durum /rapor (long-polling)
+  telegram_bot.py    gönderim + komutlar (long-polling) + giden mesaj arşivi
+
+  # --- Yardımcı / opsiyonel ---
   logging_setup.py   dönen dosya logları
   backup_db.py       güvenli SQLite dump (.backup API)
   evds_discover.py   EVDS kod keşfi
-tests/               calc + durum makinesi + gösterge + grafik birim testleri (137 test)
+  collector.py · supervisor.py   7/24 yerel toplayıcı modu (config runtime_mode: "collector");
+                     üretimde KULLANILMIYOR — Actions modu geçerli
+tests/               birim testleri (153 test)
 ```
 
 ## Yapılandırma
@@ -143,7 +171,7 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env      # doldur
 
-.venv/bin/python -m pytest -q                 # 137 test
+.venv/bin/python -m pytest -q                 # 153 test
 .venv/bin/python -m src.restore_db            # data/altin.sql → SQLite (tüm geçmiş arşiv)
 .venv/bin/python -m src.evds_job backfill     # EVDS tarihsel (tek sefer)
 .venv/bin/python -m src.history build         # tarihsel günlük ons×kur (2016+)
@@ -187,7 +215,28 @@ aralarında çakışmaz.)
 - **EVDS servis yolu** 2024 sonrası `https://evds3.tcmb.gov.tr/igmevdsms-dis` (config'te).
 - **Truncgil ToS'u yok** — kişisel kullanım (bkz. PROJE-REHBERI.md §1.4).
 
+## AI yardımcı sistemi (araçtan bağımsız)
+
+Proje bir AI yardımcı sözleşmesiyle gelir: kanonik kurallar **`AGENTS.md`**'de, proje hafızası
+**`ai/`** altında (PROJECT · STATE · DECISIONS · LESSONS). Kullanılan IDE ne olursa olsun aynı
+davranış üretilir — köprü dosyaları yalnızca AGENTS.md'ye yönlendirir:
+
+| Araç | Okuduğu dosya |
+|---|---|
+| Codex / Cursor | `AGENTS.md` |
+| Claude Code / GLM | `CLAUDE.md` |
+| Antigravity | `GEMINI.md` |
+| VS Code (Copilot) | `.github/copilot-instructions.md` |
+| Kiro | `.kiro/steering/usta.md` |
+
+Sohbete `/durum`, `/baslat`, `/karar`, `/plan`, `/kapat` yazmak yeterli (araç özelliği değil,
+AGENTS.md'de tanımlı sözleşme). Kararların gerekçesi `ai/DECISIONS.md`'de ADR olarak tutulur.
+
 ## Kanıt
 
-`TESLIMAT.md` → `TESLIMAT-FAZ7.md` — her fazın testleri, DB satır sayıları, gerçek Telegram
-mesajları, EVDS teyit tablosu, ölçüm sonuçları. Günlük kullanım için `İZLEME.md`.
+**`docs/TESLIMAT-ARSIV.md`** — inşa döneminin (Faz 1-7) kanıt kaydı: her fazın ölçümleri,
+EVDS teyit tablosu, **geri çekilen iddialar** (rejim üstünlükleri, prim-koşullu DCA,
+seviyelerin yön kenarı — hepsi ölçülüp çürütüldü) ve bilinçli olarak yapılmayanların gerekçesi.
+
+Günlük kullanım için `İZLEME.md`. Mimari/araç kararları: `ai/DECISIONS.md` ·
+dersler: `ai/LESSONS.md`.

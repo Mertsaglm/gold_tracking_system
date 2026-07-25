@@ -195,7 +195,14 @@ yazdığında hangi araçta olursan ol aynı davranışı üret:
 ## 10. Sınırlar
 
 - Emin olmadığın bir konuda "emin değilim, doğrulayalım" de; uydurma.
+- **`git commit` ve `git push` DAİMA onaya tabidir.** Kendi kararınla repoya
+  yazma. Değişiklikleri yap, testleri çalıştır, sonra "şunları commit'leyeyim
+  mi?" diye sor ve DUR. Onay tek seferliktir — sonraki commit için tekrar sor.
+  Dosya düzenlemek/test çalıştırmak serbesttir; sadece git yazma işlemleri
+  onaya bağlıdır. (Repo public ve üretim canlı olabilir; ne gideceğine Mert
+  karar verir.)
 - Geri dönüşü zor işlemler (veri silme, migration, prod deploy, para/servis
-  satın alma) öncesi daima açıkça onay iste.
+  satın alma) öncesi daima açıkça onay iste. **Untracked dosya silmek geri
+  alınamaz** — git'te olmayan bir şeyi silmeden önce mutlaka sor.
 - Mert'in yazdığı koddaki bir hatayı görünce söyle — "çalışıyor ama şurada
   patlar" demek senin görevin.

@@ -1,28 +1,46 @@
+# NOT: .gitignore satır-sonu yorumu DESTEKLEMEZ — yorumlar kendi satırında olmalı,
+# yoksa yorum metni pattern'in parçası sayılır ve kural sessizce çalışmaz.
+
+# --- Sırlar (asla commit'lenmez) ---
 .env
+
+# --- Python ---
 __pycache__/
 *.pyc
 .venv/
 venv/
 .pytest_cache/
-# Not: data/ ve reports/ YEDEKLENİR (private repo). Yerel WAL dosyaları hariç:
-data/*.sqlite-wal
-data/*.sqlite-shm
 
+# --- Araç dizinleri ---
 .claude/
 
-# Geçici (Faz 3)
+# --- Veri ---
+# data/ ve reports/ İZLENİR (yedek + geçmiş diff'lenebilir kalsın).
+# Repo PUBLIC; içerik yalnız fiyat verisi ve analiz — hassas veri yok.
+# İstisnalar:
+# binary DB izlenmez, diff'lenebilir data/altin.sql izlenir
+data/altin.sqlite
+# yerel WAL/SHM yan dosyaları
+data/*.sqlite-wal
+data/*.sqlite-shm
+# geçici önbellek (24s)
 data/trends_cache.json
 data/*.log
 logs/
+# scripts/backup.sh'ın ürettiği binary yedekler — repoya ASLA girmemeli
+# (Faz 5'te binary SQLite commit'lemek tam da çözülen sorundu)
+data/backups/
 
-# Binary DB izlenmez; diff'lenebilir dump izlenir (Faz 5)
-data/altin.sqlite
-
-# macOS
-.DS_Store
-
-# Kişisel profil — public repo'ya girmesin (yerel/araçlar arası kalır)
+# --- Kişisel / yerel kalanlar ---
+# kullanıcı profili — public repo'ya girmesin, araçlar arası yerelde taşınır
 ai/PROFILE.md
+# Telegram sohbet export'u (kişisel)
+telegram çıktısı.json
 
-# Usta sistem kaynak şablonu (kök kanonik; alt klasör gereksiz kopya)
+# "Usta" yardımcı sisteminin kaynak şablonu. Kanonik kopya proje KÖKÜNDEDİR
+# (AGENTS.md + ai/); bu klasör yeni projelere kopyalamak için tutulan şablondur
+# ve bilinçli olarak yerelde kalır.
 Proje Yardımcısı/
+
+# --- macOS ---
+.DS_Store

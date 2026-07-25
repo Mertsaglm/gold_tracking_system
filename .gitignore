@@ -37,10 +37,12 @@ ai/PROFILE.md
 # Telegram sohbet export'u (kişisel)
 telegram çıktısı.json
 
-# "Usta" yardımcı sisteminin kaynak şablonu. Kanonik kopya proje KÖKÜNDEDİR
-# (AGENTS.md + ai/); bu klasör yeni projelere kopyalamak için tutulan şablondur
-# ve bilinçli olarak yerelde kalır.
+# "Usta" yardımcı paketi. Kanonik/canlı kopya proje KÖKÜNDEDİR (AGENTS.md + ai/);
+# bu klasör devir paketi + yeni proje şablonudur ve bilinçli olarak yerelde kalır.
+# İçinde ai/PROFILE.md (kişisel) var — public repoya girmemeli.
+# NOT: klasör adı değişirse bu satır da değişmeli, yoksa kural sessizce çalışmaz.
 Proje Yardımcısı/
+Proje Yardımcısı - Gold Tracking System/
 
 # --- macOS ---
 .DS_Store

@@ -226,6 +226,11 @@ yaptığı şey ve tek gerçekten evrensel konum. Düz markdown → araç kilidi
 **Tekrar gözden geçir:** Bir araç AGENTS.md/steering desteğini bırakır veya yeni
 bir araç farklı bir konvansiyon dayatırsa köprü ekle/güncelle.
 
+> **Güncelleme (2026-07-25):** Kiro köprüsü (`.kiro/steering/usta.md`) kullanıcı
+> kararıyla **kaldırıldı** — Kiro pratikte az kullanılıyor, diğer köprüler yeterli.
+> Kararın özü (kök kanonik + ince köprüler) değişmedi; yalnız köprü listesinden bir
+> araç çıktı. Gerekirse AGENTS.md'ye yönlendiren 3 satırlık dosyayla geri eklenir.
+
 ---
 
 ## #001 — 2026-07-23 — Taşınabilirlik için AGENTS.md standardı + düz markdown hafıza

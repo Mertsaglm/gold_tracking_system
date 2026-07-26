@@ -72,7 +72,10 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
   hakemi + faz-düzeltmeli taban), `src/karar.py` (iki kollu hüküm + sert kapı),
   rapor başına HÜKÜM bloğu, `/hukum` komutu, `config.yaml karar:` bölümü.
   En riskli varsayım ("trade ederek gram artırılabilir") ölçüldü ve **düştü**.
-  **207 test.**
+- 2026-07-26 — **Karar motoru Faz C**: `src/tahmin.py` (kayıt/giriş/çözüm/karne),
+  3 yeni tablo + `trg_predictions_immutable`, `daily_job` adım 3d, `/karne`
+  komutu, HÜKÜM bloğunda karne satırı. **Canlı örneklem-dışı kayıt BAŞLADI** —
+  ilk çözüm ~2026-07-31 (1 hafta), ~2026-08-22 (1 ay). **232 test.**
 
 ## 🔨 Devam Edenler
 - _(yok)_
@@ -83,12 +86,9 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 - Z-skor kapısı → ~09-12
 
 ## 🎯 Sıradaki 3 İş
-1. **Faz C — tahmin kaydı + karne** (`src/tahmin.py` + 3 tablo + immutability
-   trigger). **Bu, tek gerçek örneklem-dışı kaydı başlatır — saat işlemeye
-   başlar.** DoD: `daily_job` bir koşuda 6 tahmin satırı yazıyor; `UPDATE
-   predictions SET hukum=...` ABORT veriyor; `/karne` çalışıyor.
-   **Not:** `dbdump._TABLES`'a 3 tabloyu eklemeyi UNUTMA — yoksa dump/restore
-   döngüsü tahminleri sessizce siler.
+1. **İlk canlı çözümü doğrula (~2026-07-31).** DoD: `prediction_outcomes`'ta
+   1-hafta tahmini çözülmüş; `gram_carry_kazanc_pct` makul; `/karne` "1 çözülmüş"
+   diyor. **Bu, tüm zincirin (kaydet→giriş→çözüm) canlıda ilk kez tam dönüşü.**
 2. **Faz D — `src/ozellikler.py`** tek giriş noktası (canlı + replay aynı
    fonksiyon → look-ahead yapısal olarak imkânsız). DoD: `asof` sonrası satırlar
    silinmiş DB kopyasında `feature_vector` birebir aynı sözlüğü döndürüyor.

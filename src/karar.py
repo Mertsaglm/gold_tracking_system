@@ -188,7 +188,7 @@ def karar_ver(ozellikler: dict, cfg: dict, engel: Optional[dict],
 # ================= IO + biçimleme =================
 
 def build_karar(cfg: dict) -> dict:
-    """Canlı hüküm: EVDS bağlamı + önbelleklenmiş engel ölçümü."""
+    """Canlı hüküm: EVDS bağlamı + önbelleklenmiş engel ölçümü + canlı karne."""
     from . import gram
     ozellikler = {}
     try:
@@ -196,7 +196,19 @@ def build_karar(cfg: dict) -> dict:
         ozellikler["reel_net_mevduat"] = evds_context(cfg).get("reel_net_mevduat")
     except Exception as e:                      # rapor bloğu yine de çıksın
         log.warning("evds baglami alinamadi: %s", e)
-    return karar_ver(ozellikler, cfg, gram.engel_oku(cfg), karne=None)
+    k_karne = None
+    try:
+        from . import db, tahmin
+        con = db.connect(cfg)
+        try:
+            k_karne = tahmin.karne(cfg, con)
+        finally:
+            con.close()
+    except Exception as e:
+        log.warning("karne okunamadi: %s", e)
+    out = karar_ver(ozellikler, cfg, gram.engel_oku(cfg), karne=k_karne)
+    out["karne"] = k_karne
+    return out
 
 
 def format_karar_md(k: dict) -> str:
@@ -219,6 +231,22 @@ def format_karar_md(k: dict) -> str:
         L += ["", f"_Ölçüm tabanı: {e['n_bagimsiz']} bağımsız pencere · en kötü "
               f"tek pencere %{e['en_kotu_pct']:+.1f} · çekirdek eşiği "
               f"+{e['cekirdek_esik_puan']:.2f}p_"]
+    # Karne satırı: her hüküm kendi sicilini yanında taşır. Sicil yoksa bunu
+    # SÖYLEMEK zorunda — sessiz kalmak "sicilim iyi" izlenimi verirdi.
+    kn = k.get("karne")
+    if kn:
+        if kn.get("cozulmus", 0) == 0:
+            ilk = kn.get("ilk_cozum_tarihi")
+            L += ["", f"_**Karne:** henüz çözülmüş tahmin yok · "
+                  f"{kn.get('bekleyen', 0)} tahmin vadesini bekliyor"
+                  + (f", ilki ~{ilk}" if ilk else "") + ". Bu hüküm ölçülen "
+                  "tarihsel tabana dayanır; canlı isabet iddiası YOK._"]
+        else:
+            zayif = "" if kn.get("yeterli_mi") else " ⚠️ölçüm yetersiz"
+            L += ["", f"_**Karne** ({kn['kol']}): {kn['cozulmus']} çözülmüş · "
+                  f"isabet %{kn['isabet_pct']:.0f} (taban %{kn['taban_pct']:.0f}, "
+                  f"fark {kn['isabet_farki_puan']:+.1f}p) · gram etkisi "
+                  f"{kn['gram_etkisi_pct']:+.2f}%{zayif}_"]
     L.append("")
     return "\n".join(L)
 

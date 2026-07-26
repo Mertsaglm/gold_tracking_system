@@ -79,6 +79,29 @@ Taban `range(len(closes))` ile 0. fazdan başlıyor, sinyal kümesi başka fazda
 faz artefaktından ayırt edilemez.** Yeni motor bu hatayı miras almıyor:
 `gram.phase_matched_baseline` tüm fazlar üzerinden ölçer ve yayılımı raporlar.
 
+### F) Tahmin kaydı DEĞİŞTİRİLEMEZ (Faz C, aynı gün)
+
+Verilen her hüküm `predictions`'a yazılır ve `trg_predictions_immutable`
+trigger'ı `hukum/skor/guven/ozellikler_json/asof_date/esik_pct/kapi_acik/
+horizon_days/target_date/kol` kolonlarında UPDATE'i ABORT ediyor.
+
+**Neden şema düzeyinde:** karneyi güzelleştirmek için geçmiş bir tahmini
+"düzeltmek" kaçınılmaz bir ayartıdır ("şu tahmin bozuktu, elle düzelteyim").
+Disiplinle değil, imkânsızlıkla çözülür.
+
+Üç ek koruma:
+- **Giriş fiyatı AYRI tabloda** (`prediction_entries`): hüküm asof=T-1'de
+  verilir, giriş T'nin kapanışıdır ve o an bilinmez. Aynı satıra yazmak
+  look-ahead olurdu.
+- **Giriş ve çıkış İKİSİ de 3 işlem günü ortalaması.** Yalnız çıkışı ortalamak,
+  yukarı sürüklenen bir seride sistematik TUT yanlılığı yaratır.
+- **Kaçınma yasak:** her asof tam olarak bir hüküm üretir; "emin değilim" diye
+  atlamak karneyi seçerek temizlemenin kapısıdır.
+
+`dbdump._TABLES`'a üç tablo da eklendi. `predictions.id` — `ticks.id`'nin
+aksine — dump'a GİRER: `prediction_entries/outcomes` ona referans veriyor,
+hariç tutulsaydı restore'da bağlar sessizce kopardı.
+
 **Tekrar gözden geçir:** (a) taktik kapısı açılırsa veya 30 tahmin çözülüp şart
 sağlanmazsa — o zaman "trade kolu kalıcı kapalı" ADR'si yazılır; (b) ALTINS1'e
 geçilirse eşik %1.20 → %0.40 düşer, taktik kol yeniden değerlendirilir;

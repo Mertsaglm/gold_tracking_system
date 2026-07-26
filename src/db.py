@@ -90,6 +90,63 @@ CREATE TABLE IF NOT EXISTS ohlc_daily (
     PRIMARY KEY (date, symbol)
 );
 CREATE INDEX IF NOT EXISTS idx_ohlcd_sym_date ON ohlc_daily(symbol, date);
+
+-- ---------- Tahmin kaydı (Bölüm 8 — karar motoru karnesi) ----------
+-- Sistemin verdiği HER hüküm buraya yazılır ve vadesi gelince otomatik çözülür.
+-- Bu tablo projenin dürüstlük altyapısıdır: hüküm net olabilir çünkü karnesi
+-- tutuluyor. Karne olmadan "AL" demek kehanettir; karneyle birlikte iddiadır.
+CREATE TABLE IF NOT EXISTS predictions (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_utc     TEXT NOT NULL,
+    model_version   TEXT NOT NULL,   -- değişirse canlı karne SIFIRLANIR: farklı
+                                     -- modelin tahminleri aynı karnede toplanamaz
+    kaynak          TEXT NOT NULL,   -- 'canli' | 'replay'
+    asof_date       TEXT NOT NULL,   -- SON TAM KAPANMIŞ gün (T-1); özellik kesimi
+    horizon_days    INTEGER NOT NULL,
+    target_date     TEXT NOT NULL,
+    kol             TEXT NOT NULL,   -- 'cekirdek' | 'taktik'
+    hukum           TEXT NOT NULL,
+    skor            REAL,
+    guven           REAL,
+    beklenen_gram_kazanc_pct REAL,
+    esik_pct        REAL,            -- o an geçerli engel (taban + maliyet)
+    kapi_acik       INTEGER NOT NULL,-- 0 → hüküm SAT olsa bile TUT'a kilitlendi
+    ozellikler_json TEXT NOT NULL,
+    UNIQUE(model_version, kaynak, asof_date, horizon_days, kol)
+);
+CREATE INDEX IF NOT EXISTS idx_pred_target ON predictions(target_date, kaynak);
+
+-- Giriş fiyatı AYRI tabloda: asof=T-1'de hüküm verilir ama giriş T'nin
+-- kapanışıdır ve o an HENÜZ BİLİNMEZ. Aynı satıra yazmak look-ahead olurdu.
+CREATE TABLE IF NOT EXISTS prediction_entries (
+    prediction_id     INTEGER PRIMARY KEY REFERENCES predictions(id),
+    giris_date        TEXT NOT NULL,
+    giris_gram_teorik REAL NOT NULL,  -- 3 işlem günü ort. (çıkışla SİMETRİK)
+    doldurma_utc      TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS prediction_outcomes (
+    prediction_id         INTEGER PRIMARY KEY REFERENCES predictions(id),
+    cozum_utc             TEXT NOT NULL,
+    cikis_date            TEXT NOT NULL,
+    cikis_gram_teorik     REAL NOT NULL,  -- hedef ±1 gün, 3 gün ortalaması
+    mevduat_yillik_pct    REAL,
+    gram_carry_kazanc_pct REAL NOT NULL,  -- (giris/cikis)×(1+net_faiz) − 1
+    roundtrip_maliyet_pct REAL NOT NULL,
+    hukum_dogru           INTEGER NOT NULL,
+    taban_dogru           INTEGER NOT NULL, -- "hep TUT" aynı pencerede doğru muydu
+    gram_etkisi_pct       REAL NOT NULL
+);
+
+-- Karneyi güzelleştirmek için geçmiş bir tahmini "düzeltmek" kaçınılmaz bir
+-- ayartıdır ("şu tahmin bozuktu, elle düzelteyim"). Şema bunu imkânsız kılar.
+CREATE TRIGGER IF NOT EXISTS trg_predictions_immutable
+BEFORE UPDATE OF hukum, skor, guven, ozellikler_json, asof_date, esik_pct,
+                 kapi_acik, horizon_days, target_date, kol
+ON predictions
+BEGIN
+    SELECT RAISE(ABORT, 'tahmin kaydi degistirilemez');
+END;
 """
 
 

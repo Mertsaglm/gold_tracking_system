@@ -26,6 +26,15 @@ _TABLES = [
     ("history_daily", "date", []),
     ("gld_tonnage", "date", []),
     ("ohlc_daily", "symbol, date", []),
+    # Tahmin kaydı: dump'a GİRMEK ZORUNDA. Actions stateless çalışıyor ve DB'yi
+    # her koşuda data/altin.sql'den restore ediyor — buraya eklenmezse karne
+    # her gün sessizce sıfırlanırdı.
+    # `id` ticks'in aksine DUMP'A GİRER: prediction_entries/outcomes ona referans
+    # veriyor. Hariç tutulsaydı restore'da yeni id'ler atanır ve giriş/sonuç
+    # bağları sessizce kopardı (tahmin var, karnesi yok).
+    ("predictions", "model_version, kaynak, asof_date, horizon_days, kol", []),
+    ("prediction_entries", "prediction_id", []),
+    ("prediction_outcomes", "prediction_id", []),
 ]
 
 

@@ -187,7 +187,7 @@ def _seriler(cfg: dict, con) -> tuple[list[tuple[str, float]], dict]:
     return [(r["date"], r["gram_teorik"]) for r in rows], dep
 
 
-def _asof_faiz(dep_tarihleri: Sequence[str], dep: dict, tarih: str) -> Optional[float]:
+def asof_faiz(dep_tarihleri: Sequence[str], dep: dict, tarih: str) -> Optional[float]:
     """`tarih`te BİLİNEN son mevduat faizi. Sonrasına asla bakmaz (look-ahead)."""
     import bisect
     i = bisect.bisect_right(dep_tarihleri, tarih)
@@ -210,7 +210,7 @@ def sat_engeli(cfg: dict, con, ufuklar: Optional[dict] = None) -> dict:
 
     def yap(i: int, j: int) -> Optional[float]:
         return gram_carry_gain_pct(fiyatlar[i], fiyatlar[j],
-                                   _asof_faiz(dep_t, dep, tarihler[i]),
+                                   asof_faiz(dep_t, dep, tarihler[i]),
                                    j - i, stopaj)
 
     out = {"n_gun": n, "ilk": tarihler[0] if n else None,
@@ -244,7 +244,7 @@ def alt_donem_kirilimi(cfg: dict, con, horizon: int,
                 if not (lo <= seri[i][0] <= hi):
                     continue
                 v = gram_carry_gain_pct(seri[i][1], seri[j][1],
-                                        _asof_faiz(dep_t, dep, seri[i][0]),
+                                        asof_faiz(dep_t, dep, seri[i][0]),
                                         j - i, stopaj)
                 if v is not None:
                     vals.append(v)

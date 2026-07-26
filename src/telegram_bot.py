@@ -223,6 +223,15 @@ def run_bot(cfg: dict) -> None:
                     from . import karar
                     send_message(cfg, karar.format_karar_md(karar.build_karar(cfg)),
                                  chat_id=cid)
+                elif text.startswith("/karne"):
+                    from . import db as _db, tahmin
+                    _c = _db.connect(cfg)
+                    try:
+                        _kol = "cekirdek" if "cekirdek" in text else "taktik"
+                        _t = tahmin.format_karne_md(tahmin.karne(cfg, _c, kol=_kol))
+                    finally:
+                        _c.close()
+                    send_message(cfg, _t, chat_id=cid)
                 elif text.startswith("/durum"):
                     send_message(cfg, _cmd_durum(cfg), chat_id=cid, parse_mode="HTML")
                 elif text.startswith("/rapor"):
@@ -243,6 +252,7 @@ def run_bot(cfg: dict) -> None:
                 elif text.startswith("/yardim") or text.startswith("/help"):
                     send_message(cfg, "Komutlar:\n"
                                       "/hukum — bugün ne yapayım (çekirdek + taktik)\n"
+                                      "/karne [cekirdek] — tahminlerim tuttu mu\n"
                                       "/durum · /rapor\n"
                                       "/net <tutar> <ay> [altın%] — enstrüman karşılaştırma\n"
                                       "/bilezik <gram> <işçilik%> [gramfiyat] — başabaş\n"

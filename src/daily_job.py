@@ -84,6 +84,24 @@ def run(cfg: dict) -> dict:
     except Exception as e:
         log.warning("zskor prova hata: %s", e)
 
+    # 3d) Tahmin kaydı — hüküm ver, girişi doldur, vadesi geleni çöz.
+    # SIRA ÖNEMLİ: rapordan (adım 5) ÖNCE olmalı ki rapordaki karne bugünün
+    # çözümlerini içersin. Çözüm kaydettikten sonra gelir — aynı koşuda
+    # yazılan tahmin zaten vadesi dolmadığı için çözülmez, zararsız.
+    # Bu adım `data/altin.sql` dump'ına yazar (dbdump._TABLES) — Actions
+    # stateless olduğu için kayıt ancak böyle hayatta kalır.
+    try:
+        from . import db as _db, tahmin
+        _con = _db.connect(cfg)
+        try:
+            result["tahmin_kaydedilen"] = len(tahmin.kaydet(cfg, _con))
+            result["tahmin_giris"] = tahmin.girisleri_doldur(cfg, _con)
+            result["tahmin_cozulen"] = tahmin.cozumle(cfg, _con)
+        finally:
+            _con.close()
+    except Exception as e:
+        log.warning("tahmin kaydi hata: %s", e)
+
     # 4) Pazartesi mutabakat
     if weekday == 0:
         try:

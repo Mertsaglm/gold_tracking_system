@@ -35,6 +35,9 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
 - **Karar:** raporun en başında **HÜKÜM** — bu ay ne kadar al (çekirdek) + satılır
   mı (taktik, doğuştan kapalı kapı). Amaç fonksiyonu **terminal gram sayısı**;
   ölçüm `reports/gram_engeli.md`. Bkz. `ai/DECISIONS.md` #007.
+- **Karne:** verilen her hüküm `predictions` tablosuna **değiştirilemez** yazılır
+  (SQLite trigger), vadesi gelince gram uzayında otomatik çözülür. `/karne` ile
+  okunur. Hüküm net olabiliyor çünkü sicili tutuluyor.
 - **Rapor:** gün sonu markdown → dosya + Telegram. Bot komutları: `/hukum`, `/durum`, `/rapor`.
 - **Loglama:** `logs/` altında dönen dosya logları (5 MB × 5).
 - **Kapsama:** rapor "son 24s veri kapsaması %X" satırı; **prim boşluğu** (kaynak boş dönerse de
@@ -207,7 +210,7 @@ cp .env.example .env      # doldur
 .venv/bin/python -m src.import_actions        # Actions CSV arşivini ana DB'ye aktar
 ```
 
-**Telegram komutları:** `/hukum` · `/durum` · `/rapor` · `/net <tutar> <ay> [altın%]` ·
+**Telegram komutları:** `/hukum` · `/karne [cekirdek]` · `/durum` · `/rapor` · `/net <tutar> <ay> [altın%]` ·
 `/bilezik <gram> <işçilik%>` · `/aipaket` · `/grafik`
 (Actions push-only çalıştığı için bu komutlar yerelde `src.telegram_bot` açıkken yanıt verir.)
 

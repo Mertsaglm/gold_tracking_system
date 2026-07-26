@@ -295,6 +295,14 @@ chart:
       zirve_yakin_atr: 1.0              # zirveye bu kadar yakınsa "üstte direnç YOK" uyarısı
       atr_rejim_p_dusuk: 33.0           # ATR% persentili < bu -> düşük oynaklık
       atr_rejim_p_yuksek: 66.0
+  # Görsel grafik (Bölüm 8f) — metnin EKİ, yerine geçmez.
+  gorsel:
+    gunluk_gonder: true        # daily_job raporun ardından PNG de gönderir
+    cikti: "data/grafik.png"
+    # matplotlib yalnız requirements.txt'te (daily.yml kurar). archive.yml
+    # kurmuyor ve kurmasına gerek yok: grafik_ciz.ciz() matplotlib yoksa
+    # None döner ve akış sessizce devam eder.
+
   dogrulama:
     yeniden_hesap_bar: 21               # walk-forward'da seviyeler kaç barda bir kurulur
     min_anlamli_fark_puan: 1.0          # |taban farkı| < bu puan -> "kenar yok"

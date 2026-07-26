@@ -38,6 +38,9 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
 - **Karne:** verilen her hüküm `predictions` tablosuna **değiştirilemez** yazılır
   (SQLite trigger), vadesi gelince gram uzayında otomatik çözülür. `/karne` ile
   okunur. Hüküm net olabiliyor çünkü sicili tutuluyor.
+- **Grafik:** 4 panel PNG (ons mum + destek/direnç · gram TL çizgi · iki motor ·
+  RSI) günlük raporun ardından Telegram'a gider. `/grafik` görsel + metin döner.
+  Gram paneli **çizgidir**: gram TL için OHLC türetilmez (bkz. `db.py` şeması).
 - **Rapor:** gün sonu markdown → dosya + Telegram. Bot komutları: `/hukum`, `/durum`, `/rapor`.
 - **Loglama:** `logs/` altında dönen dosya logları (5 MB × 5).
 - **Kapsama:** rapor "son 24s veri kapsaması %X" satırı; **prim boşluğu** (kaynak boş dönerse de

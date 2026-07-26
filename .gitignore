@@ -26,6 +26,11 @@ data/*.sqlite-shm
 # geçici önbellek (24s)
 data/trends_cache.json
 data/*.log
+# günlük üretilen grafik PNG'si — her koşuda yeniden çizilir, ~200 KB ve her
+# gün değişir. Binary DB'yi izlememe kararının (Faz 5) aynı gerekçesi:
+# diff'lenemeyen, her gün değişen binary git geçmişini şişirir.
+# Kaynağı repoda (src/grafik_ciz.py) → istenildiğinde yeniden üretilir.
+data/grafik.png
 logs/
 # scripts/backup.sh'ın ürettiği binary yedekler — repoya ASLA girmemeli
 # (Faz 5'te binary SQLite commit'lemek tam da çözülen sorundu)

@@ -84,7 +84,12 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 - 2026-07-26 — **Karar motoru Faz E**: `src/tahmin_backfill.py` aday taraması
   (karne DEĞİL — örneklem-içi üst sınır). 458 haftalık asof, 14 aday,
   **hiçbiri +3.18p eşiğini geçemedi.** Taktik kol kapalı kalıyor — sonuç bu.
-  `reports/gram_aday_taramasi.md`. **266 test.**
+  `reports/gram_aday_taramasi.md`.
+- 2026-07-26 — **Karar motoru Faz H**: `src/grafik_ciz.py` görsel grafik
+  (4 panel PNG), `send_photo`, `/grafik` artık görsel + metin, günlük rapora
+  eklendi. matplotlib `requirements.txt`'e girdi ama **lazy import** — yoksa
+  sessizce atlanır (`archive.yml` kurmuyor). `data/grafik.png` gitignore'da.
+  **273 test. Planlanan tüm kodlama fazları bitti.**
 
 ## 🔨 Devam Edenler
 - _(yok)_
@@ -102,7 +107,8 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
    raporda HÜKÜM bloğu var; `data/altin.sql`'de `INSERT INTO predictions`
    satırları görünüyor. **L-002 gereği push öncesi dump satır sayıları
    azalmamış olmalı.**
-3. **Faz H — görsel grafik** (matplotlib + sendPhoto), istenirse.
+3. **~2026-07-31: ilk 1-hafta tahmini çözülecek** — zincirin canlıda ilk tam
+   dönüşü. DoD: `prediction_outcomes`'ta satır var, `/karne` "1 çözülmüş" diyor.
    Faz F (SAT kapısı) kod işi değil, ~Ekim'de karneye bakılıp verilecek karar.
    Faz G (MTF) **askıda**: Faz E hiçbir aday bulamadı, yeni gösterge eklemenin
    ölçülmüş bir gerekçesi yok.

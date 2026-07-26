@@ -3,3 +3,6 @@ PyYAML>=6.0
 yfinance>=0.2.40
 pytrends>=4.9
 pytest>=8.0
+# Görsel grafik (Bölüm 8f). Yalnız daily.yml kurar; archive.yml kurmaz ve
+# kurmasına gerek yok — src/grafik_ciz.py matplotlib yoksa sessizce atlar.
+matplotlib>=3.8

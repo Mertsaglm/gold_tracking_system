@@ -44,6 +44,33 @@ def _call(method: str, **params):
     return r.json()
 
 
+def send_photo(cfg: dict, path: str, caption: str = "",
+               chat_id: str | None = None) -> bool:
+    """PNG gönderir. Başarısızlık AKIŞI BOZMAZ — grafik metnin ekidir, yerine
+    geçmez; gönderilemezse rapor yine de gider.
+
+    Caption Telegram'da 1024 karakterle sınırlı (mesaj sınırı 4096 değil).
+    """
+    from pathlib import Path
+    p = Path(path)
+    if not p.exists():
+        log.warning("grafik dosyasi yok: %s", path)
+        return False
+    cid = chat_id or _chat_id()
+    try:
+        with open(p, "rb") as f:
+            r = requests.post(API.format(token=_token(), method="sendPhoto"),
+                              data={"chat_id": cid, "caption": caption[:1024]},
+                              files={"photo": (p.name, f, "image/png")}, timeout=60)
+        r.raise_for_status()
+        log.info("telegram: grafik gonderildi (chat=…%s, %d KB)",
+                 str(cid)[-3:], p.stat().st_size // 1024)
+        return True
+    except Exception as e:
+        log.warning("grafik gonderilemedi: %s", e)
+        return False
+
+
 def allowed_chats(cfg: dict) -> set[str]:
     """İzinli sohbet kimlikleri: .env TELEGRAM_CHAT_ID + config ekstralar."""
     ids = set()
@@ -244,10 +271,16 @@ def run_bot(cfg: dict) -> None:
                     from . import aipaket
                     send_message(cfg, aipaket.build_prompt(cfg), chat_id=cid)
                 elif text.startswith("/grafik"):
-                    from . import chart
+                    from . import chart, grafik_ciz
                     # refresh=False: uzun yoklama döngüsü 30 sn'lik yfinance çağrısında
                     # asılmasın; günlük OHLC'yi daily_job zaten güncelliyor.
                     _t = chart.format_chart_md(chart.build_chart(cfg, refresh=False))
+                    # Önce GÖRSEL, sonra metin: grafik "nerede duruyoruz"u tek
+                    # bakışta verir, metin "niçin"i anlatır. İkisi de gider —
+                    # görsel çizilemezse (matplotlib yok) metin yine gider.
+                    _p = grafik_ciz.ciz(cfg)
+                    if _p:
+                        send_photo(cfg, _p, caption="Altın Takip — grafik", chat_id=cid)
                     send_message(cfg, _t or "Grafik verisi yok.", chat_id=cid)
                 elif text.startswith("/yardim") or text.startswith("/help"):
                     send_message(cfg, "Komutlar:\n"

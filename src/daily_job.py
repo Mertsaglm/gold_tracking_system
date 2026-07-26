@@ -124,6 +124,21 @@ def run(cfg: dict) -> dict:
         log.warning("rapor hata: %s", e)
         result["rapor_hata"] = str(e)
 
+    # 6) Görsel grafik — rapordan SONRA ve AYRI try/except'te.
+    # Ayrı olmasının sebebi: matplotlib ağır bir bağımlılık ve grafik metnin
+    # EKİDİR, yerine geçmez. Çizim ya da gönderim patlarsa raporun gitmiş
+    # olması değişmez; iş bu adımda bitmiş sayılır.
+    if cfg.get("chart", {}).get("gorsel", {}).get("gunluk_gonder", True):
+        try:
+            from . import grafik_ciz
+            p = grafik_ciz.ciz(cfg)
+            result["grafik"] = p
+            if p and cfg["telegram"]["enabled"]:
+                from .telegram_bot import send_photo
+                send_photo(cfg, p, caption="Altın Takip — günlük grafik")
+        except Exception as e:
+            log.warning("grafik hata: %s", e)
+
     log.info("daily_job: %s", {k: v for k, v in result.items() if k != "import"})
     return result
 

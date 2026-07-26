@@ -61,6 +61,36 @@ güncelliyor?" Cevap "kimse / elle" ise ya otomatiğe bağla ya da STATE.md'ye
 
 ---
 
+## L-002 — 2026-07-26 — `git pull` dump'ı tazeler, SQLite'ı tazelemez
+
+**Olay:** Oturum başında kural gereği `git pull` yapıldı (13 commit geride) ve
+`data/altin.sql` uzak sürüme güncellendi. Ama `data/altin.sqlite` **gitignore'da**
+olduğu için pull'dan etkilenmedi — 25 Tem 00:26'da kalmıştı. Sonra bir DoD
+kontrolü için `python -m src.dbdump` çalıştırıldı; dump **yerel sqlite'tan**
+üretildiği için taze dump geriye sarıldı ve commit'lendi:
+`prim_history` 251 → **238**, `ticks` 14 511 → **13 109**. Yani ~1.5 günlük
+üretim verisi sessizce silindi.
+
+**Ders:** L-001'in daha sinsi hali. Orada yerel *repo* eskiyordu ve fark
+görülebiliyordu; burada eskiyen şey **git'in izlemediği türetilmiş dosya**.
+`git status` temiz görünür, `git pull` başarılı olur, ama sqlite ile dump
+birbirinden ayrışmıştır. Bu ayrışma ancak dump alındığında ve iş işten geçtikten
+sonra fark edilir.
+
+**Kural:**
+1. Yerelde **`python -m src.dbdump` çalıştırma.** Dump üretimi Actions'ın işi
+   (`daily.yml` adımı). Yerelde gerekiyorsa **önce `python -m src.restore_db`**
+   ile sqlite'ı dump'tan tazele, sonra dump al.
+2. `git pull` sonrası DB'ye dokunacaksan refleks: `restore_db`.
+3. `data/altin.sql` bir commit'te değişiyorsa **satır sayıları azalmamalı.**
+   Azalıyorsa dur ve bak: `grep -c "INSERT INTO <tablo>" data/altin.sql`
+   commit öncesi/sonrası karşılaştır.
+
+**Genel ilke:** Türetilmiş bir dosya git'te izleniyor ama kaynağı izlenmiyorsa,
+o ikilinin senkronu **git'in değil senin sorumluluğun**dur.
+
+---
+
 ## L-001 — 2026-07-24 — Yerel repo üretimin gerisinde kalır
 
 **Olay:** Denetimde yerel checkout'a bakıldı; veri 21 Tem'de "durmuş" göründü.

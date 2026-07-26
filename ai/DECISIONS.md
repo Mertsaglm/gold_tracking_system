@@ -102,6 +102,38 @@ Disiplinle değil, imkânsızlıkla çözülür.
 aksine — dump'a GİRER: `prediction_entries/outcomes` ona referans veriyor,
 hariç tutulsaydı restore'da bağlar sessizce kopardı.
 
+### G) Tek özellik giriş noktası (Faz D, aynı gün)
+
+`src/ozellikler.py` `feature_vector(cfg, con, asof_date)` — canlı üretim ve
+tarihsel replay **aynı fonksiyonu** çağırır. Look-ahead artık disiplinle değil
+**yapısal olarak** engelleniyor: `asof`'tan sonraki hiçbir satırı okumayan tek
+kod yolu budur. `tahmin.kaydet` ve `karar.build_karar` ikisi de buraya bağlandı.
+
+41 özellik: momentum (21/63/126/252g), 200GMA konumu, gerçekleşen oynaklık,
+Donchian 20/55, Wilder ATR + RSI (ons & kur gerçek OHLC'den; gram yalnız
+kapanıştan — `db.py` kuralı), ons/kur bacağı payı, makro (mevduat, politika
+faizi, enflasyon beklentisi, reel net mevduat).
+
+**Yayın gecikmesi bir look-ahead'i kapattı.** `evds_daily.date` dönem başıdır;
+eski yol (`evds_job.context`) gecikme uygulamıyordu. Aynı gün ölçülen fark:
+reel net mevduat **%12.7 → %13.1**. Eski sayı hafifçe kontamineydi.
+
+Ayrıca `feature_vector` TÜFE'ye **düşmez** (`evds_job.context` düşüyor). Sebep:
+TÜFE serisi 7 aydır bayat; sessiz yedeğe düşme replay'de canlıdan farklı
+davranırdı — kesişim kuralının ihlali olurdu.
+
+**Test kanıtı:** `test_look_ahead_gelecek_silinince_ayni_sonuc` — `asof` sonrası
+tüm satırlar silinince birebir aynı sözlük dönmeli. Testin gerçekten
+düşebildiği, `asof` filtresi kasten kaldırılarak doğrulandı (3 test düştü,
+`gram_getiri_6ay` 16.3 → 11531 sızıntısını isim isim gösterdi).
+
+**Gözlem, kurala DÖNÜŞTÜRÜLMEDİ:** kur oynaklığı bugün %1.42 (son 60 günün 59'u
+artı) — 10 yılın en sıkı sürünen kur rejimi (2018 %43.0 · 2021 %23.9 · 2023
+%15.1). Sürünen kur + yüksek mevduat faizi, "sat ve TL'de otur"un kâğıt üstünde
+en cazip göründüğü rejimdir; oysa en kötü iki SAT ayı (gram −33%, −36%) tam da
+sürünmenin bittiği aylardır. Ölçülmemiş bir sinyali hükme sokmak bu ADR'nin
+yasakladığı şey olduğu için yalnız özellik olarak kayıtta.
+
 **Tekrar gözden geçir:** (a) taktik kapısı açılırsa veya 30 tahmin çözülüp şart
 sağlanmazsa — o zaman "trade kolu kalıcı kapalı" ADR'si yazılır; (b) ALTINS1'e
 geçilirse eşik %1.20 → %0.40 düşer, taktik kol yeniden değerlendirilir;

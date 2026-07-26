@@ -145,7 +145,7 @@ def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
     UNIQUE kısıtı sayesinde sessizce atlanır. Bu, `daily_job`'un aynı gün iki kez
     koşmasına dayanıklı olmasını sağlar.
     """
-    from . import karar
+    from . import karar, ozellikler as oz
     k = cfg["karar"]
     asof = asof_date or _son_kapali_gun(con)
     if not asof:
@@ -154,12 +154,10 @@ def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
 
     tarihler, _ = _fiyat_serisi(con)
     engel = gram.engel_oku(cfg)
-    ozellikler = {}
-    try:
-        from .evds_job import context as evds_context
-        ozellikler["reel_net_mevduat"] = evds_context(cfg).get("reel_net_mevduat")
-    except Exception as e:
-        log.warning("evds baglami alinamadi: %s", e)
+    # TEK GİRİŞ NOKTASI: canlı üretim ve tarihsel replay aynı fonksiyonu çağırır.
+    # Buradan başka bir yolla veri okumak look-ahead garantisini düşürür
+    # (bkz. ozellikler.py modül docstring'i).
+    ozellikler = oz.feature_vector(cfg, con, asof)
 
     simdi = util.utcnow().isoformat()
     yazilan = []
@@ -189,6 +187,8 @@ def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
                  (ufuk_engel or {}).get("taktik_esik_puan" if kol == "taktik"
                                         else "cekirdek_esik_puan"),
                  1 if kapi["acik"] else 0,
+                 # Özellik vektörünün TAMAMI saklanır: bir hükmü sonradan
+                 # denetlemek ancak o an neyi gördüğünü bilerek mümkün.
                  json.dumps({**ozellikler, "gerekce": h_res["gerekce"]},
                             ensure_ascii=False)))
             if cur.rowcount:

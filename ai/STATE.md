@@ -75,7 +75,12 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 - 2026-07-26 — **Karar motoru Faz C**: `src/tahmin.py` (kayıt/giriş/çözüm/karne),
   3 yeni tablo + `trg_predictions_immutable`, `daily_job` adım 3d, `/karne`
   komutu, HÜKÜM bloğunda karne satırı. **Canlı örneklem-dışı kayıt BAŞLADI** —
-  ilk çözüm ~2026-07-31 (1 hafta), ~2026-08-22 (1 ay). **232 test.**
+  ilk çözüm ~2026-07-31 (1 hafta), ~2026-08-22 (1 ay).
+- 2026-07-26 — **Karar motoru Faz D**: `src/ozellikler.py` tek giriş noktası
+  (41 özellik); `tahmin.kaydet` + `karar.build_karar` ikisi de buraya bağlandı.
+  Look-ahead artık yapısal olarak imkânsız; test sızıntı enjekte edilerek
+  düşebildiği doğrulandı. EVDS yayın gecikmesi bir kontaminasyonu kapattı
+  (reel net mevduat %12.7 → %13.1). **250 test.**
 
 ## 🔨 Devam Edenler
 - _(yok)_
@@ -89,11 +94,12 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 1. **İlk canlı çözümü doğrula (~2026-07-31).** DoD: `prediction_outcomes`'ta
    1-hafta tahmini çözülmüş; `gram_carry_kazanc_pct` makul; `/karne` "1 çözülmüş"
    diyor. **Bu, tüm zincirin (kaydet→giriş→çözüm) canlıda ilk kez tam dönüşü.**
-2. **Faz D — `src/ozellikler.py`** tek giriş noktası (canlı + replay aynı
-   fonksiyon → look-ahead yapısal olarak imkânsız). DoD: `asof` sonrası satırlar
-   silinmiş DB kopyasında `feature_vector` birebir aynı sözlüğü döndürüyor.
-3. **Faz E — tarihsel replay** = **karne DEĞİL, aday taraması.** Eşikler bu
+2. **Faz E — tarihsel replay** = **karne DEĞİL, aday taraması.** Eşikler bu
    veriye bakılarak seçildi → sahte OOS. Rapor başına bu uyarı zorunlu.
+   `ozellikler.feature_vector` hazır; replay onu haftalık asof'larla çağıracak.
+3. **Faz H — görsel grafik** (matplotlib + sendPhoto), istenirse. Faz F (SAT
+   kapısı) kod işi değil, ~Ekim'de karneye bakılıp verilecek karar; Faz G (MTF)
+   yalnız E bir aday bulursa.
 
 ## 📦 Backlog (şimdi değil, unutma da)
 - **`chart.measure_edge` faz artefaktı** (ADR #007-E) — taban tek fazdan

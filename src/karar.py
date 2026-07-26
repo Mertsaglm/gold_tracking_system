@@ -188,26 +188,28 @@ def karar_ver(ozellikler: dict, cfg: dict, engel: Optional[dict],
 # ================= IO + biçimleme =================
 
 def build_karar(cfg: dict) -> dict:
-    """Canlı hüküm: EVDS bağlamı + önbelleklenmiş engel ölçümü + canlı karne."""
-    from . import gram
-    ozellikler = {}
+    """Canlı hüküm: özellik vektörü + önbelleklenmiş engel ölçümü + canlı karne.
+
+    Özellikler `ozellikler.feature_vector` üzerinden gelir — tahmin kaydıyla
+    AYNI yol. İkinci bir okuma yolu açmak, canlı hükmün kaydedilen hükümden
+    farklı girdiyle üretilmesi demek olurdu; karne o an anlamını yitirirdi.
+    """
+    from . import db, gram, ozellikler as oz, tahmin
+    ozellikler, k_karne = {}, None
     try:
-        from .evds_job import context as evds_context
-        ozellikler["reel_net_mevduat"] = evds_context(cfg).get("reel_net_mevduat")
-    except Exception as e:                      # rapor bloğu yine de çıksın
-        log.warning("evds baglami alinamadi: %s", e)
-    k_karne = None
-    try:
-        from . import db, tahmin
         con = db.connect(cfg)
         try:
+            asof = oz.son_kapali_gun(con)
+            if asof:
+                ozellikler = oz.feature_vector(cfg, con, asof)
             k_karne = tahmin.karne(cfg, con)
         finally:
             con.close()
-    except Exception as e:
-        log.warning("karne okunamadi: %s", e)
+    except Exception as e:                      # rapor bloğu yine de çıksın
+        log.warning("ozellik/karne okunamadi: %s", e)
     out = karar_ver(ozellikler, cfg, gram.engel_oku(cfg), karne=k_karne)
     out["karne"] = k_karne
+    out["asof_date"] = ozellikler.get("asof_date")
     return out
 
 
@@ -220,7 +222,11 @@ def format_karar_md(k: dict) -> str:
         + (f"  ({c['carpan']:.2f}× normal alım)" if c["carpan"] != 1.0 else ""),
         f"**TAKTİK:** {_ETIKET[t['hukum']]}", "",
         f"_Ufuk {k['ufuk']} ({k['ufuk_gun']} gün) · model {k['model_version']} · "
-        f"enstrüman `{k['enstruman']}` · SAT kapısı: {kapi_txt}_", "",
+        f"enstrüman `{k['enstruman']}` · SAT kapısı: {kapi_txt}_",
+        # asof gösterilir: hüküm SON TAM KAPANMIŞ güne dayanır, bugüne değil.
+        # Rapor 18:35 TR'de çıkıyor ve o saatte GC=F'in bugünkü kapanışı yok.
+        (f"_Veri kesimi (asof): {k['asof_date']} — son tam kapanmış gün_"
+         if k.get("asof_date") else ""), "",
         f"**Neden {_ETIKET[c['hukum']].split(' —')[0]} (çekirdek):**",
     ]
     L += [f"- {g}" for g in c["gerekce"]]

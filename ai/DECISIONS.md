@@ -6,6 +6,86 @@
 
 ---
 
+## #007 — 2026-07-26 — Karar motoru: amaç fonksiyonu GRAM, taktik kol doğuştan kapalı
+
+**Tetikleyen:** Mert: *"bu proje benim hiç işimi görmez, oldukça net şekilde
+tahminlerini söylemesi lazım"* + *"her ay düzenli alıyorum, düşme riski varsa
+satıp geri toplamak istiyorum — **yani elimdeki gramı artırmalıyım**."*
+
+### A) Amaç fonksiyonu = terminal GRAM sayısı
+
+Son cümle projeye eksik olan şeyi verdi. Ölçüt gram olunca TL enflasyonu
+artefaktı ölür (`backtest._regime_stats_table` bunun için tabandan-fark sunmak
+zorunda kalıyordu) ve her iddia yanlışlanabilir olur.
+
+### B) En riskli varsayım ÖNCE ölçüldü — ve düştü
+
+"Trade ederek gram artırılabilir" varsayımı, kod yazılmadan ölçüldü
+(2561 gün, 2016-01-04→2026-07-24, örtüşmeyen pencere, tüm fazlar, TP.TRY.MT03
+mevduat carry'si net dahil). **"SAT → mevduatta bekle → geri al" işleminin gram
+kazancı:**
+
+| Ufuk | N | Ortalama | SAT kazanır | Maliyet sonrası | En kötü |
+|---|---:|---:|---:|---:|---:|
+| 1 hafta | 512 | −0.47% | %42 | %24 | −24.0% |
+| 1 ay | 121 | **−1.99%** | %36 | %28 | **−36.2%** |
+| 3 ay | 40 | −6.14% | %22 | %19 | −49.4% |
+
+Alt dönem: 2016-19 −1.35% · 2020-22 −2.84% · 2023-26 −1.98% → **her rejimde aynı
+işaret, yapısal** (TL mevduat faizi ≈ TL değer kaybı ≈ gram TL sürüklenmesi).
+
+Gidiş-dönüş maliyeti (`calculators.instrument_net`): banka_hesap **%1.20**,
+altins1 **%0.40**, fiziki **%3.00**. → Bir SAT sinyalinin 1 ay ufkunda tabanı
+**+3.18 puan** yenmesi gerekiyor. Taranan adayların en iyisi +1.4p (t≈1.4).
+
+**Sonuç: satmak ortalamada gram KAYBETTİRİR ve bunu tersine çeviren sinyal henüz
+ölçülmedi.**
+
+### C) Karar: iki kol, biri doğuştan kapalı
+
+- **ÇEKİRDEK** (aylık alımı zamanlar) — **açık, birincil.** Gidiş-dönüş makası
+  ödemez → eşiği %1.20 daha düşük. Kademeler bilerek DAR (1.25× / 0.75×): kapı
+  değişkeninin (reel net mevduat) ölçülen kenarı t≈1.4, yani en iyi aday ama
+  kanıt değil; 2x/0.5x agresiflik bu kanıtla savunulamaz. Kol alımı asla KESMEZ.
+- **TAKTİK** (sat/geri al) — **doğuştan KAPALI.** `karar.taktik.aktif: false`.
+  Açılma şartı önceden config'e yazıldı ve gevşetilmez: canlı karnede ≥30
+  çözülmüş tahmin **ve** gram etkisi > 0 **ve** isabet farkı > +10p.
+
+Bu, prim z-skoru kapısının (`signals.zscore_dry_run`) birebir aynısıdır. Sistem
+"yapamam" demez; **"henüz hakkını kazanmadım, şu sayı görününce söyleyeceğim"**
+der. Kural `tests/test_karar.py::test_kapi_kapaliyken_en_guclu_sinyal_bile_tut`
+ile kilitlendi.
+
+### D) Ağırlık öğrenme REDDEDİLDİ
+
+1 ay ufkunda 121 örtüşmeyen pencere, ~5 bağımsız makro epizot var. 7 bileşen ×
+3 ufuk = 21 ağırlığı "kayıt biriktikçe yeniden kestirmek" ders kitabı
+aşırı-uydurmadır; üstelik geri besleme sistemin kendi gürültüsünü onaylamasına
+yol açar. Yerine: **tek kapı değişkeni + sabit önceden-kayıtlı eşikler**; diğer
+6 gösterge bağlam olarak gösterilir, **oy vermez**.
+
+### E) Yan bulgu: `chart.measure_edge`'de faz artefaktı
+
+Taban `range(len(closes))` ile 0. fazdan başlıyor, sinyal kümesi başka fazdan.
+Ölçüldü — yalnız faz seçiminden gelen taban yayılımı:
+
+| | h=21 | h=63 | h=126 |
+|---|---:|---:|---:|
+| ons USD | 0.91p | 2.64p | 7.46p |
+| gram TL | 1.18p | 3.23p | 11.58p |
+
+`chart.dogrulama.min_anlamli_fark_puan = 1.0` → h≥63'te faz gürültüsü eşiğin
+3-11 katı. **`reports/grafik_dogrulama.md`'nin uzun ufuk "zayıf kanıt" bulguları
+faz artefaktından ayırt edilemez.** Yeni motor bu hatayı miras almıyor:
+`gram.phase_matched_baseline` tüm fazlar üzerinden ölçer ve yayılımı raporlar.
+
+**Tekrar gözden geçir:** (a) taktik kapısı açılırsa veya 30 tahmin çözülüp şart
+sağlanmazsa — o zaman "trade kolu kalıcı kapalı" ADR'si yazılır; (b) ALTINS1'e
+geçilirse eşik %1.20 → %0.40 düşer, taktik kol yeniden değerlendirilir;
+(c) `chart.validate` faz düzeltmesiyle yeniden koşulmalı.
+
+---
+
 ## #006 — 2026-07-25 — Backlog kapatma: FRED yedeği, z-skor kuru provası, çeyrek primi, tek kaynak eşik
 
 Dört açık iş sırayla kapatıldı. Her biri önce **ölçüldü**, sonra karar verildi.

@@ -3,8 +3,9 @@
 > Usta her oturumun başında bu dosyayı okur, sonunda günceller.
 > KISA TUT: ~100 satırı aşınca eskiyi `ai/archive/STATE-YYYY-MM.md`'ye taşı.
 
-**Son güncelleme:** 2026-07-25
-**Aktif milestone:** İzleme + **12 Eylül 2026 z-skor kapı açılışına hazırlık**
+**Son güncelleme:** 2026-07-26
+**Aktif milestone:** **Karar motoru** (ADR #007) — sistem artık hüküm veriyor,
+sırada verdiği hükmün karnesini tutması var
 
 ---
 
@@ -21,6 +22,13 @@ hiçbir şey çalıştırması gerekmiyor. İki workflow:
 **Sağlık ölçütleri (normal aralık):** kapsama %60-100 · geçersiz kayıt ~%7 (retry
 sonrası düşmesi bekleniyor) · uzlaşı paneli **6/7 gösterge** (reel faiz FRED ölü
 olduğu için kapalı, bilerek).
+
+**AMAÇ FONKSİYONU: terminal GRAM sayısı** (TL getirisi değil — ADR #007).
+Raporun en başında **HÜKÜM** bloğu var; `/hukum` ile Telegram'dan da sorulur.
+İki kol: **ÇEKİRDEK** (aylık alım şiddeti, açık) + **TAKTİK** (sat/geri al,
+**doğuştan kapalı**). Ölçüldü: satmak 1 ayda ortalama **−1.99% gram**
+kaybettiriyor, bir sinyalin tabanı **+3.18p** yenmesi gerek, aşan aday yok.
+Ölçüm `reports/gram_engeli.md` + `data/gram_engeli.json` (önbellek).
 
 **Yerelde çalışmadan önce daima `git pull`** — Actions sürekli commit atıyor
 (bkz. LESSONS L-001).
@@ -40,6 +48,10 @@ olduğu için kapalı, bilerek).
 | **~2026-09-05** (kapıdan ~1 hafta önce) | ⚠️ **Z TABANI KARARI** — en kritik iş | `data/zskor_prova.jsonl` okundu; z **kayıt** tabanında mı **gün** tabanında mı hesaplanacak karara bağlandı; ADR `ai/DECISIONS.md`'ye yazıldı; kod tek tabanı kullanıyor |
 | **~2026-09-12** | 🔔 **KAPI AÇILIŞI** (60 geçerli gün) | prim z + çeyrek z sinyalleri ve `z > 2` bildirimi kendiliğinden devreye girer. Kod hazır, **ek iş yok** — yalnız izle |
 | **2026-09-12 → 09-19** | Kapı sonrası ilk hafta izleme | Günlük tavan (6) doluyor mu? z alarmları diğer bildirimleri bastırıyor mu? Gerekirse `alerts.prim_z` eşiği ayarlanır |
+| **Faz C biter bitmez** | Tahmin karnesi saatini başlat | İlk `predictions` satırı yazıldı; 1-ay tahmini ~30 gün sonra çözülecek |
+| **Faz C + ~30 çözülmüş tahmin** (≈2026-10, kayıt başlangıcına bağlı) | ⚠️ **TAKTİK KAPI KARARI** | `karne` okundu; şart (N≥30 **ve** gram etkisi>0 **ve** isabet farkı>+10p) sağlandı mı? Sağlandıysa `karar.taktik.aktif: true` + ADR. **Sağlanmadıysa "trade kolu kalıcı kapalı" ADR'si yazılır — bu da bir sonuçtur** |
+| **~2026-10** (3 ay yeni veri) | `python -m src.gram engel` tazele | `data/gram_engeli.json` yeni tarihli; taban ve eşikler değişti mi bakıldı |
+| **Faz E'den önce** | `chart.validate` faz düzeltmesiyle yeniden koş | `reports/grafik_dogrulama.md` faz-eşleştirmeli tabanla üretildi; eski uzun-ufuk bulguları gözden geçirildi (ADR #007-E) |
 | **~200 rapora ulaşınca** (≈2027 Şubat) | `reports/` yıl klasörlerine böl | `reports/2026/`, `reports/2027/`; README yolu güncel |
 
 **Kapı tahmini nasıl hesaplandı (2026-07-25):** 16 geçerli gün / 18 takvim günü =
@@ -56,6 +68,11 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 - 2026-07-24 — Doküman düzeni, `.gitignore` onarımı, ölü script temizliği
 - 2026-07-25 — **Backlog'un tamamı kapatıldı** (DECISIONS #006): FRED yedeği,
   z-skor kuru provası, çeyrek primi kuralı, tek kaynak eşik. **171 test.**
+- 2026-07-26 — **Karar motoru Faz A+B** (DECISIONS #007): `src/gram.py` (gram
+  hakemi + faz-düzeltmeli taban), `src/karar.py` (iki kollu hüküm + sert kapı),
+  rapor başına HÜKÜM bloğu, `/hukum` komutu, `config.yaml karar:` bölümü.
+  En riskli varsayım ("trade ederek gram artırılabilir") ölçüldü ve **düştü**.
+  **207 test.**
 
 ## 🔨 Devam Edenler
 - _(yok)_
@@ -66,11 +83,30 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 - Z-skor kapısı → ~09-12
 
 ## 🎯 Sıradaki 3 İş
-1. Bekleyen 17 dosyayı commit + push et — **DoD:** GitHub'da, Actions yeşil
-2. 25 Tem akşamki günlük çalışmada yeni adımları doğrula (takvim satırı 2)
-3. ~28 Tem'de retry etkisini ölç (takvim satırı 3)
+1. **Faz C — tahmin kaydı + karne** (`src/tahmin.py` + 3 tablo + immutability
+   trigger). **Bu, tek gerçek örneklem-dışı kaydı başlatır — saat işlemeye
+   başlar.** DoD: `daily_job` bir koşuda 6 tahmin satırı yazıyor; `UPDATE
+   predictions SET hukum=...` ABORT veriyor; `/karne` çalışıyor.
+   **Not:** `dbdump._TABLES`'a 3 tabloyu eklemeyi UNUTMA — yoksa dump/restore
+   döngüsü tahminleri sessizce siler.
+2. **Faz D — `src/ozellikler.py`** tek giriş noktası (canlı + replay aynı
+   fonksiyon → look-ahead yapısal olarak imkânsız). DoD: `asof` sonrası satırlar
+   silinmiş DB kopyasında `feature_vector` birebir aynı sözlüğü döndürüyor.
+3. **Faz E — tarihsel replay** = **karne DEĞİL, aday taraması.** Eşikler bu
+   veriye bakılarak seçildi → sahte OOS. Rapor başına bu uyarı zorunlu.
 
 ## 📦 Backlog (şimdi değil, unutma da)
+- **`chart.measure_edge` faz artefaktı** (ADR #007-E) — taban tek fazdan
+  ölçülüyor; yayılım h=63'te 2.6-3.2p, h=126'da 7.5-11.6p, `min_anlamli_fark_puan`
+  ise 1.0. Uzun ufuk "zayıf kanıt" bulguları gürültünün içinde. Düzeltme hazır
+  (`gram.phase_matched_baseline`), `chart.py`'ye taşınmalı.
+- **TÜFE serisi 7 aydır bayat** (`TP.FE.OKTG01` son değer 2025-12-01);
+  `evds_job.context` sessizce `enf_bek_12ay`'a düşüyor. Reel net mevduat artık
+  **çekirdek kolun kapı değişkeni** → bu sessiz yedeğe düşme görünür olmalı.
+- **ALTINS1 gidiş-dönüş %0.40 vs banka hesabı %1.20** (3× ucuz). Taktik kapı
+  açılırsa enstrüman seçimi eşiği doğrudan değiştirir (3.18p → 2.38p).
+- `prim_series(only_valid=False)` ölü argüman; `weekend=0` koşulu `indicative=0`
+  altında fazlalık, 4 yerde tekrarlanıyor.
 - **Reel faiz göstergesi kapalı** — FRED ölü, ücretsiz TIPS reel getiri muadili yok.
   FRED geri gelirse kendiliğinden açılır. Panel 6/7 ile çalışıyor, öncelik düşük.
 - **Çeyrek priminde sezon düzeltmesi yok** — yıllar süren arşiv ister; düz z sezonu

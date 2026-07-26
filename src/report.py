@@ -181,6 +181,17 @@ def build_report(cfg: dict) -> str:
     lines.append(f"**Veri durumu:** {tag}  ·  _{latest['reason']}_")
     lines.append("")
 
+    # ---- HÜKÜM (raporun EN BAŞI) ----
+    # Neden burada: sinyaller eskiden 8. bölümdeydi ve kimse oraya kadar
+    # okumuyordu. Kullanıcının rapordan beklediği tek şey "bugün ne yapayım?" —
+    # o cevap ilk ekranda olmalı, Telegram'da da öyle görünür.
+    if cfg.get("karar", {}).get("enabled", False):
+        try:
+            from . import karar
+            lines.append(karar.format_karar_md(karar.build_karar(cfg)))
+        except Exception as e:
+            log.warning("hukum blogu hata: %s", e)
+
     # ---- Fiyat özeti ----
     lines.append("## Fiyat Özeti")
     lines.append("")

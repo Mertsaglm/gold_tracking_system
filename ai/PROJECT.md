@@ -7,9 +7,15 @@
 Altın Takip Sistemi (`gold_tracking_system`)
 
 ## Tek Cümlelik Amaç
-Kapalıçarşı has altın primini, makası ve teknik göstergeleri otonom izleyip
-günlük rapor + anlık anomali bildirimini Telegram'a basan; GitHub Actions
-üstünde kendi kendine çalışan bir gözlem/analiz sistemi.
+Mert'in **elindeki gram sayısını artırmasına** yardım eden kişisel karar-destek
+sistemi: Kapalıçarşı primini, makası ve göstergeleri otonom izler, her gün
+**net bir hüküm** verir (bu ay ne kadar al · satılır mı), verdiği her hükmü
+kaydedip **karnesini tutar**; GitHub Actions üstünde kendi kendine çalışır.
+
+## Amaç Fonksiyonu (her hüküm buna karşı ölçülür)
+**Terminal gram sayısı** — TL getirisi değil. Ölçüt gram olunca TL enflasyonu
+artefaktı kendiliğinden ölür ve her iddia yanlışlanabilir olur: 100 gramla
+başladın, 108 gram bitirdin → tuttu.
 
 ## Kapsam (Ne VAR)
 - **Veri toplama:** Truncgil (gram/çeyrek/kur) + yfinance (ons XAU, GC=F OHLC) +
@@ -25,7 +31,10 @@ günlük rapor + anlık anomali bildirimini Telegram'a basan; GitHub Actions
 - **Telegram bot komutları:** `/durum` `/rapor` `/net` `/bilezik` `/grafik` `/aipaket`
 
 ## Kapsam Dışı (Ne YOK)
-- Yatırım tavsiyesi (her rapor "genel bilgilendirme amaçlıdır" ibaresiyle biter)
+- **Üçüncü kişilere** yatırım tavsiyesi / danışmanlık servisi. Sistem Mert'in
+  **kişisel** karar-destek aracıdır; kendisine net hüküm verir ve o hükmün
+  karnesini tutar. Disclaimer satırı kalır (maliyeti sıfır) ama çıktıyı
+  sulandırmaz — dürüstlük hedge dilinden değil KARNEDEN gelir (ADR #007).
 - Otomatik alım-satım / emir iletimi
 - Ayrı sunucu / 7x24 servis — **şimdilik** yok, üretim GitHub Actions cron.
   Oracle Cloud'a geçiş düşünüldü ama **ertelendi (iptal değil)**; masada duran bir

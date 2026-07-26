@@ -141,6 +141,87 @@ backtest:
   kur_vol_annual_threshold_pct: 20.0
   dca_monthly_try: 1000                 # aylık DCA tutarı (nominal karşılaştırma)
 
+# ----------------- Karar motoru (Bölüm 8) -----------------
+# AMAÇ FONKSİYONU: terminal GRAM sayısı. TL getirisi DEĞİL.
+#
+# ÖLÇÜLEN ENGEL (2026-07-26, 2561 gün 2016-01-04→2026-07-24, örtüşmeyen pencere,
+# TP.TRY.MT03 mevduat carry'si net dahil): "SAT → mevduat → geri al" işleminin
+# gram kazancı ortalaması 1 haftada -0.46%, 1 ayda -1.98%, 3 ayda -6.20%,
+# 6 ayda -12.71%. SAT'ın kazanma oranı sırasıyla %43/%36/%28/%10.
+# Alt dönemlerde İŞARET DEĞİŞMİYOR (2016-19 -1.40, 2020-22 -2.67, 2023-26 -2.07)
+# → dönem artefaktı değil, yapısal: TL mevduat faizi ≈ TL değer kaybı ≈ gram TL
+# sürüklenmesi. Yani SATMAK ortalamada gram KAYBETTİRİR.
+# Bunu tersine çeviren bir sinyal HENÜZ ÖLÇÜLMEDİ → taktik kol doğuştan kapalı.
+karar:
+  enabled: true
+  model_version: "v1.0"        # DEĞİŞİRSE canlı karne SIFIRLANIR (dürüstlük şartı:
+                               # farklı modelin tahminleri aynı karnede toplanamaz)
+  enstruman: "banka_hesap"     # gidiş-dönüş maliyeti buradan (instrument_costs)
+                               # ölçüldü: banka_hesap %1.20 · altins1 %0.40 (3× ucuz)
+  ufuklar_gun: { "1hafta": 5, "1ay": 21, "3ay": 63 }
+  birincil_ufuk: "1ay"         # HÜKÜM bloğunda öne çıkan
+  # 6 ay YOK: 20 örtüşmeyen pencere kalıyor — hiçbir parametre dürüstçe
+  # kalibre edilemez. Ölçüm raporda gösterilir, hükme girmez.
+
+  cekirdek:                    # aylık düzenli alımı zamanlar; gidiş-dönüş makası ÖDEMEZ
+    # Kapı değişkeni: reel net mevduat faizi (net mevduat − 12ay enflasyon beklentisi).
+    # SEÇİLME SEBEBİ: taktik kazancın varyansının ~%91'i TL carry bacağında
+    # (ons bacağı ~%31, kovaryans negatif) ve taranan 13 aday içinde tabanı yenen
+    # tek şey buydu: >%10 iken fark +1.4p (N=29, t=1.4), <0 iken -1.9p (N=33).
+    # t<2 → bu KANIT DEĞİL, en iyi adaydır. Bu yüzden kademeler DAR tutuldu:
+    # 2x/0.5x gibi agresif bir kademe t=1.4'lük bir kanıtla savunulamaz.
+    reel_mevduat_dusuk_pct: 0.0     # < 0  → altın lehine  → üst kademe
+    reel_mevduat_yuksek_pct: 10.0   # > 10 → mevduat rekabetçi → alt kademe
+    kademe_carpani_ust: 1.25
+    kademe_carpani_alt: 0.75
+
+  taktik:                      # SAT / geri al — pahalı kol, DOĞUŞTAN KAPALI
+    aktif: false               # <-- KAPI. Aşağıdaki şart sağlanmadan AÇILMAZ.
+    # Açılma şartı ÖNCEDEN KAYITLIDIR ve sonradan gevşetilmez. Bu, prim z-skoru
+    # kapısının (stats.zscore_min_samples) ve signals.zscore_dry_run'ın aynısıdır:
+    # kapı açılmadan önce kuru provayla dağılım öğrenilir.
+    kapi_min_cozulmus: 30           # canlı karnede çözülmüş 1-ay tahmini
+    kapi_min_gram_etkisi_pct: 0.0   # tahminlere uyulsaydı gram farkı > 0 olmalı
+    kapi_min_isabet_farki_puan: 10.0
+    kismi_oranlar: [0.25, 0.50]
+    maliyet_emniyet_carpani: 1.5    # beklenen kazanç bu çarpanla maliyeti aşmalı
+
+  karne:
+    zayif_n: 30                # < bu ise "ölçüm yetersiz". backtest.weak_n=15'ten
+                               # SERT: burada seçilmiş bir kuralın karnesi ölçülüyor,
+                               # ham bir dağılım değil.
+    faz_duzeltmeli_taban: true
+    # chart.measure_edge'in faz artefaktının düzeltmesi. Ölçüldü (2026-07-26),
+    # HAM ileri getiri tabanının yalnız faz seçiminden gelen yayılımı:
+    #                h=21     h=63     h=126
+    #   ons USD     0.91p    2.64p     7.46p
+    #   gram TL     1.18p    3.23p    11.58p
+    # chart.dogrulama.min_anlamli_fark_puan = 1.0 → h≥63'te faz gürültüsü eşiğin
+    # 3-11 KATI. Yani tek-fazlı ölçümün uzun ufuk "zayıf kanıt" bulguları faz
+    # artefaktından ayırt edilemez (bkz. reports/grafik_dogrulama.md).
+    # NOT: gram-carry metriği bir ORAN metriği olduğu için çok daha kararlı —
+    # aynı veride h=63 yayılımı yalnız 0.70p (reports/gram_engeli.md).
+
+  # EVDS yayın gecikmesi — backfill'de look-ahead'i kapatır.
+  # evds_daily.date DÖNEM BAŞIDIR, yayın tarihi değil: `date <= asof` filtresi
+  # tek başına 1-35 gün geleceği sızdırır.
+  evds_yayin_gecikme_gun:
+    tufe: 35                   # ayın ~3'ünde önceki ay yayınlanır
+    enf_bek_12ay: 25
+    mevduat_3ay: 10            # haftalık seri, ~1 hafta gecikmeli
+    mevduat_1yil: 10
+    aofm_politika: 1
+
+  # BACKFILL'DE KULLANILMAYAN kaynaklar ve NEDENLERİ (reddedilen özellik
+  # gerekçesiyle kayda geçer — repo kuralı):
+  #   gld_tonnage    : 19 satır (2026-07-07'den) — tarihçe yok
+  #   prim_history   : ~250 kayıt / 19 gün — tarihçe yok
+  #   FRED DFII10/DXY: üretimde 2026-07-07'den beri yanıt vermiyor → canlıda
+  #                    hesaplanamayan bir özelliğin karnesi sahte olur
+  #   Google Trends  : timeframe "today 5-y" değerleri pencere maksimumuna
+  #                    normalize eder → bugün çekilen 2018 değeri GELECEĞİ İÇERİR
+  #   gram TL OHLC   : üretilmiyor (db.py şema notu) → gram için yalnız kapanış
+
 # ----------------- Kadran / gösterge uzlaşı paneli (rapor E.2) -----------------
 # Her gösterge altın açısından olumlu(+1)/nötr(0)/olumsuz(-1) etiketlenir.
 indicators:

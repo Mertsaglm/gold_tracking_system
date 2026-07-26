@@ -32,7 +32,10 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
   çetelesi**. Seviyeler ons USD'de hesaplanır, TL'ye **bugünkü kurla izdüşüm** olarak çevrilir.
   Ölçüm sonucu: seviyelerin yön üstünlüğü yok — kademe/stop planlaması için sunulur, yön iddiası
   olarak değil (ölçüm: `docs/TESLIMAT-ARSIV.md` → Faz 6).
-- **Rapor:** gün sonu markdown → dosya + Telegram. Bot komutları: `/durum`, `/rapor`.
+- **Karar:** raporun en başında **HÜKÜM** — bu ay ne kadar al (çekirdek) + satılır
+  mı (taktik, doğuştan kapalı kapı). Amaç fonksiyonu **terminal gram sayısı**;
+  ölçüm `reports/gram_engeli.md`. Bkz. `ai/DECISIONS.md` #007.
+- **Rapor:** gün sonu markdown → dosya + Telegram. Bot komutları: `/hukum`, `/durum`, `/rapor`.
 - **Loglama:** `logs/` altında dönen dosya logları (5 MB × 5).
 - **Kapsama:** rapor "son 24s veri kapsaması %X" satırı; **prim boşluğu** (kaynak boş dönerse de
   büyür) ile **çekim boşluğu** (Actions gerçekten durdu mu) ayrı raporlanır — ikisi karışmasın
@@ -204,7 +207,7 @@ cp .env.example .env      # doldur
 .venv/bin/python -m src.import_actions        # Actions CSV arşivini ana DB'ye aktar
 ```
 
-**Telegram komutları:** `/durum` · `/rapor` · `/net <tutar> <ay> [altın%]` ·
+**Telegram komutları:** `/hukum` · `/durum` · `/rapor` · `/net <tutar> <ay> [altın%]` ·
 `/bilezik <gram> <işçilik%>` · `/aipaket` · `/grafik`
 (Actions push-only çalıştığı için bu komutlar yerelde `src.telegram_bot` açıkken yanıt verir.)
 

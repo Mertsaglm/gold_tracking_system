@@ -213,8 +213,16 @@ def run_bot(cfg: dict) -> None:
                     log.warning("yetkisiz sohbet komut denedi: …%s (yoksayıldı)", cid[-3:])
                     continue
                 if text.startswith("/start"):
-                    send_message(cfg, "Merhaba! Komutlar:\n/durum — anlık fiyat + prim\n"
-                                      "/rapor — son gün sonu raporu", chat_id=cid)
+                    send_message(cfg, "Merhaba! Komutlar:\n/hukum — bugün ne yapayım\n"
+                                      "/durum — anlık fiyat + prim\n"
+                                      "/rapor — son gün sonu raporu\n"
+                                      "/yardim — tüm komutlar", chat_id=cid)
+                elif text.startswith("/hukum"):
+                    # Ağ çağrısı yalnız EVDS bağlamı (yerel DB) + önbellekli engel
+                    # ölçümü → /grafik gibi yavaş değil, yoklama döngüsünü asmaz.
+                    from . import karar
+                    send_message(cfg, karar.format_karar_md(karar.build_karar(cfg)),
+                                 chat_id=cid)
                 elif text.startswith("/durum"):
                     send_message(cfg, _cmd_durum(cfg), chat_id=cid, parse_mode="HTML")
                 elif text.startswith("/rapor"):
@@ -233,7 +241,9 @@ def run_bot(cfg: dict) -> None:
                     _t = chart.format_chart_md(chart.build_chart(cfg, refresh=False))
                     send_message(cfg, _t or "Grafik verisi yok.", chat_id=cid)
                 elif text.startswith("/yardim") or text.startswith("/help"):
-                    send_message(cfg, "Komutlar:\n/durum · /rapor\n"
+                    send_message(cfg, "Komutlar:\n"
+                                      "/hukum — bugün ne yapayım (çekirdek + taktik)\n"
+                                      "/durum · /rapor\n"
                                       "/net <tutar> <ay> [altın%] — enstrüman karşılaştırma\n"
                                       "/bilezik <gram> <işçilik%> [gramfiyat] — başabaş\n"
                                       "/aipaket — AI'a yapıştırılacak veri paketi\n"

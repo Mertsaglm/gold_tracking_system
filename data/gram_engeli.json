@@ -1,0 +1,40 @@
+{
+  "olcum_utc": "2026-07-26T15:10:06.652510+00:00",
+  "veri_ilk": "2016-01-04",
+  "veri_son": "2026-07-24",
+  "n_gun": 2561,
+  "enstruman": "banka_hesap",
+  "roundtrip_pct": 1.1955049999999967,
+  "ufuklar": {
+    "1hafta": {
+      "gun": 5,
+      "n_bagimsiz": 512,
+      "taban_ortalama_pct": -0.46771009197181723,
+      "kazanma_pct": 42.09702660406886,
+      "maliyet_sonrasi_kazanma_pct": 23.826291079812208,
+      "en_kotu_pct": -24.001230146796914,
+      "taktik_esik_puan": 1.6632150919718138,
+      "cekirdek_esik_puan": 0.46771009197181723
+    },
+    "1ay": {
+      "gun": 21,
+      "n_bagimsiz": 121,
+      "taban_ortalama_pct": -1.9868139848764437,
+      "kazanma_pct": 36.37795275590551,
+      "maliyet_sonrasi_kazanma_pct": 28.07086614173228,
+      "en_kotu_pct": -36.16976374922029,
+      "taktik_esik_puan": 3.1823189848764404,
+      "cekirdek_esik_puan": 1.9868139848764437
+    },
+    "3ay": {
+      "gun": 63,
+      "n_bagimsiz": 40,
+      "taban_ortalama_pct": -6.143314508600473,
+      "kazanma_pct": 22.377902321857484,
+      "maliyet_sonrasi_kazanma_pct": 18.57485988791033,
+      "en_kotu_pct": -49.36841448654455,
+      "taktik_esik_puan": 7.338819508600469,
+      "cekirdek_esik_puan": 6.143314508600473
+    }
+  }
+}

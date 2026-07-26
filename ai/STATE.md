@@ -80,7 +80,11 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
   (41 özellik); `tahmin.kaydet` + `karar.build_karar` ikisi de buraya bağlandı.
   Look-ahead artık yapısal olarak imkânsız; test sızıntı enjekte edilerek
   düşebildiği doğrulandı. EVDS yayın gecikmesi bir kontaminasyonu kapattı
-  (reel net mevduat %12.7 → %13.1). **250 test.**
+  (reel net mevduat %12.7 → %13.1).
+- 2026-07-26 — **Karar motoru Faz E**: `src/tahmin_backfill.py` aday taraması
+  (karne DEĞİL — örneklem-içi üst sınır). 458 haftalık asof, 14 aday,
+  **hiçbiri +3.18p eşiğini geçemedi.** Taktik kol kapalı kalıyor — sonuç bu.
+  `reports/gram_aday_taramasi.md`. **266 test.**
 
 ## 🔨 Devam Edenler
 - _(yok)_
@@ -94,12 +98,14 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 1. **İlk canlı çözümü doğrula (~2026-07-31).** DoD: `prediction_outcomes`'ta
    1-hafta tahmini çözülmüş; `gram_carry_kazanc_pct` makul; `/karne` "1 çözülmüş"
    diyor. **Bu, tüm zincirin (kaydet→giriş→çözüm) canlıda ilk kez tam dönüşü.**
-2. **Faz E — tarihsel replay** = **karne DEĞİL, aday taraması.** Eşikler bu
-   veriye bakılarak seçildi → sahte OOS. Rapor başına bu uyarı zorunlu.
-   `ozellikler.feature_vector` hazır; replay onu haftalık asof'larla çağıracak.
-3. **Faz H — görsel grafik** (matplotlib + sendPhoto), istenirse. Faz F (SAT
-   kapısı) kod işi değil, ~Ekim'de karneye bakılıp verilecek karar; Faz G (MTF)
-   yalnız E bir aday bulursa.
+2. **Push + ilk Actions koşusunu izle.** 5 commit bekliyor. DoD: Actions yeşil;
+   raporda HÜKÜM bloğu var; `data/altin.sql`'de `INSERT INTO predictions`
+   satırları görünüyor. **L-002 gereği push öncesi dump satır sayıları
+   azalmamış olmalı.**
+3. **Faz H — görsel grafik** (matplotlib + sendPhoto), istenirse.
+   Faz F (SAT kapısı) kod işi değil, ~Ekim'de karneye bakılıp verilecek karar.
+   Faz G (MTF) **askıda**: Faz E hiçbir aday bulamadı, yeni gösterge eklemenin
+   ölçülmüş bir gerekçesi yok.
 
 ## 📦 Backlog (şimdi değil, unutma da)
 - **`chart.measure_edge` faz artefaktı** (ADR #007-E) — taban tek fazdan

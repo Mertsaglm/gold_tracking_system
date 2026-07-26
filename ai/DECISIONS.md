@@ -134,6 +134,36 @@ en cazip göründüğü rejimdir; oysa en kötü iki SAT ayı (gram −33%, −3
 sürünmenin bittiği aylardır. Ölçülmemiş bir sinyali hükme sokmak bu ADR'nin
 yasakladığı şey olduğu için yalnız özellik olarak kayıtta.
 
+### H) Aday taraması: 14 aday, HİÇBİRİ eşiği geçemedi (Faz E, aynı gün)
+
+`src/tahmin_backfill.py` — 2017-01-19 → 2026-07-24, **458 haftalık asof**,
+özellikler canlıyla aynı yoldan (`ozellikler.feature_vector`), örtüşmeyen
+pencere, tüm fazlar. Aşılması gereken eşik: **+3.18 puan**.
+
+| Aday | N | Tabana fark | t |
+|---|---:|---:|---:|
+| kur oynaklık > %25 (şok) | 6 ⚠️ | +2.85p | +1.01 |
+| reel_mevduat > %10 | 22 ⚠️ | +1.34p | +1.03 |
+| gram 12ay momentum > %60 | 47 | +0.45p | +0.55 |
+| **kur oynaklık < %5 (sürünme)** | 30 | **−0.47p** | −0.49 |
+| gram 200GMA üstü %15+ | 55 | −0.78p | −0.89 |
+| reel_mevduat < 0 | 34 | −1.06p | −0.80 |
+
+**Hiçbiri geçmedi.** Bu güçlü ve kalıcı bir sonuçtur: eşikler bu veriye
+bakılarak seçildiği için ölçüm örneklem-**içi**dir, yani bir ÜST SINIR. Örneklem
+içinde bile aşılamayan eşik, örneklem dışında hiç aşılmaz. Taktik kol kapalı
+kalır — bu bir başarısızlık değil, **sonuçtur**.
+
+**Bu modül karne ÜRETMEZ.** 10.5 yıllık replay'e "işte karnem" demek cazipti ama
+sahte olurdu. Rapor başında bunu bağırarak yazan bir uyarı var ve testle
+korunuyor (`test_rapor_karne_olmadigini_bagirarak_soyler`).
+
+**Sürünen kur tuzağı artık spekülasyon değil, ölçüm:** G'de "kurala
+dönüştürülmedi" diye not düşülen gözlem tarandı — sürünen kur rejiminde (bugünkü
+rejim, %1.42) satmak, zaten negatif olan tabandan **daha da kötü** (−0.47p).
+Yine de t=−0.49, yani **kural yapılmadı**; yalnız TUT'un gerekçesini
+güçlendiren bir bağlam.
+
 **Tekrar gözden geçir:** (a) taktik kapısı açılırsa veya 30 tahmin çözülüp şart
 sağlanmazsa — o zaman "trade kolu kalıcı kapalı" ADR'si yazılır; (b) ALTINS1'e
 geçilirse eşik %1.20 → %0.40 düşer, taktik kol yeniden değerlendirilir;

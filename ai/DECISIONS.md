@@ -6,6 +6,96 @@
 
 ---
 
+## #009 — 2026-07-27 — Regresyon zırhı: testler ARAÇ DEĞİL, devrin kendisi
+
+**Tetikleyen:** Mert: *"yakın zamanda Claude Code aboneliğim bitecek... ileride
+düşük modelli yapay zekalar projemi bozmasın."* Bu, PROJECT.md'deki
+araç-bağımsızlık kısıtının (ADR #001/#002) doğal sonucu: kurallar taşınabilir
+hâle getirildi, **ama kuralların uygulandığını hiçbir şey doğrulamıyordu.**
+
+### A) Testin işi değişti: "hata bulmak" değil, "sözleşmeyi kilitlemek"
+
+Mevcut 299 test doğruydu ama tamamı **birim** seviyesindeydi. Bu projede
+yaşanan en pahalı arızaların HİÇBİRİ birim seviyesinde değildi:
+
+| Arıza | Nerede | Birim testi görür müydü? |
+|---|---|---|
+| `history_daily` 17 gün donuk (#004) | parçalar arası (pipeline'a bağlı değildi) | hayır |
+| `quarter_z` daima None (#006-C) | üretici ↔ tüketici | hayır |
+| `daily_job` altı adımı yutuyor (#008 K-6) | süreç çıkış kodu | hayır |
+| `asof` koruması bağlanmamış (L-011) | çağrı yolu | hayır |
+| Karne totolojisi (L-010) | metriğin tanımı | hayır |
+
+Yeni paket bu boşluğu hedefler: **491 yeni test, 16 dosya, 8138 satır** →
+toplam **804 test**. Ağırlık merkezi birim değil **sözleşme**:
+
+| Sözleşme | Neyi kilitler |
+|---|---|
+| `test_uctan_uca` | Zincirin tamamı: izole kökte `daily_job.run()` (ağ kapalı, sentetik veri) |
+| `test_sozlesme_config` | 149 `cfg[...]` zinciri çözülüyor mu · ölü anahtar var mı · **önceden kayıtlı eşikler gevşetilemez** |
+| `test_sozlesme_sema` | Şema ↔ dump ↔ Actions stateless döngüsü; değiştirilemezliğin kolon kolon kapsamı |
+| `test_sozlesme_workflow` | Üretim = 2 YAML: `restore→iş→dump→commit` sırası, `continue-on-error` yokluğu |
+| `test_sozlesme_gizlilik` | L-005 (satır-sonu yorumu), iki yönlü `check-ignore`, sır sızıntısı |
+| `test_yapisal_korumalar` | Tek asof/eşik/maliyet/teorik-gram kaynağı; `_hata` yolu (AST ile) |
+| `test_ag_izolasyonu` | Karar yolu **soket kapalıyken** çalışmalı; ağ hangi modüllerde olabilir |
+| `test_dejenere_metrik` | L-010 avı: metrik 11 senaryoda değişebiliyor mu; eşik config'ten mi |
+| `test_dokuman_tutarliligi` | Devir paketi: köprüler, `ai/` yapısı, L/ADR numara uzayı, belgelenen komut |
+| `test_saf_cekirdek_ozellikleri` | Formül değişmezleri (ölçek/kaydırma bağımsızlığı, tek eşik) |
+
+**Neden bu kadar çok "yapısal" test:** L-011 zaten kanıtladı ki davranış testi
+yetmiyor — "bu korumayı atlayan bir yol var mı?" sorusunu da **testin** sorması
+gerekiyor. Bu yüzden AST/metin taraması meşru bir test tekniği olarak kabul
+edildi (tek asof kaynağı, tek eşik kaynağı, `import requests` nerede olabilir).
+
+### B) Testin kendisi ölçüldü — 20 mutasyon, 20 yakalama
+
+"Testleri yazdım, geçiyor" bu projede kabul edilebilir bir cümle değil (L-012).
+20 kontrollü mutasyon uygulandı ve her biri `try/finally` ile geri alındı:
+`asof` filtresini gevşet · hafta sonu filtresini sil · `taktik.aktif: true` ·
+z kapısını 60→20 · tabloyu dump listesinden düşür · `predictions.id`'yi çıkar ·
+imza sırasını değiştir · `karar.py`'ye ağ ekle · kritik adım etiketini kaydır ·
+ölçülebilirlik bayrağını sahtele · gram carry'yi TL farkına çevir · eşiği koda
+göm · DELETE korumasını kaldır · trigger'dan kolon düşür · `insert_tick`'i düz
+INSERT yap · dump'ı düz INSERT'e döndür · `backup.sh`'a push ekle · script'i sil.
+**20/20 yakalandı.** → Ders **L-015**.
+
+### C) Denetimde bulunan 4 açık kapatıldı
+
+| Açık | Ölçüm | Düzeltme |
+|---|---|---|
+| `ticks` her koşumda yeniden yazılıyor | dump'ta 15 999 satır, **tekil 1 663** (9.6×); en eski satır 23 kopya | `ticks(ts_utc, source, symbol)` benzersiz indeks + `INSERT OR IGNORE`; `db.tekil_tick_indeksi()` mevcut DB'leri **önce onarıp sonra** indeksi kuruyor → L-013 |
+| Tahmin kaydı **silinebiliyordu** | trigger yalnız UPDATE'i engelliyordu | `trg_predictions_nodelete` → L-014 |
+| `kaynak`/`model_version` korumasız | bu iki kolon kaydın hangi karneye sayıldığını belirliyor | UPDATE trigger listesine eklendi; trigger'lar artık `DROP+CREATE` (tanım değişince `IF NOT EXISTS` eski kapsamı bırakıyordu) |
+| `deploy/altin-backup.service` → olmayan script | STATE backlog'unda duruyordu | `scripts/backup.sh` yazıldı: yalnız WAL-güvenli anlık görüntü; git/ağ/silme YOK (L-007'nin tekrarı engellendi) |
+
+**Veri sonucu:** `data/altin.sql` **33 699 → 19 369 satır** (4.98 → 2.8 MB).
+Tekilleştirme **commit'li dump'ın kendisinden** yapıldı, bayat yerel sqlite'tan
+değil (L-009). Kopyalar birebir aynıydı (aynı anahtarda farklı değer taşıyan
+tek satır yok) → bilgi kaybı sıfır. `restore → dump` gidiş-dönüşü commit'li
+dosyayla **bayt bayt aynı** (sabit nokta doğrulandı).
+
+**Geriye uyum:** dump artık `INSERT OR IGNORE` yazıyor ve `restore` benzersiz
+indeksi **yükleme bittikten sonra** kuruyor. Böylece eski bir commit'e dönüp
+`python -m src.restore_db` çalıştırmak hâlâ çalışıyor — aksi halde her tarihsel
+dump `IntegrityError` verirdi.
+
+### D) Neden bu kadar yatırım — ve sınırı
+
+Testler bu projede **bakım maliyeti değil, devir belgesidir**: yeni bir araç ya
+da daha zayıf bir model geldiğinde kuralları okumasa bile ihlal ettiği anda
+kırmızı görür. Yine de sınır açık: test paketi **doğruluğu** değil
+**sözleşmeyi** korur. Bir formülün finansal olarak doğru olup olmadığını hâlâ
+ölçüm söyler (ADR #007-B/H); testler yalnız o ölçümün sessizce değiştirilmesini
+engeller.
+
+**Tekrar gözden geçir:** (a) `predictions` yazımı başlayınca (2026-07-27 akşamı)
+`test_veri_butunlugu`'ndaki tahmin tutarlılık testleri gerçek veriyle anlam
+kazanır; (b) taban satır sayıları (`TABANLAR`) veri büyüdükçe **yükseltilir,
+asla düşürülmez**; (c) gölge kol kararı verilirse (ADR #008-B) karne testleri
+"ölçülemez" dalından "ölçülür" dalına taşınmalı.
+
+---
+
 ## #008 — 2026-07-27 — Denetim: karne bir totolojiydi; ölçülemezlik GİZLENMEK yerine RAPORLANIYOR
 
 **Tetikleyen:** Karar motoru (ADR #007) push edilmeden önce uçtan uca denetim.

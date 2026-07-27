@@ -11,6 +11,70 @@
 
 ---
 
+## L-015 — Test yazmak yetmez: testin DÜŞEBİLDİĞİNİ kanıtla
+
+**Olay:** Bir projeye yüzlerce koruma testi yazıldı ve hepsi ilk koşumda yeşil
+geçti. Bu tek başına hiçbir şey kanıtlamıyordu — L-012 zaten "yeşil kalarak
+yanlış güven veren test" vakasıydı. Bu yüzden korumalar tek tek, kontrollü
+biçimde **bozuldu** (mutasyon): bir filtre gevşetildi, bir eşik koda gömüldü,
+bir fonksiyonun parametre sırası değiştirildi, bir tablo kalıcılık listesinden
+düşürüldü... Her mutasyon `try/finally` ile geri alındı ve hepsinin
+yakalandığı görüldü. Ancak bundan sonra "bu testler koruyor" cümlesi ölçüme
+dayandı.
+
+**Ders:** Bir testin değeri geçmesinde değil, **doğru durumda düşmesinde**dir.
+"Testi yazdım, geçiyor" ölçüm değil temennidir.
+
+**Kural:** Kritik bir koruma testi yazdığında korumayı bilerek boz, testin
+düştüğünü gör, geri al. Düşmüyorsa test yanlış şeyi ölçüyordur. Toplu mutasyon
+koşumundan sonra çalışma alanının temiz kaldığını (`git status`) da doğrula.
+
+---
+
+## L-014 — Korumanın KAPSAMI da denetlenir: kilidi takıp kapıyı açık bırakma
+
+**Olay:** "Bu kayıt değiştirilemez" garantisi bir veritabanı trigger'ıyla
+kuruluydu ve gerçekten çalışıyordu — ama yalnız **UPDATE** için; **DELETE**
+tamamen serbestti. Oysa kaydı güzelleştirmenin en kısa yolu düzeltmek değil
+silmekti. Ayrıca trigger'ın koruduğu kolon listesinde, kaydın **hangi kümeye
+sayıldığını** belirleyen iki kolon eksikti; tek satırlık bir UPDATE ile bir
+kayıt başka bir kümeye taşınabiliyordu.
+
+**Ders:** L-011 "koruma bağlanmamış" diyordu; bu onun kardeşi: koruma **bağlı
+ama kapsamı eksik**. Kısmi koruma, tam koruma sanıldığı için daha tehlikelidir.
+
+**Kural:** Koruma yazınca üç soruyu sor: (1) hangi **fiiller** kapalı
+(oluşturma/değiştirme/silme)? (2) hangi **alanlar** kapalı — dışarıda kalan bir
+alan sonucu değiştirebiliyor mu? (3) test her fiil/alan için **ayrı ayrı** mı
+koşuyor? Korunan alan listesi testte de veri olarak dursun; tek örnek üzerinden
+yazılmış test, listeye eklenmemiş alanı görmez.
+
+---
+
+## L-013 — Girdisini baştan okuyan iş, kısıtsız tabloda SAYAÇ üretir
+
+**Olay:** Günlük bir iş, girdi dosyalarının TAMAMINI her koşumda yeniden
+okuyordu (dosya bazlı artımlılık yoktu) ve yazma fonksiyonu düz `INSERT` idi.
+Hedef tabloda benzersiz kısıt olmadığı için aynı gözlem her gün yeniden
+yazıldı. Ölçüldüğünde: satırların yalnız ~%10'u tekildi, en eski kayıt 23
+kopyaya ulaşmıştı. İki zarar birden — depo/dump her gün şişiyordu ve "kayıt
+sayısı" metriği veri hacmini değil **koşum sayısını** ölçüyordu. Doğal anahtarı
+PRIMARY KEY olan kardeş tablolar etkilenmemişti: kusur iş akışında değil,
+tablonun tasarımındaydı.
+
+**Ders:** "Her koşumda baştan oku" basit ve dayanıklı bir tasarımdır **ama**
+yazdığı her tabloda idempotentlik şart koşar. Kısıtsız bir tabloda bu desen,
+ölçüm kılığında bir koşum sayacı üretir (L-010'un veri katmanındaki hâli).
+
+**Kural:** Bir iş girdisinin tamamını yeniden okuyorsa her hedef tablo için sor:
+**"Aynı gözlem ikinci kez yazılırsa ne olur?"** Cevap "satır artar" ise ya doğal
+anahtara `UNIQUE` + "varsa yoksay" koy, ya da artımlılığı kanıtla. Denetim tek
+sorgu: `COUNT(*) == COUNT(DISTINCT <doğal anahtar>)`. Kısıtı sonradan eklerken
+mevcut kopyaları **önce temizle** ve eski yedeklerin hâlâ yüklenebildiğini
+doğrula.
+
+---
+
 ## L-012 — Fixture üreticiden türemiyorsa test, mock'u doğrular
 
 **Olay:** Bir test yıllardır yeşil geçiyor ve "şu dal çalışıyor" izlenimi

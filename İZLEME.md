@@ -17,8 +17,12 @@
 | 4 | Veri artıyor mu? | `data/archive/` CSV satır sayısı, `data/altin.sql` diff | Her gün büyüyor | Büyümüyorsa arşiv workflow'u duraklatılmış olabilir (#1) |
 | 5 | Bildirim sayısı makul mü? | Telegram | Günde birkaç, tavan 6/gün | Fazlaysa `config.yaml alerts` eşiklerini gevşet |
 | 6 | Z-skor arşivi ilerliyor mu? | Haftalık pazar raporu → "Arşiv İlerlemesi: N/60 gün" | Her geçerli gün +1 | Bkz. aşağıdaki bölüm |
-| 7 | **Tahmin kaydı birikiyor mu?** | `grep -c "INSERT INTO predictions" data/altin.sql` | Her gün **+6** (3 ufuk × 2 kol) | Sayı durduysa `daily_job` adım 3d patlıyordur — Actions log'unda `tahmin hata` ara |
+| 7 | **Tahmin kaydı birikiyor mu?** | `grep -c "INTO predictions(" data/altin.sql` | Her gün **+6** (3 ufuk × 2 kol) | Sayı durduysa `daily_job` adım 3d patlıyordur — Actions log'unda `tahmin hata` ara |
 | 8 | **HÜKÜM raporun başında mı?** | Telegram günlük raporu | İlk ekranda "🎯 HÜKÜM" bloğu | Yoksa `karar.enabled` kapalı ya da blok hata almış (`hukum blogu hata`) |
+| 9 | **Dump şişmiyor mu?** | `wc -l data/altin.sql` | Günde ~**+15-20 satır** (yeni gözlemler) | Günde binlerce satır artıyorsa tick tekilliği kopmuş — `grep -c "INTO ticks(" data/altin.sql` ile karşılaştır (ADR #009-C) |
+
+> **Not:** dump `INSERT OR IGNORE` yazar; eski `grep -c "INSERT INTO ..."`
+> komutları **0 döner**. Yukarıdaki `"INTO tablo("` biçimini kullan.
 
 Hepsi beklenen aralıktaysa: **hiçbir şey yapma.** Sistem çalışıyor.
 
@@ -138,6 +142,30 @@ Bu hiçbir veriyi silmez — yalnız otomatik çalışmayı durdurur.
 | Raporlar | `reports/rapor_YYYY-MM-DD.md` |
 
 SQLite binary'si repoya girmez; dump sayesinde repo şişmez ve geçmiş diff'lenebilir kalır.
+
+---
+
+## Bir şeyi değiştirmek gerekirse (ya da bir AI'a yaptırırsan)
+
+Proje 800+ testle korunuyor (ADR #009). Değişiklikten sonra tek komut yeterli:
+
+```bash
+.venv/bin/python -m pytest -q      # ~5 sn, ağa çıkmaz, gerçek DB'ye dokunmaz
+```
+
+**Kırmızı bir test neredeyse daima haklıdır** — testlerin çoğu bir kararı
+(ADR) ya da bir dersi (LESSONS) kilitliyor ve gerekçesi testin docstring'inde
+yazılı. Önce onu oku; testi susturmak, korumayı sessizce kaldırmakla aynı şey.
+
+Sık karşılaşacakların:
+
+| Test der ki | Anlamı |
+|---|---|
+| "önceden kayıtlı eşik gevşetilmiş" | `config.yaml`'da bir kapı/eşik düşürülmüş — bu ancak ADR ile yapılır |
+| "şemada olup dump'a girmeyen tablo" | Yeni tablo `dbdump._TABLES`'a eklenmemiş → Actions'ta her gün silinir |
+| "karar katmanına ağ girdi" | Hesap/karar koduna `requests`/`yfinance` eklenmiş → replay ile canlı ayrışır |
+| "ikinci asof yolu" | `history_daily` üzerinde ikinci bir `MAX(date)` → L-011'in tekrarı |
+| "tekrar eden tick" | Tekillik koruması kopmuş → dump her gün şişer (L-013) |
 
 ---
 

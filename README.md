@@ -115,8 +115,38 @@ src/
   evds_discover.py   EVDS kod keşfi
   collector.py · supervisor.py   7/24 yerel toplayıcı modu (config runtime_mode: "collector");
                      üretimde KULLANILMIYOR — Actions modu geçerli
-tests/               birim testleri (296 test)
+
+scripts/backup.sh    WAL-güvenli anlık görüntü (yalnız ertelenmiş Oracle senaryosu;
+                     git/ağ/silme YOK — bkz. ai/LESSONS.md L-007)
+tests/               800+ test — regresyon zırhı (aşağıya bak)
 ```
+
+### Test paketi — "sözleşme kilidi" (ADR #009)
+
+Testler burada hata avlamaktan çok **sözleşmeyi kilitler**: bu projede yaşanan
+en pahalı arızaların hiçbiri birim seviyesinde değildi (bir tablo pipeline'a
+bağlı değildi, bir koruma çağrı yolunda geçilmiyordu, bir metrik yapısal olarak
+sabitti). Amaç, proje daha zayıf bir model ya da başka bir araçla sürdüğünde
+**ihlalin anında kırmızı yanması.**
+
+| Dosya | Neyi kilitler |
+|---|---|
+| `test_uctan_uca.py` | Zincirin tamamı: izole kökte `daily_job.run()`, ağ kapalı, sentetik veri |
+| `test_sozlesme_config.py` | Her `cfg[...]` çözülüyor mu · ölü anahtar · **önceden kayıtlı eşikler gevşetilemez** |
+| `test_sozlesme_sema.py` | Şema ↔ dump ↔ Actions stateless döngüsü · değiştirilemezliğin kolon kolon kapsamı |
+| `test_sozlesme_workflow.py` | Üretim = 2 YAML: `restore→iş→dump→commit` sırası, `continue-on-error` yokluğu |
+| `test_sozlesme_gizlilik.py` | `.gitignore` iki yönlü doğrulama (L-005) · sır sızıntısı taraması |
+| `test_yapisal_korumalar.py` | Tek asof/eşik/maliyet/teorik-gram kaynağı (AST ile) |
+| `test_ag_izolasyonu.py` | Karar yolu **soket kapalıyken** çalışmalı; ağ hangi modüllerde olabilir |
+| `test_dejenere_metrik.py` | L-010 avı: metrik senaryolara göre değişebiliyor mu · eşik config'ten mi |
+| `test_veri_butunlugu.py` | `data/altin.sql` denetimi: satır tabanı kilit dişlisi (L-009), hayalet bar yok |
+| `test_dokuman_tutarliligi.py` | Devir paketi: köprüler, `ai/` yapısı, L/ADR numara uzayı |
+| `test_saf_cekirdek_ozellikleri.py` | Formül değişmezleri (ölçek/kaydırma bağımsızlığı, tek eşik) |
+| `test_modul_saglik.py` | Import sağlığı · **imza kilidi** · `__main__` blokları · bağımlılık beyanı |
+
+**Bir test kırmızıysa önce onun haklı olduğunu varsay.** Çoğu bir ADR'yi ya da
+dersi kilitliyor ve gerekçesi docstring'inde yazılı. Testi susturmak, korumayı
+sessizce kaldırmakla aynı şeydir (`AGENTS.md` §5 → "Koruma disiplini").
 
 ## Yapılandırma
 
@@ -147,6 +177,15 @@ beklentisi" mesajı günde 1. Durum `data/alert_state.json`'da.
 
 **Veri kalıcılığı:** SQLite binary repoya girmez; `data/altin.sql` metin dump'ı commit'lenir
 (`src/dbdump.py` / `src/restore_db.py`). Böylece repo şişmez ve geçmiş diff'lenebilir kalır.
+Actions **stateless** çalışır: DB her koşuda dump'tan kurulur → **bir tablo
+`dbdump._TABLES`'ta yoksa her gün sıfırlanır** (`predictions` üçlüsü tam bu
+yüzden orada; testle kilitli).
+
+**Tick tekilliği:** `daily_job` her koşumda tüm arşiv CSV'lerini baştan okur.
+`ticks(ts_utc, source, symbol)` benzersiz indeksi olmasaydı aynı gözlem her gün
+yeniden yazılırdı — ölçüldü: dump'ta 15 999 satırın tekili 1 663'tü (ADR #009-C,
+L-013). Dump `INSERT OR IGNORE` yazar ve `restore` indeksi yükleme bittikten
+sonra kurar; böylece **eski commit'lerdeki dump'lar da yüklenebilir.**
 
 **Test:** Actions → "Altin arsivleyici" → Run workflow → `test_notify: true` → tek seferlik
 test bildirimi.
@@ -205,7 +244,7 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env      # doldur
 
-.venv/bin/python -m pytest -q                 # 296 test
+.venv/bin/python -m pytest -q                 # 800+ test (~5 sn, ağa çıkmaz)
 .venv/bin/python -m src.restore_db            # data/altin.sql → SQLite (tüm geçmiş arşiv)
 .venv/bin/python -m src.evds_job backfill     # EVDS tarihsel (tek sefer)
 .venv/bin/python -m src.history build         # tarihsel günlük ons×kur (2016+)
@@ -264,6 +303,11 @@ davranış üretilir — köprü dosyaları yalnızca AGENTS.md'ye yönlendirir:
 
 Sohbete `/durum`, `/baslat`, `/karar`, `/plan`, `/kapat` yazmak yeterli (araç özelliği değil,
 AGENTS.md'de tanımlı sözleşme). Kararların gerekçesi `ai/DECISIONS.md`'de ADR olarak tutulur.
+
+Devir paketi: **`Proje Yardımcısı - Gold Tracking System/`** — kuralların
+taşınabilir ikizi + `ai/PROJE-GUNLUGU.md` (ne inşa edildi, ne ölçüldü, hangi
+iddia çürüdü, bugünkü sınırlar). Kural değişikliği **önce köke** yazılır, sonra
+oraya kopyalanır; senkron testle denetlenir.
 
 ## Kanıt
 

@@ -11,7 +11,8 @@
 > **İnşa dönemi (Faz 1-7) kanıt kaydı:** `../../docs/TESLIMAT-ARSIV.md` (314 satır,
 > ölçüm ölçüm). Bu dosya oradan devralır ve **Faz 8 + denetim** dönemini anlatır.
 
-**Son güncelleme:** 2026-07-27 · **Üretimdeki son commit:** `1d983ad`
+**Son güncelleme:** 2026-07-27 (2. tur: regresyon zırhı) · **Üretimdeki son
+commit:** `571646c` + bu turun değişiklikleri
 
 ---
 
@@ -27,7 +28,7 @@ iddia yanlışlanabilir olur. "100 gramla başladın, 108 gram bitirdin → tutt
 
 | | |
 |---|---|
-| Dil / ortam | Python 3.12 · **7.805 satır** `src/` · **299 test** |
+| Dil / ortam | Python 3.12 · **7.915 satır** `src/` · **800+ test** (8.138 satır) |
 | Bağımlılık | requests, PyYAML, yfinance, pytrends, matplotlib (lazy) |
 | Depolama | SQLite **12 tablo** + diff'lenebilir `data/altin.sql` + aylık CSV arşiv |
 | Üretim | GitHub Actions — `archive.yml` (`*/15`), `daily.yml` (15:35 UTC) |
@@ -176,6 +177,43 @@ kendi hatasıydı: `history_daily`'ye bugünün satırı hâlâ yazılıyordu (t
 çakışıyordu, kökte L-005…L-008 hiç yoktu. Ortak kalıp: **yama tüketiciye değil
 kaynağa konmalıydı** (L-011).
 
+### Regresyon zırhı — 2026-07-27, 2. tur (ADR #009)
+
+**Tetikleyen:** *"Yakın zamanda Claude Code aboneliğim bitecek; ileride düşük
+modelli yapay zekalar projemi bozmasın."* Bu, ADR #001/#002'nin doğal sonucu:
+kurallar taşınabilir hâle getirilmişti, **ama uygulandığını hiçbir şey
+doğrulamıyordu.** Mevcut 299 test doğruydu; ne var ki bu projede yaşanan en
+pahalı arızaların hiçbiri birim seviyesinde değildi (donuk tablo, bağlanmamış
+koruma, yutulan hata, totolojik metrik — hepsi PARÇALAR ARASI).
+
+**Ne yapıldı:** 491 yeni test, 16 dosya → **804 test**. Ağırlık merkezi birim
+değil **sözleşme**: uçtan uca `daily_job` koşumu (izole kök, ağ kapalı) ·
+config/şema/workflow/gizlilik sözleşmeleri · yapısal korumalar (AST ile "bu
+korumayı atlayan yol var mı?") · ağ izolasyonu (soket kapalı) · dejenere metrik
+avı (L-010) · doküman-kod tutarlılığı · saf çekirdeğin matematiksel değişmezleri
+(ölçek/kaydırma bağımsızlığı).
+
+**Testin kendisi ölçüldü.** "Yazdım, geçiyor" bu projede kabul edilebilir bir
+cümle değil (L-012). **20 kontrollü mutasyon** uygulandı — `asof` filtresini
+gevşet, hafta sonu filtresini sil, kapıyı config'ten aç, dump'tan tablo düşür,
+imza sırasını değiştir, eşiği koda göm, karar katmanına ağ ekle... — her biri
+`try/finally` ile geri alındı. **20/20 yakalandı.** → Ders **L-015**.
+
+**Zırh 4 gerçek açık buldu ve kapattı:**
+
+| Açık | Ölçüm | Düzeltme |
+|---|---|---|
+| `ticks` her koşumda yeniden yazılıyor | dump'ta 15 999 satır, **tekil 1 663** (9.6×); en eski satır 23 kopya | benzersiz indeks + `INSERT OR IGNORE`; mevcut DB'leri **önce onarıp sonra** indeksleyen migration → **L-013** |
+| Tahmin kaydı **silinebiliyordu** | trigger yalnız UPDATE'i engelliyordu | `BEFORE DELETE` trigger'ı → **L-014** |
+| `kaynak`/`model_version` korumasız | kaydın hangi karneye sayıldığını bu iki kolon belirliyor | trigger listesine eklendi; trigger'lar artık `DROP+CREATE` |
+| `deploy/altin-backup.service` → olmayan script | STATE backlog'unda duruyordu | `scripts/backup.sh` yazıldı; git/ağ/silme YOK (L-007) |
+
+**Veri sonucu:** `data/altin.sql` **33 699 → 19 369 satır** (4.98 → 2.8 MB).
+Tekilleştirme commit'li dump'ın kendisinden yapıldı, bayat yerel sqlite'tan
+değil (L-009); kopyalar birebir aynıydı → bilgi kaybı sıfır; `restore→dump`
+sabit noktası bayt bayt doğrulandı. Geriye uyum korundu: eski commit'lerin
+düz-`INSERT`'li dump'ları hâlâ yükleniyor.
+
 ---
 
 ## 4. Ölçülmüş ve ÇÜRÜTÜLMÜŞ iddialar (projenin ahlakı)
@@ -193,6 +231,8 @@ saklanmaz**. Bugüne kadar düşenler:
 | 14 aday sinyalden biri eşiği geçer | **Hiçbiri geçmedi** (örneklem-içi üst sınır) |
 | "Sıfır aralıklı Pazar barı ATR'yi aşağı çeker" (4 AI'ın ortak görüşü) | **Yön yanlış** — ATR %7.17 **yukarı**; kirleten Cumartesi barı |
 | "Karne sistemin sicilini tutuyor" | **Tutmuyordu** — yapısal 0.00 (L-010) |
+| "Tahmin kaydı değiştirilemez" | **Yarısı doğruydu** — UPDATE kapalı, DELETE açıktı (L-014) |
+| "Ham tick sayısı veri hacmini ölçer" | **Ölçmüyordu** — koşum sayısını ölçüyordu, 9.6× şişkin (L-013) |
 
 ---
 
@@ -215,8 +255,9 @@ saklanmaz**. Bugüne kadar düşenler:
 7. **`chart.measure_edge` faz artefaktı** — taban tek fazdan ölçülüyor; h≥63'te
    faz gürültüsü eşiğin 3-11 katı. Düzeltme hazır (`gram.phase_matched_baseline`),
    `chart.py`'ye taşınmadı.
-8. **`deploy/altin-backup.service` var olmayan `scripts/backup.sh`'ı çağırıyor** —
-   Oracle senaryosu aktive edilirse bu timer patlar.
+8. **Testler sözleşmeyi korur, DOĞRULUĞU değil.** Test paketi bir formülün sessizce
+   değiştirilmesini engeller; o formülün finansal olarak doğru olup olmadığını
+   hâlâ ölçüm söyler (ADR #007-B/H). Zırhı "sistem doğru çalışıyor" diye okuma.
 
 ---
 
@@ -241,10 +282,17 @@ O tabloda `Kim=👤` olan satırlar **yalnız Mert'in yapabileceği** işlerdir
 4. Yerelde DB'ye dokunacaksan **önce** `python -m src.restore_db`. Yerelde
    `python -m src.dbdump` **çalıştırma** — bayat sqlite'tan dump almak 1.5 günlük
    üretim verisini siler (L-009).
-5. Kararların gerekçesi `../../ai/DECISIONS.md` (#001…#008). Tuzaklar
-   `LESSONS.md` (L-001…L-012) — numara uzayı kökle **ortak**, bkz. `DECISIONS.md` #003.
-6. Testler: `.venv/bin/python -m pytest -q` → **299** geçmeli.
+5. Kararların gerekçesi `../../ai/DECISIONS.md` (#001…#009). Tuzaklar
+   `LESSONS.md` (L-001…L-015) — numara uzayı kökle **ortak**, bkz. `DECISIONS.md` #003.
+6. Testler: `.venv/bin/python -m pytest -q` → tamamı geçmeli (~5 sn, ağa
+   çıkmaz, gerçek DB'ye dokunmaz). Kırmızı bir test neredeyse daima haklıdır:
+   çoğu bir ADR'yi ya da dersi kilitliyor ve gerekçesi docstring'inde yazılı.
+   Testi susturmak, korumayı sessizce kaldırmakla aynı şeydir.
 
-**Bir şeyi değiştirmeden önce sor:** "Bu sayının farklı çıkabilmesi için ne
-olması gerekir?" (L-010) ve "Bu korumayı atlayan bir yol var mı?" (L-011).
-Bu iki soru bu projede en pahalı iki hatayı yakaladı.
+**Bir şeyi değiştirmeden önce üç soru:** "Bu sayının farklı çıkabilmesi için ne
+olması gerekir?" (L-010) · "Bu korumayı atlayan bir yol var mı?" (L-011) ·
+"Korumanın kapsamı dışında hangi fiil/alan kaldı?" (L-014).
+Bu üç soru bu projede en pahalı hataları yakaladı.
+
+**Bir koruma eklersen** onu düşüren testi de yaz ve **düştüğünü kanıtla**:
+korumayı bilerek boz, testi koş, geri al (L-015 · `AGENTS.md` §5).

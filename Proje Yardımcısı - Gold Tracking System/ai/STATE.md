@@ -22,7 +22,7 @@
 | Ne inşa edildi, ne ölçüldü, hangi iddia çürüdü, sınırlar ne? | **`PROJE-GUNLUGU.md`** (burada) |
 | Proje nedir, kapsamı/kısıtları ne? | `PROJECT.md` (burada) veya `../../ai/PROJECT.md` |
 | Bu karar neden böyle alındı? | `../../ai/DECISIONS.md` (proje) · `DECISIONS.md` (yardımcı sistemi) |
-| Hangi tuzağa bir daha düşmeyelim? | `LESSONS.md` (L-001…L-012) — numara uzayı kökle ORTAK, bkz. `DECISIONS.md` #003 |
+| Hangi tuzağa bir daha düşmeyelim? | `LESSONS.md` (L-001…L-015) — numara uzayı kökle ORTAK, bkz. `DECISIONS.md` #003 |
 | İnşa döneminde ne ölçüldü, hangi iddia çürütüldü? | `../../docs/TESLIMAT-ARSIV.md` |
 | Haftalık 5 dakikalık kontrol nasıl yapılır? | `../../İZLEME.md` |
 
@@ -66,10 +66,21 @@
   başında SOR" kuralı yazıldı. Liste bilerek **köke** kondu — pakete konsaydı
   hiçbir IDE okumaz, hatırlatma hiç çalışmazdı (L-004).
 
+- 2026-07-27 (2. tur) — **Regresyon zırhı paketi besledi (3 yeni ders + 1 ADR).**
+  Altın projesine 491 test eklendi (299 → 800) ve testin kendisi 20 mutasyonla
+  ölçüldü. Genelleştirilip buraya işlenenler: **L-013** girdisini baştan okuyan
+  iş kısıtsız tabloda sayaç üretir · **L-014** korumanın KAPSAMI da denetlenir
+  (kilidi takıp kapıyı açık bırakma) · **L-015** testin düşebildiğini kanıtla.
+  `AGENTS.md §5`'e **"Koruma disiplini — testin DÜŞTÜĞÜNÜ kanıtla"** protokolü
+  eklendi (`DECISIONS.md #004`); kök ↔ paket senkronu artık altın projesinde
+  bir testle denetleniyor.
+
 ### 🧱 Bilinen kısıt
 - **Kural değişikliği iki yere yazılmalı:** kanonik kopya proje kökündedir; buradaki
   `AGENTS.md` onun taşınabilir ikizidir. Değişiklik önce köke, sonra buraya.
   Senkron kontrolü: `diff ../../AGENTS.md AGENTS.md` → çıktı boş olmalı.
+  (Altın projesinde bu kontrol otomatik:
+  `tests/test_dokuman_tutarliligi.py::test_paketteki_agents_md_kokle_BIREBIR_ayni`.)
 
 ### 🎯 Sıradaki 3 İş (bu paket için)
 1. Paketi ikinci bir projeye `./yeni-proje.sh` ile tohumla — **DoD:** yeni klasörde

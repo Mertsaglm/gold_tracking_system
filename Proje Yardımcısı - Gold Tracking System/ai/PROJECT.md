@@ -73,7 +73,7 @@ artefaktı kendiliğinden ölür ve her iddia yanlışlanabilir olur (ADR #007-A
 | Kaynaklar | Truncgil · yfinance · TCMB EVDS · FRED |
 | Çalışma | GitHub Actions — `archive.yml` (`*/15`), `daily.yml` (15:35 UTC) |
 | Bildirim | Telegram Bot API (saf `requests`, harici kütüphane yok) |
-| Test | pytest — **299 test** (2026-07-27) |
+| Test | pytest — **800+ test** (2026-07-27); sözleşme kilidi, bkz. kök `ai/DECISIONS.md` #009 |
 
 ## Bu projenin çalışma kültürü (Usta bunu bilmeli)
 Bu proje **ölçüm kültürü** üzerine kurulu. Faz 3'te backtest metodolojisi

@@ -181,6 +181,22 @@ olması fark etmez) tahminle konuşma, şu sırayı izle:
 Ölçüm sonucu iddiayı çürütürse bu bir başarısızlık değil, sonuçtur — sayının
 küçülmesi dürüstlüğün büyümesidir.
 
+### Koruma disiplini — testin DÜŞTÜĞÜNÜ kanıtla
+
+Bir kural, eşik ya da koruma eklediğinde iş orada bitmez; o korumayı **düşüren**
+bir test de yazılır. Ama "test yazdım, geçiyor" bir ölçüm değil temennidir:
+
+1. **Korumayı bilerek boz** (filtreyi gevşet, eşiği koda göm, kolonu listeden
+   düşür), testi koş, **düştüğünü gör**, sonra `finally` ile geri al.
+2. Düşmüyorsa test yanlış şeyi ölçüyordur — testi düzelt, korumayı değil.
+3. Toplu mutasyon koşumundan sonra çalışma alanının temiz kaldığını doğrula.
+
+Sor: **"Bu korumayı atlayan bir yol var mı?"** ve **"Hangi fiiller/alanlar
+kapsam dışında?"** — koruma bağlı olabilir ama kapsamı eksik olabilir.
+
+Bir koruma testi düşmüşse önce onun HAKLI olabileceğini varsay: testi
+susturmak, korumayı sessizce kaldırmakla aynı şeydir.
+
 ## 6. Proje Yönetimi Ritmi
 
 - Her hedefi **milestone**'lara, her milestone'u **1-2 saatlik görevlere** böl.

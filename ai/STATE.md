@@ -4,8 +4,8 @@
 > KISA TUT: ~100 satırı aşınca eskiyi `ai/archive/STATE-YYYY-MM.md`'ye taşı.
 
 **Son güncelleme:** 2026-07-27
-**Aktif milestone:** **Karar motoru** (ADR #007/#008) — ÜRETİMDE. Sırada ilk
-canlı koşumun doğrulanması ve karne birikimi var
+**Aktif milestone:** **Karar motoru** (ADR #007/#008) ÜRETİMDE + **regresyon
+zırhı** (ADR #009) kuruldu. Sırada ilk canlı koşumun doğrulanması ve karne birikimi
 
 ---
 
@@ -22,6 +22,10 @@ hiçbir şey çalıştırması gerekmiyor. İki workflow:
 **Sağlık ölçütleri (normal aralık):** kapsama %60-100 · geçersiz kayıt ~%7 (retry
 sonrası düşmesi bekleniyor) · uzlaşı paneli **6/7 gösterge** (reel faiz FRED ölü
 olduğu için kapalı, bilerek).
+
+**Regresyon zırhı (ADR #009):** `.venv/bin/python -m pytest -q` → **800+ test**.
+Bir testi susturmadan önce oku: çoğu bir ADR'yi ya da dersi kilitliyor.
+Kırmızı bir "KİLİT TEST" neredeyse daima haklıdır.
 
 **AMAÇ FONKSİYONU: terminal GRAM sayısı** (TL getirisi değil — ADR #007).
 Raporun en başında **HÜKÜM** bloğu var; `/hukum` ile Telegram'dan da sorulur.
@@ -50,8 +54,8 @@ kaybettiriyor, bir sinyalin tabanı **+3.18p** yenmesi gerek, aşan aday yok.
 | Ne zaman | Kim | İş | Bitti sayılır (DoD) | Durum |
 |---|:--:|---|---|:--:|
 | **Her oturum başı** | 🤖 | `git fetch` + yerel/uzak farkı kontrol et | Yerel güncel; "sistem durdu" teşhisi ham veriye dayanıyor (L-001) | ♻️ |
-| **2026-07-27 akşamı** | 👤 | **İlk hafta içi koşumu doğrula** — düzeltilmiş kodun canlıda ilk çalışması | `git fetch` sonrası: (a) `history_daily` son satırı **bugün DEĞİL**; (b) `ohlc_daily`'de bugünün/hafta sonunun barı yok; (c) `grep -c "INSERT INTO predictions(" data/altin.sql` → **6**; (d) raporda 🎯 HÜKÜM + "karne ÖLÇÜM İÇERMİYOR" satırı var | ⏳ |
-| **~2026-07-28** | 👤 | **FRED işini commit'le** — `src/indicators.py` + `tests/test_fred_cache.py` hâlâ commit'siz | Negatif önbellek üretimde; `daily_job` süresi ölçülen ~166 sn'lik FRED beklemesini artık ödemiyor | ⏳ |
+| **2026-07-27 akşamı** | 👤 | **İlk hafta içi koşumu doğrula** — düzeltilmiş kodun canlıda ilk çalışması | `git fetch` sonrası: (a) `history_daily` son satırı **bugün DEĞİL**; (b) `ohlc_daily`'de bugünün/hafta sonunun barı yok; (c) `grep -c "INTO predictions(" data/altin.sql` → **6**; (d) raporda 🎯 HÜKÜM + "karne ÖLÇÜM İÇERMİYOR" satırı var | ⏳ |
+| **2026-07-27 akşamı** | 👤 | **Tick tekilliğini canlıda doğrula** (ADR #009-C) — kısıt üretimde ilk kez koşuyor | `grep -c "INTO ticks(" data/altin.sql` ≈ **1663 + günün yeni gözlemleri** (3 000'e fırlarsa koruma kopmuş); dump satır sayısı ~19 400 civarı | ⏳ |
 | **~2026-07-28** | 👤 | **Retry etkisini ölç** | Yeni CSV satırlarında geçersiz kayıt oranı ölçüldü. %6.9'dan düştüyse ✅; düşmediyse truncgil'e yedek kaynak backlog'a | ⏳ |
 | **~2026-08-01** | 👤 | Prova birikimini ilk kez oku (≈7 satır) | z dağılımı görülebiliyor; `tetiklenir_gun` kaç kez `true` olmuş sayıldı | ⏳ |
 | **~2026-08-03** | 👤 | **İlk canlı çözümü doğrula** — zincirin (kaydet→giriş→çözüm) canlıda ilk tam dönüşü | `prediction_outcomes`'ta satır var; `/karne` "1 çözülmüş" diyor; `gram_carry_kazanc_pct` makul | ⏳ |
@@ -78,19 +82,22 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 
 - **2026-07-07 → 07-26:** inşa Faz 1-7 + çoklu-IDE Usta sistemi + backlog
   kapatma + karar motoru Faz A-H. Hepsi arşivde, tarih tarih.
-- **2026-07-27 — Uçtan uca denetim (ADR #008) + PUSH** (`7aa3a18`). Push ÖNCESİ
-  denetlendi, iyi oldu: **karne hiçbir şey ölçmüyordu** (kayıtlı hükümlerin hiçbiri
-  SAT değil → "tabana fark"/"gram etkisi" piyasadan bağımsız 0.00; taktik kapı
-  kendini kilitlemişti), `asof=T−1` garantisi kodda zorlanmıyordu, `daily_job` her
-  hatayı yutup Actions'ı yeşil bırakıyordu, hayalet hafta sonu barları kalıcıydı.
-  Hepsi düzeltildi. Re-audit 3 eksik daha buldu: `history_daily`'ye bugünün yarım
-  satırı yazılmaya devam ediyordu (kaynak kapatıldı), L-005 numarası devir
-  paketiyle çakışıyordu (→L-009), kökte L-005…L-008 yoktu (tamamlandı).
-  **299 test.** Rebase'te üretim dump'ı kazandı — yerel dump 2890 tick eksikti,
-  L-009'un ta kendisi. Devir paketi de tazelendi (4 yeni ders + ADR #003).
+- **2026-07-27 — Uçtan uca denetim + PUSH** (`7aa3a18`, detay **ADR #008**).
+  Push ÖNCESİ denetlendi: karne hiçbir şey ölçmüyordu (yapısal 0.00, L-010),
+  `asof=T−1` kâğıt üstündeydi (L-011), `daily_job` hataları yutuyordu, hayalet
+  hafta sonu barları kalıcıydı. Hepsi düzeltildi; re-audit 3 eksik daha buldu.
+  Devir paketi tazelendi (4 ders + ADR #003).
+- **2026-07-27 — Regresyon zırhı + 4 açık kapatıldı** (detay **ADR #009**).
+  Gerekçe: abonelik bitince proje daha zayıf modellerle sürecek; kurallar
+  taşınabilirdi ama **uygulandığını hiçbir şey doğrulamıyordu**. 299 → **800+
+  test** (16 yeni dosya); ağırlık merkezi birim değil **sözleşme**. Testin
+  kendisi 20 mutasyonla ölçüldü, 20/20 yakalandı (→ L-015). Kapatılan açıklar:
+  `ticks` tekilliği (→ L-013), tahmin kaydının silinebilmesi + `kaynak`/
+  `model_version` korumasızlığı (→ L-014), eksik `scripts/backup.sh`.
+  `data/altin.sql` 33 699 → **19 369 satır** (sabit nokta doğrulandı).
 
 ## 🔨 Devam Edenler
-- _(yok — push Mert'in onayını bekliyor)_
+- _(yok)_
 
 ## 🧱 Bekleyenler (iş değil, zaman)
 - Retry etkisi ölçümü → ~07-28
@@ -103,9 +110,13 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
    DoD — `git fetch` sonrası dört kontrol:
    (a) `data/altin.sql`'de `history_daily` son satırı **bugün DEĞİL** (asof=T−1
        koruması tuttu); (b) `ohlc_daily`'de bugünün ve hafta sonunun barı yok;
-   (c) `grep -c "INSERT INTO predictions(" data/altin.sql` → **6**;
+   (c) `grep -c "INTO predictions(" data/altin.sql` → **6**;
    (d) raporda 🎯 HÜKÜM bloğu ve "karne ÖLÇÜM İÇERMİYOR" satırı var.
+   Ayrıca (e) `grep -c "INTO ticks(" data/altin.sql` ~1663+günün gözlemleri
+   (tick tekilliği üretimde ilk kez koşuyor — ADR #009-C).
    Actions kırmızıysa artık gerçekten arıza demektir (K-6: kritik adım exit 1).
+   _Not: dump artık `INSERT OR IGNORE` yazıyor; eski `grep -c "INSERT INTO ..."`
+   komutu 0 döner, yukarıdaki biçimi kullan._
 2. **Gölge kol kararı (ADR #008-B).** Kapı kapalıyken kol yalnız TUT ürettiği
    için karne asla ölçüm içeremez — döngü GÖRÜNÜR kılındı ama KIRILMADI.
    Kırmak için "kapı açık olsaydı ne derdim" hükmünü ayrı bir kola kaydetmek
@@ -117,9 +128,6 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
    verilecek karar; Faz G (MTF) **askıda** (Faz E aday bulamadı).
 
 ## 📦 Backlog (şimdi değil, unutma da)
-- **`deploy/altin-backup.service` var olmayan `scripts/backup.sh`'ı çağırıyor.**
-  Oracle Cloud senaryosu aktive edilirse bu timer patlar. `.gitignore` da
-  `data/backups/` için aynı script'e atıf yapıyor.
 - **`chart.measure_edge` faz artefaktı** (ADR #007-E) — taban tek fazdan
   ölçülüyor; yayılım h=63'te 2.6-3.2p, h=126'da 7.5-11.6p, `min_anlamli_fark_puan`
   ise 1.0. Uzun ufuk "zayıf kanıt" bulguları gürültünün içinde. Düzeltme hazır
@@ -129,8 +137,8 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
   **çekirdek kolun kapı değişkeni** → bu sessiz yedeğe düşme görünür olmalı.
 - **ALTINS1 gidiş-dönüş %0.40 vs banka hesabı %1.20** (3× ucuz). Taktik kapı
   açılırsa enstrüman seçimi eşiği doğrudan değiştirir (3.18p → 2.38p).
-- `prim_series(only_valid=False)` ölü argüman; `weekend=0` koşulu `indicative=0`
-  altında fazlalık, 4 yerde tekrarlanıyor.
+- `weekend=0` koşulu `indicative=0` altında fazlalık, 4 yerde tekrarlanıyor
+  (bilinçli savunma katmanı; `db.py` docstring'inde gerekçesi yazılı).
 - **Reel faiz göstergesi kapalı** — FRED ölü, ücretsiz TIPS reel getiri muadili yok.
   FRED geri gelirse kendiliğinden açılır. Panel 6/7 ile çalışıyor, öncelik düşük.
 - **Çeyrek priminde sezon düzeltmesi yok** — yıllar süren arşiv ister; düz z sezonu

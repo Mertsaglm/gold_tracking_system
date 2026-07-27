@@ -14,6 +14,78 @@
 
 ---
 
+## L-015 — 2026-07-27 — Test yazmak yetmez: testin DÜŞEBİLDİĞİNİ kanıtla
+
+**Olay:** Regresyon zırhı için 491 yeni test yazıldı ve hepsi ilk koşumda yeşil
+geçti. Bu hiçbir şey kanıtlamıyordu — L-012 zaten "yeşil kalarak yanlış güven
+veren test" vakasıydı. Bu yüzden 20 kontrollü **mutasyon** uygulandı: `asof`
+filtresini `<`→`<=` yap, `drop_weekend_bars`'ı kaldır, `taktik.aktif: true` yap,
+z kapısını 60→20 düşür, bir tabloyu `dbdump._TABLES`'tan düşür, `predictions.id`'yi
+dump'tan çıkar, `feature_vector`'ın parametre sırasını değiştir, `karar.py`'ye
+`import requests` ekle, kritik adım etiketini kaydır, eşiği koda göm, gram
+carry'yi orandan TL farkına çevir... Her mutasyon `try/finally` ile geri alındı.
+**20/20 yakalandı** — ancak bundan sonra "bu testler koruyor" cümlesi ölçüme
+dayandı.
+
+**Ders:** Bir testin değeri geçmesinde değil, **doğru durumda düşmesinde**dir.
+"Testi yazdım, geçiyor" ifadesi ölçüm değil temennidir; mutasyon denetimi o
+temenniyi 10 dakikada ölçüme çevirir.
+
+**Kural:** Bir KİLİT koruma testi yazdığında korumayı bilerek boz, testin
+düştüğünü gör, `finally` ile geri al. Düşmüyorsa test yanlış şeyi ölçüyordur.
+Bu adım "kilit test" etiketi taşıyan her test için zorunludur; toplu koşum
+`git status`'ün temiz kaldığını da doğrulamalı.
+
+---
+
+## L-014 — 2026-07-27 — Korumanın KAPSAMI da denetlenir: kilidi takıp kapıyı açık bırakma
+
+**Olay:** `trg_predictions_immutable` "tahmin kaydı değiştirilemez" garantisinin
+tamamıydı (ADR #007-F) ve gerçekten çalışıyordu — ama yalnız **UPDATE** için.
+`DELETE` tamamen serbestti; oysa karneyi güzelleştirmenin en kısa yolu kötü
+tahmini düzeltmek değil **silmek**tir. Ayrıca trigger'ın kolon listesinde
+`kaynak` ve `model_version` yoktu: bir tahminin **hangi karneye sayıldığını** tam
+olarak bu iki kolon belirliyor, yani tek satırlık bir `UPDATE` ile
+`tahmin_backfill`'in 458 haftalık replay'i canlı karneye karıştırılabilirdi.
+
+**Ders:** L-011 "koruma yazıldı ama bağlanmadı" diyordu; bu onun kardeşi:
+koruma **bağlı ama kapsamı eksik**. Kısmi koruma, tam koruma sanıldığı için daha
+tehlikelidir — kimse "acaba DELETE de kapalı mı?" diye sormaz.
+
+**Kural:** Bir koruma yazınca üç soruyu sor: (1) hangi **fiiller** kapalı
+(INSERT/UPDATE/DELETE)? (2) hangi **alanlar** kapalı — dışarıda kalan bir alan
+kararı değiştirebiliyor mu? (3) test her fiil/alan için **ayrı ayrı** mı koşuyor?
+Tek bir örnek üzerinden yazılmış test, listeye eklenmemiş alanı asla görmez —
+bu yüzden kolon listesi testte de veri olarak durmalı (`KORUNAN_KOLONLAR`).
+
+---
+
+## L-013 — 2026-07-27 — Girdisini baştan okuyan iş, kısıtsız tabloda SAYAÇ üretir
+
+**Olay:** `import_actions.import_all` her `daily_job` koşumunda TÜM arşiv
+CSV'lerini baştan okuyor (dosya bazlı artımlılık yok) ve `db.insert_tick` düz
+`INSERT` idi. `ticks` tablosunda benzersiz kısıt olmadığı için aynı gözlem her
+gün yeniden yazılıyordu. Ölçüm: üretim dump'ında **15 999 tick satırı, tekil
+olan 1 663** (9.6×); en eski satır **23 kez** yazılmıştı. İki zarar birden:
+`data/altin.sql` her gün ~1663 satır büyüyordu (diff'lenebilir dump'ın var olma
+sebebi olan repo şişmesi geri geliyordu) ve raporun "Ham tick: N" satırı veri
+hacmini değil **koşum sayısını** ölçüyordu. `prim_history` ve `ohlc_1m`
+PRIMARY KEY sayesinde etkilenmemişti — yani kusur tablonun tasarımındaydı,
+iş akışında değil.
+
+**Ders:** "Her koşumda baştan oku" basit ve dayanıklı bir tasarımdır **ama**
+yazdığı her tabloda idempotentlik şart koşar. Kısıtsız bir tabloda bu desen,
+ölçüm kılığında bir koşum sayacı üretir — L-010'un veri katmanındaki hâli.
+
+**Kural:** Bir iş girdisinin tamamını yeniden okuyorsa, yazdığı her tablo için
+sor: **"Aynı gözlem ikinci kez yazılırsa ne olur?"** Cevap "satır artar" ise ya
+doğal anahtara `UNIQUE` + `INSERT OR IGNORE` koy, ya da artımlılığı kanıtla.
+Denetimi tek sorguyla yapılır: `COUNT(*) == COUNT(DISTINCT <doğal anahtar>)`.
+Kısıtı sonradan eklerken **mevcut kopyaları önce temizle** (indeks aksi halde
+kurulamaz) ve eski dump'ların hâlâ yüklenebildiğini doğrula.
+
+---
+
 ## L-012 — 2026-07-27 — Fixture üreticiden türemiyorsa test, mock'u doğrular
 
 **Olay:** `test_kapi_acik_ve_maliyeti_asarsa_sat` yıllardır yeşil geçiyor ve

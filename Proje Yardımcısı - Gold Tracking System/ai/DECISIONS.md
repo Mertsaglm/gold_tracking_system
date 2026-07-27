@@ -6,6 +6,44 @@
 
 ---
 
+## #004 — 2026-07-27 — Usta'nın koruma disiplini: testin DÜŞTÜĞÜNÜ kanıtlama zorunluluğu
+
+**Bağlam:** Altın projesinde 491 koruma testi yazıldı ve hepsi ilk koşumda yeşil
+geçti. Ama L-012 zaten "yeşil kalarak yanlış güven veren test" vakasıydı: bir
+fixture üreticiden sapmıştı ve ona dayanan testler gerçekliğini yitirmişti.
+Yani **"test yazdım, geçiyor" cümlesi bu sistemde bir kanıt değildi** — oysa
+Usta'nın tüm iş çıktısı bu cümleyle teslim ediliyordu.
+
+Ayrıca aynı turda iki gerçek açık, mevcut testlerin **kapsamı** yüzünden
+görünmemişti: bir değiştirilemezlik trigger'ı UPDATE'i engelliyor ama DELETE'i
+bırakıyordu ve tek bir örnek üzerinden yazılmış test bunu göremiyordu.
+
+**Seçenekler:**
+- A) Bir şey yapma; kod inceleme yeterli olsun → L-012 zaten bunun olmadığını gösterdi
+- B) Kapsam ölçüm aracı (coverage) zorunlu kıl → satır kapsaması "test doğru
+  şeyi ölçüyor mu" sorusunu **cevaplamaz**; yeşil kapsama yanlış güven verir
+- C) **Mutasyon disiplini:** korumayı bilerek boz, testin düştüğünü gör, geri al
+
+**Karar:** C. `AGENTS.md §5`'e **"Koruma disiplini — testin DÜŞTÜĞÜNÜ kanıtla"**
+alt bölümü eklendi: (1) korumayı boz → testi koş → düştüğünü gör → `finally` ile
+geri al, (2) düşmüyorsa **testi** düzelt (korumayı değil), (3) toplu koşumdan
+sonra çalışma alanının temiz kaldığını doğrula. Ek olarak iki soru kurallaştı:
+"bu korumayı atlayan bir yol var mı?" ve "hangi fiiller/alanlar kapsam dışında?"
+
+**Neden:** Ölçüm kültürünün (`§5` İddia denetimi) testlere uygulanmış hâli.
+Bu proje bir iddiayı ham tabana karşı ölçmeden kabul etmiyor; "testlerim
+koruyor" da bir iddiadır ve ölçülebilir — üstelik 10 dakikada. İlk uygulamada
+20 mutasyonun 20'si yakalandı, yani disiplin uygulanabilir olduğunu da gösterdi.
+
+**Neden coverage değil:** Kapsama "satır çalıştı mı" der; mutasyon "yanlış olsa
+fark eder miydik" der. Aranan ikincisi.
+
+**Tekrar gözden geçir:** Mutasyon adımı elle yapılıyor (script + `try/finally`).
+Sık tekrarlanan bir işe dönüşürse küçük bir `scripts/mutasyon.py` yazılabilir —
+ama YAGNI: iki turda bir kullanılan bir şey için araç yazma.
+
+---
+
 ## #003 — 2026-07-27 — LESSONS numara uzayı ORTAK; kök ayrıntılı, paket genelleştirilmiş
 
 **Bağlam:** Ders dosyası iki yerde yaşıyor: proje kökünde (`ai/LESSONS.md` —
@@ -23,7 +61,7 @@ kodda verilen bir `L-008` atfı boşluğa gidiyordu.
 - C) **Ortak numara uzayı + iki dosyada da tam set** → aynı ders aynı numara;
   kök proje ayrıntısını, paket genelleştirilmiş hâlini tutar
 
-**Karar:** C. Her iki dosya da **L-001…L-012'nin tamamını** içerir. Aynı numara
+**Karar:** C. Her iki dosya da **L-serisinin tamamını** içerir. Aynı numara
 = aynı ders; kökteki sürüm somut (tarih, sayı, dosya adı), paketteki sürüm
 taşınabilir (proje adı geçmez). Yeni ders eklerken **iki dosyadaki en büyük
 numaraya** bakılır. Kural her iki dosyanın başına uyarı olarak yazıldı.

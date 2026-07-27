@@ -47,9 +47,9 @@ GEMINI.md                         ← Antigravity köprüsü
 ai/
   PROJECT.md        ← Altın projesinin kimliği (kararlı — nadiren değişir)
   PROJE-GUNLUGU.md  ← **Ne inşa edildi, ne ölçüldü, hangi iddia çürüdü, sınırlar ne**
-                       (devralanın okuyacağı ana anlatı — Faz 8 + denetim)
+                       (devralanın okuyacağı ana anlatı — Faz 8 + iki denetim turu)
   PROFILE.md        ← Mert'in profili (PROJELER ARASI ortak, kişisel → gitignore'da)
-  LESSONS.md        ← Sahadan çıkan dersler L-001…L-012 (PROJELER ARASI taşınır;
+  LESSONS.md        ← Sahadan çıkan dersler L-001…L-015 (PROJELER ARASI taşınır;
                        numara uzayı kökle ORTAK — bkz. DECISIONS.md #003)
   DECISIONS.md      ← Yardımcı SİSTEMİNİN kararları (projenin kararları kökte)
   STATE.md          ← Yön levhası + tarihli özet (canlı durum kökte)

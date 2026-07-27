@@ -11,9 +11,11 @@
 > | Ne arıyorsan | Nereye bak |
 > |---|---|
 > | Karar motorunun gerekçesi ve ölçümleri | `ai/DECISIONS.md` #007 · #008 |
+> | Test paketi neyi kilitliyor (sözleşme zırhı) | `ai/DECISIONS.md` #009 · `README.md` → "Test paketi" |
 > | Modüllerin ne yaptığı | `README.md` → "Proje yapısı" |
 > | Nerede kaldık / sırada ne var | `ai/STATE.md` |
 > | Günlük kontrol listesi | `İZLEME.md` |
+> | Ne inşa edildi, hangi iddia çürüdü (anlatı) | `Proje Yardımcısı - Gold Tracking System/ai/PROJE-GUNLUGU.md` |
 >
 > Buradaki fiyat/prim/vergi formülleri hâlâ geçerlidir; eskiyen şey kapsamdır,
 > içerik değil.

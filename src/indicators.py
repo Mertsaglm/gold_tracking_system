@@ -95,6 +95,16 @@ def _fred_csv(cfg: dict, series_id: str) -> Optional[list[tuple[str, float]]]:
 
     Actions runner'larından fredgraph.csv 25 sn'de yetişmiyordu; timeout config'e
     taşındı ve yeniden deneme eklendi.
+
+    ÖNEMLİ — önbellek BAŞARISIZLIĞI da tutar, yalnız başarıyı değil. Bu seriyi
+    aynı süreç içinde 3 ayrı tüketici çağırıyor (report.py'nin paneli, signals.py'nin
+    kadran_uzlasisi'i, backtest._fred_aligned'ın rejim etiketleyicisi). FRED
+    2026-07-07'den beri üretimde hiç yanıt vermiyor (ADR #006); önbellek yalnız
+    başarıyı tutarken üçü de bağımsız olarak 15sn×2 deneme ödüyordu — tek bir
+    daily_job koşusunda ~166 saniyenin neredeyse tamamı buydu (2026-07-26
+    ölçümü, uçtan uca gerçek koşu). `_FRED_CACHE` süreç ömürlü olduğu için bunu
+    önbelleklemek güvenli: bir sonraki `daily_job` koşusu YENİ bir süreçtir ve
+    FRED'i yeniden dener; "ölü" damgası bir sonraki güne taşınmaz.
     """
     if series_id in _FRED_CACHE:
         return _FRED_CACHE[series_id]
@@ -118,14 +128,13 @@ def _fred_csv(cfg: dict, series_id: str) -> Optional[list[tuple[str, float]]]:
                     out.append((d, float(v)))
                 except ValueError:
                     continue
-            if out:
-                _FRED_CACHE[series_id] = out
-                return out
-            return None
+            _FRED_CACHE[series_id] = out or None
+            return out or None
         except Exception as e:
             log.warning("FRED %s hata (deneme %d/%d): %s", series_id, attempt, tries, e)
             if attempt < tries:
                 time.sleep(2.0 * attempt)          # basit geri çekilme
+    _FRED_CACHE[series_id] = None          # bu SÜREÇ için "ölü" damgası
     return None
 
 

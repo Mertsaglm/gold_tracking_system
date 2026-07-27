@@ -93,8 +93,6 @@ market:
 # ----------------- Enstrüman metrikleri (has içerik) -----------------
 instruments:
   troy_ounce_gram: 31.1034768
-  gram_has_purity: 1.0                  # gram-has-altin zaten saf (1000) bazında
-  gram_retail_purity: 0.995             # gram-altin ~995 bazında (saflık düzeltmesi)
   coins:
     ceyrek:   { gross_g: 1.804, milyem: 0.916 }
     yarim:    { gross_g: 3.608, milyem: 0.916 }
@@ -183,14 +181,12 @@ karar:
     kapi_min_cozulmus: 30           # canlı karnede çözülmüş 1-ay tahmini
     kapi_min_gram_etkisi_pct: 0.0   # tahminlere uyulsaydı gram farkı > 0 olmalı
     kapi_min_isabet_farki_puan: 10.0
-    kismi_oranlar: [0.25, 0.50]
     maliyet_emniyet_carpani: 1.5    # beklenen kazanç bu çarpanla maliyeti aşmalı
 
   karne:
     zayif_n: 30                # < bu ise "ölçüm yetersiz". backtest.weak_n=15'ten
                                # SERT: burada seçilmiş bir kuralın karnesi ölçülüyor,
                                # ham bir dağılım değil.
-    faz_duzeltmeli_taban: true
     # chart.measure_edge'in faz artefaktının düzeltmesi. Ölçüldü (2026-07-26),
     # HAM ileri getiri tabanının yalnız faz seçiminden gelen yayılımı:
     #                h=21     h=63     h=126
@@ -322,8 +318,9 @@ trends:
   cache_file: "data/trends_cache.json"
 
 # ----------------- Rapor / Telegram -----------------
-report:
-  hour_local: 20                        # gün sonu raporu saati (TR)
+# NOT: raporun saati BURADA DEĞİL, .github/workflows/daily.yml cron'unda
+# tanımlıdır (15:35 UTC = 18:35 TR). Burada bir `report.hour_local: 20`
+# anahtarı vardı: hiçbir kod onu okumuyordu ve değeri de yanlıştı.
 
 # ----------------- Bildirim eşikleri (rehber 6.2; zamanlayıcı Actions'ta) -----------------
 alerts:
@@ -342,7 +339,6 @@ alerts:
   # göre hesaplanır; aksi halde sağlıklı sistem her gün "13 ardışık çalışma başarısız" der.
   archive_observed_freq_minutes: 90     # gözlemlenen gerçek ritim (~16 çalışma/gün)
   archive_gap_tolerance_factor: 3.0     # 90×3=270 dk; bunun altındaki boşluk normal kısıtlama
-  coverage_warn_pct: 40.0               # sayım tabanlı ikincil eşik (asıl uyarı boşluk tabanlı)
 telegram:
   enabled: true
   # token + chat_id .env'den (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
@@ -361,7 +357,3 @@ supervisor:
   singleton_port: 47615      # tek-instance kilidi (localhost bind)
 
 # ----------------- Yedekleme -----------------
-backup:
-  git_remote: "origin"
-  git_branch: "main"
-  commit_prefix: "backup"

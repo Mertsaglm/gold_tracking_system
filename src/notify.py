@@ -96,15 +96,22 @@ def _save_state(cfg, state) -> None:
     util.write_json(cfg["alerts"]["state_file"], state)
 
 
-def _atr_from_history(con, window=14):
+def _atr_from_history(con, window=14, bugun=None):
     """ATR(14) — kapanış-kapanış yaklaşımı, history_daily'den.
 
     history_daily'yi daily_job her gün tazeler (`history.update_recent`). Tazelenmezse
     ATR sabit kalır ve "günlük hareket" alarmı yanlış eşikle çalışır — bir dönem
     böyle oldu, bkz. ai/DECISIONS.md #004.
+
+    BUGÜN DIŞLANIR: `update_recent` hafta içi her koşumda o günün YARIM barını da
+    yazıyor (yfinance ∩ EVDS ikisi de aynı-gün satırı döndürüyor). Yarım bar
+    ATR'yi hem bozar hem de gün içinde her çalıştırmada değiştirir — eşik
+    kayan bir hedefe dönerdi.
     """
+    bugun = bugun or util.local_today()
     rows = con.execute(
-        "SELECT gram_teorik FROM history_daily ORDER BY date DESC LIMIT ?", (window + 1,)
+        "SELECT gram_teorik FROM history_daily WHERE date < ? "
+        "ORDER BY date DESC LIMIT ?", (bugun, window + 1)
     ).fetchall()
     prices = [r["gram_teorik"] for r in reversed(rows)]
     if len(prices) < window + 1:
@@ -172,7 +179,7 @@ def build_context(cfg: dict) -> dict:
     n_days = db.count_valid_prim_days(con)
     prim_z = None
     if n_days >= zmin and cur_prim is not None:
-        series = db.prim_series(con, only_valid=True)
+        series = db.prim_series(con)
         z = calc.zscore(series, cur_prim, zmin)     # güncel primin arşive karşı z'si
         prim_z = z.value
     # makas p90
@@ -184,9 +191,15 @@ def build_context(cfg: dict) -> dict:
         spreads.sort()
         idx = int(p / 100 * (len(spreads) - 1))
         spread_p90 = spreads[idx]
-    # günlük hareket: güncel teorik vs dünkü kapanış
-    atr = _atr_from_history(con)
-    yrow = con.execute("SELECT gram_teorik FROM history_daily ORDER BY date DESC LIMIT 1").fetchone()
+    # Günlük hareket: güncel teorik vs SON KAPANMIŞ günün kapanışı.
+    # `date < bugun` şart: `update_recent` hafta içi bugünün yarım barını da
+    # yazıyor. Filtresiz "en son satır", günlük rapor koştuktan sonra BUGÜNÜN
+    # kendi yarım kapanışına dönüyordu — yani alarm fiyatı kendisiyle
+    # karşılaştırıp farkı ~0 buluyor ve akşam saatlerinde hiç ateşlenemiyordu.
+    bugun_local = util.local_today()
+    atr = _atr_from_history(con, bugun=bugun_local)
+    yrow = con.execute("SELECT gram_teorik FROM history_daily WHERE date < ? "
+                       "ORDER BY date DESC LIMIT 1", (bugun_local,)).fetchone()
     daily_move = abs(cur_theo - yrow["gram_teorik"]) if (yrow and cur_theo) else None
     # Çeyrek primi z'si — prim z ile AYNI kapıya tabi (tutarlılık).
     # Kapı açılana dek None; bu artık "unutulmuş" değil, gerekçesi yazılı bir bekleme.
@@ -197,7 +210,7 @@ def build_context(cfg: dict) -> dict:
         latest["quarter_prim_pct"] if latest is not None else None)
     quarter_z = None
     if n_days >= zmin and cur_quarter is not None:
-        qseries = db.prim_series(con, only_valid=True, column="quarter_prim_pct")
+        qseries = db.prim_series(con, column="quarter_prim_pct")
         if qseries:
             quarter_z = calc.zscore(qseries, cur_quarter, zmin).value
     con.close()

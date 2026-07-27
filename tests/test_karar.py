@@ -22,13 +22,32 @@ def _cfg(**taktik):
     return c
 
 
-def _engel(taban=-1.99, esik=3.19, beklenen=None):
-    return {"ufuklar": {CFG["karar"]["birincil_ufuk"]: {
-        "gun": 21, "n_bagimsiz": 121, "taban_ortalama_pct": taban,
-        "kazanma_pct": 36.0, "en_kotu_pct": -36.2,
-        "taktik_esik_puan": esik, "cekirdek_esik_puan": abs(taban),
-        "beklenen_gram_kazanc_pct": beklenen,
-    }}}
+# `gram.engel_ozet`'in GERÇEKTEN ürettiği anahtar kümesi. Elle yazılmış bir
+# fixture bir zamanlar buraya `beklenen_gram_kazanc_pct` de koyuyordu; üretici
+# o anahtarı hiç üretmediği için "SAT dalı çalışıyor" diyen test yeşil geçiyor,
+# üretimde ise dal ERİŞİLEMEZ kalıyordu. Fixture artık üreticinin şemasına
+# bağlı ve sapma `test_engel_ozet_sozlesmesi` ile yakalanıyor.
+_ENGEL_ALANLARI = ("gun", "n_bagimsiz", "taban_ortalama_pct", "kazanma_pct",
+                   "maliyet_sonrasi_kazanma_pct", "en_kotu_pct",
+                   "taktik_esik_puan", "cekirdek_esik_puan")
+
+_YOK = object()          # "bu argüman hiç geçilmedi" işareti
+
+
+def _engel(taban=-1.99, esik=3.19, beklenen=_YOK):
+    """Üretimdeki `engel_ozet` çıktısının birebir şekli.
+
+    `beklenen` GEÇİLMEZSE anahtar hiç konmaz — üretimdeki durum budur.
+    Açıkça geçilirse (kapı-açık senaryolarını sınamak için) eklenir.
+    """
+    u = {"gun": 21, "n_bagimsiz": 121, "taban_ortalama_pct": taban,
+         "kazanma_pct": 36.0, "maliyet_sonrasi_kazanma_pct": 28.0,
+         "en_kotu_pct": -36.2,
+         "taktik_esik_puan": esik, "cekirdek_esik_puan": abs(taban)}
+    assert set(u) == set(_ENGEL_ALANLARI)
+    if beklenen is not _YOK:
+        u["beklenen_gram_kazanc_pct"] = beklenen
+    return {"ufuklar": {CFG["karar"]["birincil_ufuk"]: u}}
 
 
 # ---------- çekirdek kol ----------
@@ -79,19 +98,23 @@ def test_kapi_aktif_ama_karne_yoksa_kapali():
 
 
 def test_kapi_yetersiz_cozulmus_kapali():
-    k = {"cozulmus": 5, "gram_etkisi_pct": 3.0, "isabet_farki_puan": 20.0}
+    k = {"cozulmus": 5, "gram_etkisi_pct": 3.0, "isabet_farki_puan": 20.0,
+         "olculebilir_mi": True, "sat_hukum_sayisi": 3}
     assert karar.kapi_durumu(_cfg(aktif=True), k)["acik"] is False
 
 
 def test_kapi_gram_etkisi_negatifse_kapali():
     """İsabet yüksek ama gram etkisi negatifse kapı AÇILMAZ — amaç fonksiyonu
     isabet değil, gram."""
-    k = {"cozulmus": 50, "gram_etkisi_pct": -1.0, "isabet_farki_puan": 20.0}
+    k = {"cozulmus": 50, "gram_etkisi_pct": -1.0, "isabet_farki_puan": 20.0,
+         "olculebilir_mi": True, "sat_hukum_sayisi": 18}
     assert karar.kapi_durumu(_cfg(aktif=True), k)["acik"] is False
 
 
 def test_kapi_tum_sartlar_saglanirsa_acik():
-    k = {"cozulmus": 50, "gram_etkisi_pct": 2.0, "isabet_farki_puan": 15.0}
+    # `olculebilir_mi` ŞART: gram etkisi +2.0 ancak SAT hükümleri varsa oluşabilir.
+    k = {"cozulmus": 50, "gram_etkisi_pct": 2.0, "isabet_farki_puan": 15.0,
+         "olculebilir_mi": True, "sat_hukum_sayisi": 21}
     assert karar.kapi_durumu(_cfg(aktif=True), k)["acik"] is True
 
 
@@ -156,3 +179,97 @@ def test_format_kapi_durumunu_yazar():
     md = karar.format_karar_md(
         karar.karar_ver({"reel_net_mevduat": 1.0}, _cfg(aktif=False), _engel()))
     assert "SAT kapısı: KAPALI" in md
+
+
+# ---------- ÜRETİCİ ↔ TÜKETİCİ SÖZLEŞMESİ (bu sınıf hatanın tekrarını engeller) ----------
+def test_engel_ozet_sozlesmesi_fixture_ile_ayni():
+    """`gram.engel_ozet` ne üretiyorsa fixture da onu üretmeli.
+
+    Fixture üreticiden ayrıştığı an, ona dayanan bütün karar testleri
+    gerçekliğini kaybeder — `beklenen_gram_kazanc_pct` tam olarak böyle oldu.
+    """
+    from src import gram
+    sahte_engel = {"ilk": "2016-01-04", "son": "2026-07-24", "n_gun": 2561,
+                   "ufuklar": {"1ay": {"gun": 21, "n_bagimsiz": 121,
+                                       "ortalama": -1.99, "kazanma_pct": 36.0,
+                                       "maliyet_sonrasi_kazanma_pct": 28.0,
+                                       "en_kotu": -36.2, "yeterli": True}}}
+    ozet = gram.engel_ozet(CFG, sahte_engel)
+    assert set(ozet["ufuklar"]["1ay"]) == set(_ENGEL_ALANLARI)
+
+
+def test_uretici_beklenen_gram_kazancini_URETMIYOR():
+    """Bu bir arıza değil, ÖLÇÜM SONUCU (ADR #007-H: 14 aday, hiçbiri geçmedi).
+
+    Test bunu kilitliyor: bir gün gerçek bir tahminci bağlanırsa bu test
+    düşecek ve o an `taktik_hukum`'un "üretici yok" dalının kaldırılması
+    gerektiği hatırlatılacak.
+    """
+    from src import gram
+    engel = gram.engel_oku(CFG)
+    if engel is None:
+        pytest.skip("gram_engeli.json yok")
+    for ad, u in engel["ufuklar"].items():
+        assert "beklenen_gram_kazanc_pct" not in u, (
+            f"{ad}: üretici bağlanmış → karar.taktik_hukum'daki 'uretici_yok' "
+            "dalı gözden geçirilmeli")
+
+
+def test_uretici_yoksa_kapi_acik_olsa_bile_SAT_yok():
+    """K-2: üretimdeki engel şekliyle SAT dalı erişilemez — ve bunu SÖYLER."""
+    e = _engel()["ufuklar"][CFG["karar"]["birincil_ufuk"]]      # anahtar YOK
+    r = karar.taktik_hukum(e, {"acik": True, "gerekce": ""}, 1.5)
+    assert r["hukum"] == karar.TUT
+    assert r["beklenen_kaynak"] == "uretici_yok"
+    g = " ".join(r["gerekce"])
+    assert "ÜRETİCİSİ BAĞLI DEĞİL" in g
+    assert "hesaplanamadı" not in g, "üretici yokluğu 'hesaplanamadı' gibi okunmamalı"
+
+
+def test_uretici_yok_ile_esigin_altinda_ayri_gerekce_verir():
+    """İkisi aynı cümleyle raporlanırsa ölü kod 'zayıf sinyal' gibi okunur."""
+    yok = karar.taktik_hukum(_engel()["ufuklar"][CFG["karar"]["birincil_ufuk"]],
+                             {"acik": True, "gerekce": ""}, 1.5)
+    altinda = karar.taktik_hukum(_engel(beklenen=1.0)["ufuklar"][CFG["karar"]["birincil_ufuk"]],
+                                 {"acik": True, "gerekce": ""}, 1.5)
+    assert yok["hukum"] == altinda["hukum"] == karar.TUT
+    assert yok["beklenen_kaynak"] != altinda["beklenen_kaynak"]
+    assert yok["gerekce"] != altinda["gerekce"]
+
+
+# ---------- K-1: kapı totolojiden "şart sağlanmadı" sonucu ÇIKARMAMALI ----------
+def test_kapi_olculemez_karneden_sart_saglanmadi_DEMEZ():
+    """KİLİT TEST (ADR #008).
+
+    Hiç SAT hükmü olmayan bir karnede gram etkisi ve isabet farkı yapısal olarak
+    0.00'dır. Eski kod bunu "gram etkisi pozitif değil" diye raporluyordu — yani
+    ölçülmemiş bir şeyi ölçülmüş-ve-olumsuz gibi gösteriyordu. Ekim'deki
+    "trade kolu kalıcı kapalı" ADR'si bu cümleye dayanacaktı.
+    """
+    k = {"cozulmus": 50, "gram_etkisi_pct": 0.0, "isabet_farki_puan": 0.0,
+         "olculebilir_mi": False, "sat_hukum_sayisi": 0}
+    d = karar.kapi_durumu(_cfg(aktif=True), k)
+    assert d["acik"] is False
+    assert d["olculebilir"] is False
+    assert "ÖLÇÜM İÇERMİYOR" in d["gerekce"]
+    assert "ölçülmedi" in d["gerekce"]
+
+
+def test_kapi_olculebilir_ama_olumsuz_karne_eski_gerekceyi_korur():
+    """Gerçekten ölçülüp olumsuz çıkmışsa mesaj DEĞİŞMEMELİ."""
+    k = {"cozulmus": 50, "gram_etkisi_pct": -1.0, "isabet_farki_puan": 20.0,
+         "olculebilir_mi": True, "sat_hukum_sayisi": 12}
+    d = karar.kapi_durumu(_cfg(aktif=True), k)
+    assert d["acik"] is False and d["olculebilir"] is True
+    assert d["gerekce"] == "karnede gram etkisi pozitif değil"
+
+
+def test_karar_ver_olculemez_karneyi_raporda_bagirir():
+    k = karar.karar_ver({"reel_net_mevduat": 5.0}, _cfg(aktif=False), _engel(),
+                        karne={"cozulmus": 30, "isabet_pct": 64.0, "taban_pct": 64.0,
+                               "isabet_farki_puan": 0.0, "gram_etkisi_pct": 0.0,
+                               "olculebilir_mi": False, "sat_hukum_sayisi": 0,
+                               "kol": "taktik", "yeterli_mi": True})
+    md = karar.format_karar_md(k)
+    assert "ÖLÇÜLEMİYOR" in md
+    assert "fark +0.0p" not in md, "totoloji ölçüm gibi yazılmış"

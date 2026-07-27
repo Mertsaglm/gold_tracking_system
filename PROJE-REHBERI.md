@@ -2,6 +2,22 @@
 
 > Tarih: 2026-07-07. Vergi oranları ve API koşulları değişebilir; üretime almadan önce güncel kaynaktan doğrulayın.
 
+> ## ⚠️ KAPSAM SINIRI — önce bunu oku
+>
+> Bu belge **inşa dönemini (Faz 1-7)** anlatır ve son teknik güncellemesi
+> **2026-07-21**'dir. **Karar motorunu KAPSAMAZ** — HÜKÜM, gram engeli, tahmin
+> karnesi, özellik katmanı ve grafik çizimi burada geçmez. O katman için:
+>
+> | Ne arıyorsan | Nereye bak |
+> |---|---|
+> | Karar motorunun gerekçesi ve ölçümleri | `ai/DECISIONS.md` #007 · #008 |
+> | Modüllerin ne yaptığı | `README.md` → "Proje yapısı" |
+> | Nerede kaldık / sırada ne var | `ai/STATE.md` |
+> | Günlük kontrol listesi | `İZLEME.md` |
+>
+> Buradaki fiyat/prim/vergi formülleri hâlâ geçerlidir; eskiyen şey kapsamdır,
+> içerik değil.
+
 ---
 
 ## 1. Fiyat ve Piyasa Verisi Katmanı

@@ -6,6 +6,149 @@
 
 ---
 
+## #008 — 2026-07-27 — Denetim: karne bir totolojiydi; ölçülemezlik GİZLENMEK yerine RAPORLANIYOR
+
+**Tetikleyen:** Karar motoru (ADR #007) push edilmeden önce uçtan uca denetim.
+Bulunanların hepsi ölçümle kanıtlandı; iddiaların hiçbiri "muhtemelen" değil.
+
+### A) EN ÖNEMLİ BULGU — karne hiçbir şey ölçmüyordu
+
+`gram.hukum_dogru_mu` iki dala ayrılır: `SAT*` ise "satmak kazandı mı", **değilse**
+"satmamak doğru muydu". Taban daima `hukum_dogru_mu("TUT", …)`. Sistemin gerçekte
+üretebildiği hükümler ise yalnız `{AL_COK, AL, AL_AZ}` (çekirdek) ve `TUT`
+(taktik, kapı kapalı). **Hiçbiri `SAT` ile başlamıyor.** Sonuç:
+
+| hüküm | isabet_farkı | gram_etkisi |
+|---|---:|---:|
+| AL_COK · AL · AL_AZ · TUT · BEKLE | **+0.00p** | **+0.00%** |
+
+11 farklı gram carry senaryosunda (−40%…+60%) koşuldu; **piyasa ne yaparsa yapsın
+aynı.** Bunlar ölçüm değil, fonksiyonun tanımının sonucu — yani **kimlik**.
+
+**Kapı kendi kendini kilitliyordu:** `kapi_durumu` şartı `gram_etkisi > 0` **ve**
+`isabet_farki >= 10p`. İkisi de yapısal 0 olduğu için `aktif: true` yapılıp N=35
+beslendiğinde bile kapı kapalı kalıyor ve gerekçe *"karnede gram etkisi pozitif
+değil"* diyordu. Kapalı kapı → TUT → sıfır skor → kapalı kapı.
+
+**Neden kritikti:** STATE.md'nin takvimi Ekim'de bu tabloyu okuyup *"trade kolu
+kalıcı kapalı"* ADR'si yazmayı planlıyordu. O ADR bir ölçüm sonucuna değil, bir
+totolojiye dayanacaktı — ve tablo tıpatıp gerçek bir ölçüm gibi göründüğü için
+anlaşılmayacaktı.
+
+### B) Karar: totoloji GİZLENMİYOR, BAĞIRILIYOR (döngü henüz KIRILMADI)
+
+Yapılan: `karne_ozeti`'ye `olculebilir_mi` (= en az bir `SAT` hükmü var mı) ve
+`sat_hukum_sayisi` eklendi. Ölçülemez durumda:
+- `format_karne_md` rakam yerine **"🚫 Bu karne ÖLÇÜM İÇERMİYOR"** yazıyor,
+- `format_karar_md` karne satırı **"tabana fark ve gram etkisi ÖLÇÜLEMİYOR"** diyor,
+- `kapi_durumu` **"şart sağlanmadı DEĞİL, ölçülmedi"** gerekçesini döndürüyor.
+
+**Yapılmayan (bilerek):** döngüyü kırmak için "gölge kol" (kapı açık olsaydı
+üretilecek hükmü ayrıca kaydetmek) gerekiyor. Bu bir tasarım kararıdır ve
+**Mert'e bırakıldı** — çünkü (C)'deki sebeple gölge kol da bugün SAT üretemez.
+
+### C) `beklenen_gram_kazanc_pct` üreticisi YOK — ve bu bir unutma değil
+
+`karar.taktik_hukum` bu alanı okuyor; tek üretici olabilecek `gram.engel_ozet`
+onu **hiç üretmiyor** (8 anahtar üretiyor, bu yok). `.get()` sessizce `None`
+dönüyor → `SAT_25` dalı üretim verisiyle **erişilemez**. Kapı zorla açılarak
+doğrulandı: hüküm yine `TUT`.
+
+**Sebep ADR #007-H'de zaten yazılı:** 458 haftalık asof üzerinde 14 aday tarandı,
+en iyisi +1.4p (t≈1.4), gereken +3.18p. **Dürüst bir tahminci yok.** Bu yüzden
+buraya uydurma bir üretici KOYULMADI; bunun yerine kod artık *"ÜRETİCİSİ BAĞLI
+DEĞİL"* diyor ve bunu *"hesaplanamadı"*dan ayırıyor (`beklenen_kaynak` alanı).
+`test_uretici_beklenen_gram_kazancini_URETMIYOR` bunu kilitliyor: bir gün gerçek
+bir tahminci bağlanırsa test düşecek ve bu dalın kaldırılması gerektiğini
+hatırlatacak.
+
+### D) `asof = T−1` garantisi kâğıt üstündeydi
+
+`ozellikler.son_kapali_gun`'da bugünü dışlayan filtre **opsiyoneldi** ve iki
+çağıranın hiçbiri onu geçmiyordu; `tahmin.py`'de ayrıca filtresiz ikinci bir
+`MAX(date)` kopyası vardı. `daily_job` ise bu adımdan **önce**
+`history.update_recent`'ı çağırıyor.
+
+**Ölçüldü (üretim dump'ı):** 2026-07-24 17:25Z koşumunda hem `ohlc_daily` GC=F
+hem EVDS `TP.DK.USD.S.YTL` **aynı-gün** satırını içeriyordu → `history_daily`'nin
+bugünü almaması için hiçbir engel yok. Bugüne dek patlamamasının tek sebebi,
+`update_recent`'ı bağlayan düzeltmenin (`bb5a2ee`, 07-24 20:26Z) ardından yalnız
+hafta sonu koşumu olması. **İlk hafta içi koşum 2026-07-27.**
+
+Gerçekleşseydi: özellikler yarım bardan üretilip `predictions`'a DEĞİŞTİRİLEMEZ
+yazılacak, ertesi gün aynı satır gerçek kapanışla ezilecekti (`INSERT OR REPLACE`)
+→ kayıtlı hüküm bir daha yeniden üretilemez, **ADR #007-G'nin "canlı = replay"
+garantisi düşerdi.**
+
+**Karar:** filtre **varsayılan ve zorunlu** yapıldı (filtresiz yol YOK), ikinci
+kopya silindi, referans **yerel TR günü** (UTC değil — GC=F 00:00 TR'de kapanıyor).
+
+### E) Diğer düzeltmeler
+
+| # | Sorun | Karar |
+|---|---|---|
+| K-6 | `daily_job`'un altı adımı da istisnayı yutuyordu, süreç daima 0 ile çıkıyordu → `import`/`rapor` günlerce patlasa **Actions yeşil** kalırdı (`logs/` gitignore'da) | Hatalar tek yola (`_hata`) yazılıyor; `KRITIK_ADIMLAR = (import, rapor)` patlarsa `exit(1)` → dbdump+commit atlanır, yarım veri commit'lenmez |
+| K-7 | "günlük hareket" alarmı `history_daily`'nin **en son** satırıyla karşılaştırıyordu; günlük koşumdan sonra bu BUGÜNÜN yarım kapanışı oluyor → fark ~0, alarm akşamları ölü | `date < bugun` şartı; ATR de aynı şekilde |
+| K-8 | yfinance canlı sorguda piyasa kapalıyken bile "bugün" satırı döndürüyor; `_upsert` hiç silmediği için **kalıcı** oluyordu (2026-07-25/26 TRY=X hayalet barları) | `drop_unclosed_bar` YAZMA yoluna bağlandı **+ `drop_weekend_bars` eklendi** — bkz. (G) |
+| K-5 | `test_karar._engel` fixture'ı üreticinin hiç yazmadığı `beklenen_gram_kazanc_pct`'yi elle koyuyordu → "SAT dalı çalışıyor" diyen test yeşil, üretimde dal ölü | Fixture üreticinin şemasına bağlandı + `test_engel_ozet_sozlesmesi_fixture_ile_ayni` sözleşme testi |
+| LOW | 7 ölü config anahtarı (`kismi_oranlar`, `faz_duzeltmeli_taban`, `coverage_warn_pct`, `report.hour_local`, 2× purity, `backup:` bölümü); `grafik_ciz.CIKTI` config'i gölgeliyordu; `guven` hesaplanıp atılıyordu; `prim_series(only_valid)` ölü argümandı | Ölüler silindi, `CIKTI` config'e bağlandı, `guven TEXT` olarak kaydediliyor, argüman kaldırıldı |
+
+`predictions` üretimde **0 satır** olduğu için `guven REAL → TEXT` şema
+değişikliği migration gerektirmedi — bu pencere bir daha açılmayacak.
+
+**Doğrulama:** 296 test (277 → +19). Her bulgu için düşebilen bir regresyon testi
+var; `test_kapi_olculemez_karneden_sart_saglanmadi_DEMEZ` ve
+`test_son_kapali_gun_bugunu_VARSAYILAN_olarak_disar` kilit testler.
+
+### F) Denetimde ÇÜRÜTÜLEN iddia
+
+"`chart.measure_edge` faz artefaktı hâlâ açık" diye ayrı bir bulgu yazmaya
+hazırlanmıştım; ADR #007-E'de zaten ölçülüp backlog'a alınmış olduğunu görünce
+**geri çektim.** Aynı şekilde `collector.py`/`supervisor.py`/`deploy/` "ölü kod"
+gibi görünüyor ama PROJECT.md:39-42 onları Oracle Cloud senaryosu için bilinçli
+tutuyor — **kasıtlı ve geçerli**, dokunulmadı.
+
+### G) Hayalet bar: iddia ÖLÇÜLDÜ, yönü YANLIŞ çıktı
+
+Dört farklı AI'a soruldu; dördü de aynı varsayımı tekrarladı: *"sıfır aralıklı
+Pazar barı ATR'yi aşağı çekiyor."* **Ölçüm bunu çürüttü** (üretim dump'ı, ATR(14)):
+
+| | `kur_atr` | `kur_rsi` |
+|---|---:|---:|
+| hayaletli | 0.076262 | 98.77 |
+| temiz | 0.071157 | 98.95 |
+| **fark** | **+%7.17 (YUKARI)** | −0.18p |
+
+Kirleten Pazar barı değil: **Cumartesi barının aralığı 0.2226** — önceki 10 gerçek
+barın ortalamasının (0.0404) **5.5 katı**. Sıfır aralıklı Pazar barı ihmal edilebilir.
+
+**Etki değerlendirmesi:** `kur_atr` yalnız `ozellikler.feature_vector`'a giriyor ve
+ADR #007-D gereği **oy vermiyor** (bağlam). `notify`'ın alarm ATR'si
+`history_daily.gram_teorik`'ten geliyor, TRY=X'e hiç bakmıyor → "alarm yanılır"
+korkusu yersizdi. Yani bugünkü zarar **düşük ama sıfır değil**.
+
+**Karar:** yeni hayalet üretimi `drop_weekend_bars` ile kalıcı kapatıldı (ölçüm:
+5401 tarihsel barın **0'ı** hafta sonu → meşru hafta sonu barı YOK, filtre güvenli).
+`drop_unclosed_bar` tek başına yetmiyordu: Cumartesi yazılan bar Pazartesi
+koşumunda geçmiş tarihlidir ve o filtreden geçer.
+
+Bu, yeni bir emsal değil **var olan kuralın uygulanmasıdır**: `prim_history` zaten
+her istatistik tabanında `indicative=0 AND weekend=0` filtreliyor; `ohlc_daily`'de
+bu eksikti.
+
+**Tekrar gözden geçir:**
+- (a) **Gölge kol kararı** — B'deki açık iş. Ekim'e bırakıldı (2026-07-27 kararı).
+  Verilmezse karne yine ölçüm üretmeyecek, ama artık bunu **söyleyecek**.
+- (b) `beklenen_gram_kazanc_pct` üreticisi bağlanırsa C'deki dal ve testi kalkar.
+- (c) Üretimdeki 2 hayalet TRY=X satırı hâlâ duruyor. **Zamanlama kritik:**
+  `predictions` şu an 0 satır; kayıt başladıktan sonra silmek, o kayıtların
+  özelliklerini yeniden üretilemez kılar (ADR #007-G "canlı = replay" ihlali).
+  Temizlenecekse kayıt başlamadan temizlenmeli — veri silme Mert'in kararı.
+- (d) `deploy/altin-backup.service` var olmayan `scripts/backup.sh`'ı çağırıyor —
+  Oracle senaryosu aktive edilirse bu timer patlar.
+
+---
+
 ## #007 — 2026-07-26 — Karar motoru: amaç fonksiyonu GRAM, taktik kol doğuştan kapalı
 
 **Tetikleyen:** Mert: *"bu proje benim hiç işimi görmez, oldukça net şekilde

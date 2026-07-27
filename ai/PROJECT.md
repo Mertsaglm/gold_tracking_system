@@ -1,7 +1,9 @@
 # PROJECT.md — Projenin Kimliği
 
 > Bir kez yazılır, nadiren değişir. Derin teknik detay için kök dizindeki
-> **PROJE-REHBERI.md**, **README.md** ve **config.yaml**'a bak.
+> **README.md** ve **config.yaml**'a bak. **PROJE-REHBERI.md** yalnız inşa
+> dönemini (Faz 1-7) kapsar — karar motoru orada YOKTUR, onun için
+> `ai/DECISIONS.md` #007/#008.
 
 ## Proje Adı
 Altın Takip Sistemi (`gold_tracking_system`)
@@ -28,7 +30,8 @@ başladın, 108 gram bitirdin → tuttu.
   beklentisi; üç bacak FRESH değilse anomali bastırılır
 - **Rapor:** günlük (18:35 TR) + pazar haftalık; grafik yorumu (destek/direnç +
   gösterge teyidi)
-- **Telegram bot komutları:** `/durum` `/rapor` `/net` `/bilezik` `/grafik` `/aipaket`
+- **Telegram bot komutları:** `/hukum` `/karne` `/durum` `/rapor` `/net` `/bilezik`
+  `/grafik` `/aipaket`
 
 ## Kapsam Dışı (Ne YOK)
 - **Üçüncü kişilere** yatırım tavsiyesi / danışmanlık servisi. Sistem Mert'in

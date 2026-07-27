@@ -102,10 +102,30 @@ def karne_ozeti(satirlar: list[dict], zayif_n: int) -> dict:
     Sebep: gram TL yukarı sürükleniyor, yani "hep TUT" diyen bir taş bile yüksek
     isabet alır. Anlamlı olan TABANA KARŞI FARK — `backtest.py`'nin
     "mutlak medyan TL enflasyonu artefaktıdır" uyarısının aynısı.
+
+    ⚠️ `olculebilir_mi` NEDEN VAR — bu karnenin en önemli alanı:
+
+    `gram.hukum_dogru_mu` yalnız iki dala ayrılır: `SAT*` ise "satmak kazandı mı",
+    değilse "satmamak doğru muydu". Taban daima `hukum_dogru_mu("TUT", …)`.
+    Dolayısıyla kayıtlı hükümlerin HİÇBİRİ `SAT*` değilse:
+
+        hukum_dogru ≡ taban_dogru      →  isabet_farki_puan ≡ 0.00
+        gram_etkisi("TUT"/"AL*") ≡ 0.0 →  gram_etkisi_pct   ≡ 0.00
+
+    Bunlar ÖLÇÜM DEĞİL, KİMLİKTİR — piyasa ne yaparsa yapsın aynı çıkar
+    (doğrulandı: 11 farklı gram carry senaryosu, hepsinde +0.00). Çekirdek kol
+    yalnız `AL_*`, taktik kol kapı kapalıyken yalnız `TUT` üretir; yani bugün
+    İKİ KOL DA ölçülemez durumda.
+
+    Bu bayrak olmadan karne "%64 isabet, taban %64, fark +0.0p" yazar ve gerçek
+    bir ölçüm gibi okunur — Ekim'deki taktik kapı kararı bu totolojiye
+    dayandırılırdı. Bkz. ADR #008.
     """
     n = len(satirlar)
     if n == 0:
-        return {"cozulmus": 0, "yeterli_mi": False}
+        return {"cozulmus": 0, "yeterli_mi": False, "olculebilir_mi": False,
+                "sat_hukum_sayisi": 0}
+    sat_n = sum(1 for s in satirlar if str(s["hukum"]).startswith("SAT"))
     isabet = sum(1 for s in satirlar if s["hukum_dogru"]) / n * 100.0
     taban = sum(1 for s in satirlar if s["taban_dogru"]) / n * 100.0
     return {
@@ -120,6 +140,9 @@ def karne_ozeti(satirlar: list[dict], zayif_n: int) -> dict:
                            for h in sorted({s["hukum"] for s in satirlar})},
         "yeterli_mi": n >= zayif_n,
         "zayif_n": zayif_n,
+        # Tabandan fark ve gram etkisi ancak en az bir SAT hükmü varsa ÖLÇÜMdür.
+        "sat_hukum_sayisi": sat_n,
+        "olculebilir_mi": sat_n > 0,
     }
 
 
@@ -129,12 +152,6 @@ def _fiyat_serisi(con) -> tuple[list[str], list[float]]:
     rows = con.execute("SELECT date, gram_teorik FROM history_daily "
                        "WHERE gram_teorik IS NOT NULL ORDER BY date").fetchall()
     return [r["date"] for r in rows], [r["gram_teorik"] for r in rows]
-
-
-def _son_kapali_gun(con) -> Optional[str]:
-    r = con.execute("SELECT MAX(date) d FROM history_daily "
-                    "WHERE gram_teorik IS NOT NULL").fetchone()
-    return r["d"] if r else None
 
 
 def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
@@ -147,7 +164,10 @@ def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
     """
     from . import karar, ozellikler as oz
     k = cfg["karar"]
-    asof = asof_date or _son_kapali_gun(con)
+    # asof'un TEK kaynağı `ozellikler.son_kapali_gun` — burada ikinci bir
+    # "MAX(date)" kopyası vardı ve o kopyada bugünü dışlayan filtre YOKTU.
+    # İki asof yolu = iki farklı kesim tarihi ihtimali; tek kaynağa bağlandı.
+    asof = asof_date or oz.son_kapali_gun(con)
     if not asof:
         log.warning("history_daily bos — tahmin kaydedilemedi")
         return []
@@ -160,6 +180,9 @@ def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
     ozellikler = oz.feature_vector(cfg, con, asof)
 
     simdi = util.utcnow().isoformat()
+    # Kapı ufka bağlı DEĞİL — döngü içinde hesaplanınca her koşuda 3 özdeş karne
+    # sorgusu koşuyordu. Bir kez hesapla, üç ufukta da aynısını kullan.
+    kapi = karar.kapi_durumu(cfg, karne(cfg, con) if kaynak == "canli" else None)
     yazilan = []
     for ufuk_ad, h in k["ufuklar_gun"].items():
         j = hedef_indeks(tarihler, asof, h)
@@ -167,7 +190,6 @@ def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
         # → gösterim için yaklaşık takvim tarihi yazılır; çözüm indeksten yapılır.
         hedef = tarihler[j] if j is not None else tahmini_hedef_tarih(asof, h)
         ufuk_engel = (engel or {}).get("ufuklar", {}).get(ufuk_ad)
-        kapi = karar.kapi_durumu(cfg, karne(cfg, con) if kaynak == "canli" else None)
         kollar = {
             "cekirdek": karar.cekirdek_hukum(ozellikler.get("reel_net_mevduat"),
                                              k["cekirdek"]),
@@ -182,7 +204,7 @@ def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
                 " beklenen_gram_kazanc_pct, esik_pct, kapi_acik, ozellikler_json)"
                 " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (simdi, k["model_version"], kaynak, asof, h, hedef, kol,
-                 h_res["hukum"], h_res.get("skor"), None,
+                 h_res["hukum"], h_res.get("skor"), h_res.get("guven"),
                  h_res.get("beklenen_gram_kazanc_pct"),
                  (ufuk_engel or {}).get("taktik_esik_puan" if kol == "taktik"
                                         else "cekirdek_esik_puan"),
@@ -326,16 +348,31 @@ def format_karne_md(k: dict) -> str:
             f"bekliyor{ilk} _(kol `{k['kol']}`)_.", "",
             "_Karne dolana kadar hükümler ölçülen tarihsel tabana dayanır; "
             "canlı isabet iddiası YOKTUR._", ""])
+    olculebilir = k.get("olculebilir_mi", False)
+    # Ölçülemez durumda bu iki sayı kimliktir; "+0.0p" diye yazmak onları
+    # ölçüm gibi gösterir. Rakam yerine sebebi yazıyoruz.
+    fark_txt = (f"**{k['isabet_farki_puan']:+.1f} puan**" if olculebilir
+                else "— _(ölçülemez, aşağıya bak)_")
+    etki_txt = (f"**{k['gram_etkisi_pct']:+.2f}%**" if olculebilir
+                else "— _(ölçülemez, aşağıya bak)_")
     L = ["## 📋 Tahmin Karnesi", "",
          f"_kol `{k['kol']}` · model {k['model_version']} · kaynak {k['kaynak']}_", "",
          "| Metrik | Değer |", "|---|---:|",
          f"| Çözülmüş tahmin | {k['cozulmus']} |",
          f"| İsabet | %{k['isabet_pct']:.0f} |",
          f"| Taban (\"hep TUT\") | %{k['taban_pct']:.0f} |",
-         f"| **Tabana fark** | **{k['isabet_farki_puan']:+.1f} puan** |",
-         f"| **Gram etkisi** | **{k['gram_etkisi_pct']:+.2f}%** |",
+         f"| **Tabana fark** | {fark_txt} |",
+         f"| **Gram etkisi** | {etki_txt} |",
          f"| Bekleyen | {k['bekleyen']} |", ""]
-    if not k["yeterli_mi"]:
+    if not olculebilir:
+        L += [f"🚫 **Bu karne ÖLÇÜM İÇERMİYOR.** Çözülmüş {k['cozulmus']} hükmün "
+              f"{k.get('sat_hukum_sayisi', 0)}'i SAT. Hiç SAT yoksa "
+              "\"tabana fark\" ve \"gram etkisi\" piyasa ne yaparsa yapsın "
+              "**yapısal olarak 0.00** çıkar — bunlar ölçüm değil kimliktir.",
+              "",
+              "_Bu satırlardan **taktik kapı kararı çıkarılamaz.** Kapı kapalıyken "
+              "kol yalnız TUT üretiyor, TUT da tabanın kendisi. Bkz. ADR #008._", ""]
+    elif not k["yeterli_mi"]:
         L += [f"⚠️ **Ölçüm yetersiz** (N={k['cozulmus']} < {k['zayif_n']}). "
               "Bu karneden sonuç çıkarma.", ""]
     L += ["_Asıl metrik gram etkisidir: bir sistem yüksek isabetle gram "

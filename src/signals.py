@@ -43,14 +43,14 @@ def zscore_dry_run(cfg: dict, con) -> dict:
         z = calc.zscore(seri[:-1], seri[-1], 2)
         return z.value, z.mean, z.std
 
-    kayitlar = db.prim_series(con, only_valid=True)
+    kayitlar = db.prim_series(con)
     gunluk = [v for _, v in db.prim_daily_means(con)]
     z_kayit, mu_k, sd_k = _z(kayitlar)
     z_gun, mu_g, sd_g = _z(gunluk)
 
     # Çeyrek primi z'si de aynı kapıya tabi ve o da kapı açılana dek HİÇ
     # ateşlenmemiş olacak → aynı kalibrasyon riski, aynı prova.
-    q_kayit = db.prim_series(con, only_valid=True, column="quarter_prim_pct")
+    q_kayit = db.prim_series(con, column="quarter_prim_pct")
     q_gunluk = [v for _, v in db.prim_daily_means(con, column="quarter_prim_pct")]
     qz_kayit, _, _ = _z(q_kayit)
     qz_gun, _, _ = _z(q_gunluk)
@@ -143,7 +143,7 @@ def build_signals(cfg: dict) -> dict:
                            "yok",
                            f"Arşiv {zmin} güne ulaşınca z-skor sinyali devreye girer.", "—"))
     else:
-        series = db.prim_series(con, only_valid=True)
+        series = db.prim_series(con)
         z = calc.zscore(series[:-1], series[-1], zmin)
         yon = ("alim_lehine" if (z.value or 0) < -1 else
                "temkinli" if (z.value or 0) > 2 else "notr")

@@ -17,8 +17,16 @@
 | 4 | Veri artıyor mu? | `data/archive/` CSV satır sayısı, `data/altin.sql` diff | Her gün büyüyor | Büyümüyorsa arşiv workflow'u duraklatılmış olabilir (#1) |
 | 5 | Bildirim sayısı makul mü? | Telegram | Günde birkaç, tavan 6/gün | Fazlaysa `config.yaml alerts` eşiklerini gevşet |
 | 6 | Z-skor arşivi ilerliyor mu? | Haftalık pazar raporu → "Arşiv İlerlemesi: N/60 gün" | Her geçerli gün +1 | Bkz. aşağıdaki bölüm |
+| 7 | **Tahmin kaydı birikiyor mu?** | `grep -c "INSERT INTO predictions" data/altin.sql` | Her gün **+6** (3 ufuk × 2 kol) | Sayı durduysa `daily_job` adım 3d patlıyordur — Actions log'unda `tahmin hata` ara |
+| 8 | **HÜKÜM raporun başında mı?** | Telegram günlük raporu | İlk ekranda "🎯 HÜKÜM" bloğu | Yoksa `karar.enabled` kapalı ya da blok hata almış (`hukum blogu hata`) |
 
 Hepsi beklenen aralıktaysa: **hiçbir şey yapma.** Sistem çalışıyor.
+
+> **#7 neden var:** Ekim'deki taktik kapı kararının tek dayanağı bu birikimdir.
+> Kayıt sessizce dururca aylar sonra "karne boş" diye fark edilirdi — ADR #004'teki
+> `history_daily` donmasının aynısı. **Ama dikkat:** kaydın birikmesi karnenin
+> ÖLÇTÜĞÜ anlamına gelmez; bugün karne "tabana fark / gram etkisi" üretemiyor
+> (ADR #008) ve bunu raporda açıkça yazıyor.
 
 ---
 

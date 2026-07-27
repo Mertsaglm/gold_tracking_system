@@ -226,6 +226,40 @@ def test_son_kapali_gun_bugunden_onceki(tmp_path):
     c = _cfg(tmp_path)
     con = db.connect(c)
     tarihler = [r["date"] for r in _doldur(con, n=100)]
-    assert oz.son_kapali_gun(con) == tarihler[-1]
     assert oz.son_kapali_gun(con, bugun=tarihler[-1]) == tarihler[-2]
     con.close()
+
+
+def test_son_kapali_gun_bugunu_VARSAYILAN_olarak_disar(tmp_path):
+    """KİLİT TEST — `bugun` geçilmese bile bugünün YARIM barı asof olamaz.
+
+    Bu fonksiyonun eski hâlinde filtre opsiyoneldi ve iki çağıranın da (
+    `karar.build_karar`, `tahmin.kaydet`) hiçbiri onu geçmiyordu; garanti
+    kâğıt üstündeydi. `history.update_recent` bugünün satırını yazdığı an
+    (hafta içi her koşumda) asof bugüne kayardı.
+    """
+    c = _cfg(tmp_path)
+    con = db.connect(c)
+    tarihler = [r["date"] for r in _doldur(con, n=100)]
+    bugun = util.local_today()
+    # `update_recent`'ın hafta içi yaptığı şey: bugünün (yarım) barını yaz
+    con.execute("INSERT OR REPLACE INTO history_daily(date,ons_usd,usdtry,"
+                "gram_teorik,ons_source) VALUES(?,?,?,?,?)",
+                (bugun, 4000.0, 47.0, 6045.0, "test-yarim-bar"))
+    con.commit()
+    assert con.execute("SELECT MAX(date) FROM history_daily").fetchone()[0] == bugun
+    # ...ama asof ona ASLA kaymamalı
+    asof = oz.son_kapali_gun(con)
+    assert asof != bugun
+    assert asof == tarihler[-1]
+    con.close()
+
+
+def test_tahmin_ve_karar_ayni_asof_yolunu_kullanir():
+    """İkinci bir `MAX(date)` kopyası geri gelmesin (tek giriş noktası kuralı)."""
+    import inspect
+
+    from src import tahmin
+    kaynak = inspect.getsource(tahmin)
+    assert "_son_kapali_gun" not in kaynak, "tahmin.py'de ikinci asof yolu var"
+    assert "oz.son_kapali_gun" in kaynak

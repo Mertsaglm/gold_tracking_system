@@ -261,17 +261,54 @@ def test_karne_bos_durumda_bekleyeni_bildirir(tmp_path):
     con.close()
 
 
-def test_karne_dolu_gram_etkisini_gosterir(tmp_path):
+def test_karne_gercek_uretimde_OLCUM_ICERMEDIGINI_soyler(tmp_path):
+    """Kapı kapalıyken taktik kol yalnız TUT üretir → karne ölçüm İÇEREMEZ.
+
+    Bu test eskiden "gram etkisini gösterir" diye yazılmıştı ve `+0.00%` görüp
+    yeşil geçiyordu; oysa o sıfır piyasadan değil, `hukum_dogru_mu`'nun
+    tanımından geliyordu (SAT olmayan her hüküm tabanla aynı cevabı alır).
+    Karne artık bunu rakam yerine SEBEP yazarak söylüyor (ADR #008).
+    """
     c = _cfg(tmp_path)
     con = db.connect(c)
     _seri(con, n=200)
     tahmin.kaydet(c, con, asof_date="2026-01-10")
     tahmin.girisleri_doldur(c, con)
     tahmin.cozumle(c, con)
-    md = tahmin.format_karne_md(tahmin.karne(c, con))
-    assert "Gram etkisi" in md and "Tabana fark" in md
-    assert "Ölçüm yetersiz" in md          # N küçük → uyarı şart
+    k = tahmin.karne(c, con)
     con.close()
+    assert k["cozulmus"] > 0
+    assert k["sat_hukum_sayisi"] == 0
+    assert k["olculebilir_mi"] is False
+    # Kimlik olduğu için sayılar 0; ama rapor onları ÖLÇÜM gibi yazmamalı
+    assert k["isabet_farki_puan"] == 0.0 and k["gram_etkisi_pct"] == 0.0
+    md = tahmin.format_karne_md(k)
+    assert "ÖLÇÜM İÇERMİYOR" in md
+    assert "+0.0 puan" not in md and "+0.00%" not in md
+
+
+def test_karne_SAT_hukmu_varsa_gercek_sayilari_yazar():
+    """Ölçülebilir karne eski davranışını AYNEN korumalı (regresyon)."""
+    rows = [
+        {"hukum": "SAT_25", "hukum_dogru": True, "taban_dogru": False,
+         "gram_etkisi_pct": 1.20},
+        {"hukum": "SAT_25", "hukum_dogru": False, "taban_dogru": True,
+         "gram_etkisi_pct": -0.40},
+        {"hukum": "TUT", "hukum_dogru": True, "taban_dogru": True,
+         "gram_etkisi_pct": 0.0},
+    ]
+    k = tahmin.karne_ozeti(rows, zayif_n=30)
+    k.update(kol="taktik", kaynak="canli", model_version="v1.0", bekleyen=4)
+    assert k["olculebilir_mi"] is True and k["sat_hukum_sayisi"] == 2
+    md = tahmin.format_karne_md(k)
+    assert "ÖLÇÜM İÇERMİYOR" not in md
+    assert "Ölçüm yetersiz" in md            # N=3 < 30 → eski uyarı korunuyor
+    assert "+0.80%" in md                    # 1.20 − 0.40
+
+
+def test_karne_bos_olculebilir_degil():
+    k = tahmin.karne_ozeti([], zayif_n=30)
+    assert k["olculebilir_mi"] is False and k["sat_hukum_sayisi"] == 0
 
 
 # ---------- dump/restore döngüsü ----------

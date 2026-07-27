@@ -11,7 +11,8 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
 
 ## Ne yapar?
 
-- **Kaynaklar:** Truncgil (serbest piyasa gram/çeyrek/tam/Cumhuriyet + USD), yfinance (ons XAU/USD +
+- **Kaynaklar:** Truncgil (serbest piyasa gram/çeyrek + USD; tam/Cumhuriyet çekilir ama
+  arşive yazılmaz — `archive_fetch.FIELDS`), yfinance (ons XAU/USD +
   USD/TRY), TCMB EVDS (günlük; kur/faiz/TÜFE/altın/enflasyon beklentisi).
 - **Arşiv:** ham tick + 1 dk OHLC → SQLite; EVDS tarihsel seriler `evds_daily`; günlük gerçek OHLC
   `ohlc_daily` (2016+).
@@ -37,7 +38,12 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
   ölçüm `reports/gram_engeli.md`. Bkz. `ai/DECISIONS.md` #007.
 - **Karne:** verilen her hüküm `predictions` tablosuna **değiştirilemez** yazılır
   (SQLite trigger), vadesi gelince gram uzayında otomatik çözülür. `/karne` ile
-  okunur. Hüküm net olabiliyor çünkü sicili tutuluyor.
+  okunur.
+  ⚠️ **Bugün karne "tabana fark" ve "gram etkisi" ÜRETEMEZ** ve bunu açıkça yazar:
+  taktik kapı kapalıyken kol yalnız `TUT`, çekirdek kol yalnız `AL_*` üretiyor;
+  `gram.hukum_dogru_mu` bunların hepsine tabanla (`TUT`) aynı cevabı verdiği için
+  o iki sayı piyasa ne yaparsa yapsın **yapısal olarak 0.00** çıkar. Ölçüm değil,
+  kimlik. Bkz. `ai/DECISIONS.md` #008 — kapıyı açacak gölge kol henüz yok.
 - **Grafik:** 4 panel PNG (ons mum + destek/direnç · gram TL çizgi · iki motor ·
   RSI) günlük raporun ardından Telegram'a gider. `/grafik` görsel + metin döner.
   Gram paneli **çizgidir**: gram TL için OHLC türetilmez (bkz. `db.py` şeması).
@@ -82,6 +88,15 @@ src/
   import_actions.py  Actions CSV arşivini ana DB'ye aktarır
   reconcile.py       pazartesi hafta sonu mutabakatı
 
+  # --- Karar motoru (Bölüm 8 — ADR #007/#008) ---
+  ozellikler.py      TEK özellik giriş noktası (41 özellik); asof=T−1 zorunlu →
+                     look-ahead yapısal olarak imkânsız. Canlı ve replay aynı yol.
+  gram.py            gram hakemi: "satmak gram kazandırır mı?" + faz-düzeltmeli taban
+  karar.py           iki kollu HÜKÜM (çekirdek açık · taktik doğuştan kapalı) + kapı
+  tahmin.py          hüküm kaydı (değiştirilemez) → giriş → çözüm → karne
+  tahmin_backfill.py aday taraması (karne DEĞİL — örneklem-içi ÜST SINIR)
+  grafik_ciz.py      4 panel PNG (matplotlib lazy import; yoksa sessizce atlanır)
+
   # --- Analiz ve çıktı ---
   indicators.py      kadran/uzlaşı paneli (FRED/yfinance/GLD + etiketleme)
   chart.py           destek/direnç + gösterge teyidi + doğrulama harness'i
@@ -95,11 +110,12 @@ src/
 
   # --- Yardımcı / opsiyonel ---
   logging_setup.py   dönen dosya logları
-  backup_db.py       güvenli SQLite dump (.backup API)
+  restore_db.py      data/altin.sql → SQLite (dbdump.restore ince sarmalayıcısı)
+  backup_db.py       güvenli SQLite dump (.backup API) — elle çalıştırılır
   evds_discover.py   EVDS kod keşfi
   collector.py · supervisor.py   7/24 yerel toplayıcı modu (config runtime_mode: "collector");
                      üretimde KULLANILMIYOR — Actions modu geçerli
-tests/               birim testleri (153 test)
+tests/               birim testleri (296 test)
 ```
 
 ## Yapılandırma
@@ -189,7 +205,7 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env      # doldur
 
-.venv/bin/python -m pytest -q                 # 153 test
+.venv/bin/python -m pytest -q                 # 296 test
 .venv/bin/python -m src.restore_db            # data/altin.sql → SQLite (tüm geçmiş arşiv)
 .venv/bin/python -m src.evds_job backfill     # EVDS tarihsel (tek sefer)
 .venv/bin/python -m src.history build         # tarihsel günlük ons×kur (2016+)

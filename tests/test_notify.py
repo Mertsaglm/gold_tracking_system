@@ -72,3 +72,65 @@ def test_daily_cap():
     to_send, ns = notify.apply_cooldown(alerts, state, "2026-07-07T11:00:00+00:00", 24, 3)
     assert len(to_send) == 3            # tavan
     assert ns["daily"]["2026-07-07"] == 3
+
+
+# ---------- ATR / günlük hareket referansı: BUGÜN dışlanmalı ----------
+def _db_ile_history(tmp_path, satirlar):
+    import copy
+
+    from src import db
+    c = copy.deepcopy(CFG)
+    c["paths"]["db"] = str(tmp_path / "t.sqlite")
+    c["paths"]["db_dump"] = str(tmp_path / "t.sql")
+    con = db.connect(c)
+    for d, fiyat in satirlar:
+        con.execute("INSERT OR REPLACE INTO history_daily(date,ons_usd,usdtry,"
+                    "gram_teorik,ons_source) VALUES(?,?,?,?,?)",
+                    (d, 4000.0, 47.0, fiyat, "test"))
+    con.commit()
+    return c, con
+
+
+def test_atr_bugunun_yarim_barini_saymaz(tmp_path):
+    """`update_recent` hafta içi bugünün YARIM barını da yazıyor; ATR onu saymamalı.
+
+    Yarım bar hem ATR'yi bozar hem gün içinde her koşumda değiştirir → eşik
+    kayan hedefe döner.
+    """
+    from datetime import date, timedelta
+    bugun = util.local_today()
+    b = date.fromisoformat(bugun)
+    # 20 kapanmış gün: her gün +10₺ → ATR ≈ 10
+    satirlar = [((b - timedelta(days=20 - i)).isoformat(), 6000.0 + 10 * i)
+                for i in range(20)]
+    c, con = _db_ile_history(tmp_path, satirlar)
+    atr_temiz = notify._atr_from_history(con)
+    # şimdi bugünün YARIM barı gelsin — uçuk bir sıçramayla
+    con.execute("INSERT OR REPLACE INTO history_daily(date,ons_usd,usdtry,"
+                "gram_teorik,ons_source) VALUES(?,?,?,?,?)",
+                (bugun, 4000.0, 47.0, 9999.0, "yarim"))
+    con.commit()
+    assert notify._atr_from_history(con) == atr_temiz, "yarım bar ATR'ye sızdı"
+    con.close()
+
+
+def test_gunluk_hareket_bugunun_kendi_kapanisiyla_karsilastirmaz(tmp_path):
+    """Rapor koştuktan sonra alarm fiyatı KENDİSİYLE karşılaştırıp ~0 buluyordu."""
+    from datetime import date, timedelta
+    bugun = util.local_today()
+    b = date.fromisoformat(bugun)
+    satirlar = [((b - timedelta(days=20 - i)).isoformat(), 6000.0 + 10 * i)
+                for i in range(20)]
+    c, con = _db_ile_history(tmp_path, satirlar)
+    dun_kapanis = satirlar[-1][1]
+    # bugünün yarım barı, güncel fiyata ÇOK yakın yazılıyor (gerçek durum)
+    guncel = 6300.0
+    con.execute("INSERT OR REPLACE INTO history_daily(date,ons_usd,usdtry,"
+                "gram_teorik,ons_source) VALUES(?,?,?,?,?)",
+                (bugun, 4000.0, 47.0, guncel, "yarim"))
+    con.commit()
+    row = con.execute("SELECT gram_teorik FROM history_daily WHERE date < ? "
+                      "ORDER BY date DESC LIMIT 1", (bugun,)).fetchone()
+    con.close()
+    assert row["gram_teorik"] == dun_kapanis
+    assert abs(guncel - row["gram_teorik"]) > 100, "referans dünkü kapanış olmalı"

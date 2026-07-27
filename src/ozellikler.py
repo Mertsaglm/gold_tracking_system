@@ -47,6 +47,8 @@ import statistics
 from datetime import date, timedelta
 from typing import Optional, Sequence
 
+from . import util
+
 log = logging.getLogger("ozellikler")
 
 # Ufuk pencereleri (işlem günü) — momentum ve oynaklık için
@@ -142,14 +144,25 @@ def _ohlc_asof(con, symbol: str, asof_date: str, limit: int = 400):
 
 
 def son_kapali_gun(con, bugun: Optional[str] = None) -> Optional[str]:
-    """asof = SON TAM KAPANMIŞ gün. `bugun` verilirse ondan ÖNCEKİ son gün."""
-    if bugun:
-        r = con.execute("SELECT MAX(date) d FROM history_daily "
-                        "WHERE gram_teorik IS NOT NULL AND date < ?",
-                        (bugun,)).fetchone()
-    else:
-        r = con.execute("SELECT MAX(date) d FROM history_daily "
-                        "WHERE gram_teorik IS NOT NULL").fetchone()
+    """asof = SON TAM KAPANMIŞ gün — `bugun` DAİMA dışlanır.
+
+    `bugun` verilmezse yerel (TR) takvim günü kullanılır. Filtresiz bir yol
+    BİLEREK YOK: bu fonksiyonun eski hâlinde filtre opsiyoneldi ve hiçbir çağıran
+    onu geçmiyordu, yani garanti kâğıt üstündeydi.
+
+    Neden şart: `daily_job` bu adımdan ÖNCE `history.update_recent`'ı çağırıyor;
+    o da yfinance ∩ EVDS kesişimini yazıyor ve HER İKİ kaynak da hafta içi
+    aynı-gün satırını döndürüyor (2026-07-24 17:25Z koşumunda ölçüldü: GC=F ve
+    TP.DK.USD.S.YTL ikisi de 07-24'ü içeriyordu). Filtresiz MAX(date) o gün
+    15:35 UTC'de HENÜZ KAPANMAMIŞ bir barı `asof` yapardı; özellikler yarım
+    bardan üretilip `predictions`'a DEĞİŞTİRİLEMEZ yazılır, ertesi gün aynı satır
+    gerçek kapanışla ezilirdi (INSERT OR REPLACE) → kayıtlı hüküm bir daha asla
+    yeniden üretilemez, ADR #007-G'nin "canlı = replay" garantisi düşerdi.
+    """
+    bugun = bugun or util.local_today()
+    r = con.execute("SELECT MAX(date) d FROM history_daily "
+                    "WHERE gram_teorik IS NOT NULL AND date < ?",
+                    (bugun,)).fetchone()
     return r["d"] if r else None
 
 

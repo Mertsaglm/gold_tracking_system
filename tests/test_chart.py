@@ -360,3 +360,76 @@ def test_drop_unclosed_bar():
     out = ohlc_hist.drop_unclosed_bar(bars, "2026-07-21")
     assert [b["date"] for b in out] == ["2026-07-19", "2026-07-20"]
     assert ohlc_hist.drop_unclosed_bar([], "2026-07-21") == []
+
+
+# ---------- ohlc_daily YAZMA yolu: bugünün barı kalıcı olmamalı ----------
+def test_update_ohlc_daily_bugunun_barini_yazmaz(tmp_path, monkeypatch):
+    """Hayalet hafta sonu barı üretimde böyle oluştu (2026-07-25/26 TRY=X).
+
+    yfinance canlı sorguda piyasa kapalıyken bile "bugün" satırı döndürür;
+    `_upsert` hiç silmediği için o satır KALICI olurdu. Sıfır aralıklı Pazar
+    barı ATR'yi aşağı çekiyordu.
+    """
+    import copy
+
+    from src import db, ohlc_hist, util
+    cfg = copy.deepcopy(util.load_config())
+    cfg["paths"]["db"] = str(tmp_path / "t.sqlite")
+    cfg["paths"]["db_dump"] = str(tmp_path / "t.sql")
+    bugun = util.local_today()
+
+    def sahte_yf(ticker, start):
+        return [{"date": "2026-07-24", "o": 1.0, "h": 2.0, "l": 0.5, "c": 1.5, "v": 0.0},
+                # yfinance'in canlı sorguda eklediği yarım/hayalet bar:
+                {"date": bugun, "o": 9.0, "h": 9.0, "l": 9.0, "c": 9.0, "v": 0.0}]
+
+    monkeypatch.setattr(ohlc_hist, "_yf_daily_ohlc", sahte_yf)
+    ohlc_hist.update_ohlc_daily(cfg)
+
+    con = db.connect(cfg)
+    tarihler = [r[0] for r in con.execute(
+        "SELECT DISTINCT date FROM ohlc_daily ORDER BY date").fetchall()]
+    con.close()
+    assert "2026-07-24" in tarihler
+    assert bugun not in tarihler, "bugünün yarım barı kalıcı yazıldı"
+
+
+def test_drop_weekend_bars():
+    """Hafta sonu barı gerçek seans DEĞİL — ölçüldü: 5401 tarihsel barın 0'ı hafta sonu."""
+    from src import ohlc_hist
+    bars = [{"date": "2026-07-24"},   # Cuma
+            {"date": "2026-07-25"},   # Cumartesi  ← hayalet
+            {"date": "2026-07-26"},   # Pazar      ← hayalet
+            {"date": "2026-07-27"}]   # Pazartesi
+    out = [b["date"] for b in ohlc_hist.drop_weekend_bars(bars)]
+    assert out == ["2026-07-24", "2026-07-27"]
+    assert ohlc_hist.drop_weekend_bars([]) == []
+    # bozuk tarih veri KAYBETTİRMEMELİ
+    assert ohlc_hist.drop_weekend_bars([{"date": "bozuk"}]) == [{"date": "bozuk"}]
+
+
+def test_gecmis_tarihli_hafta_sonu_bari_da_yazilmaz(tmp_path, monkeypatch):
+    """`drop_unclosed_bar` tek başına YETMEZ: Cumartesi yazılan bar Pazartesi
+    koşumunda artık geçmiş tarihlidir ve o filtreden geçer."""
+    import copy
+
+    from src import db, ohlc_hist, util
+    cfg = copy.deepcopy(util.load_config())
+    cfg["paths"]["db"] = str(tmp_path / "t.sqlite")
+    cfg["paths"]["db_dump"] = str(tmp_path / "t.sql")
+
+    def sahte_yf(ticker, start):
+        return [{"date": "2026-07-24", "o": 1, "h": 2, "l": 0.5, "c": 1.5, "v": 0},
+                {"date": "2026-07-25", "o": 9, "h": 9, "l": 9, "c": 9, "v": 0},  # Cmt
+                {"date": "2026-07-26", "o": 9, "h": 9, "l": 9, "c": 9, "v": 0}]  # Paz
+
+    monkeypatch.setattr(ohlc_hist, "_yf_daily_ohlc", sahte_yf)
+    monkeypatch.setattr(util, "local_today", lambda *a, **k: "2026-07-27")
+    monkeypatch.setattr(ohlc_hist.util, "local_today", lambda *a, **k: "2026-07-27")
+    ohlc_hist.update_ohlc_daily(cfg)
+
+    con = db.connect(cfg)
+    tarihler = [r[0] for r in con.execute(
+        "SELECT DISTINCT date FROM ohlc_daily ORDER BY date").fetchall()]
+    con.close()
+    assert tarihler == ["2026-07-24"], f"hafta sonu barı yazıldı: {tarihler}"

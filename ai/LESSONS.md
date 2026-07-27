@@ -61,7 +61,7 @@ güncelliyor?" Cevap "kimse / elle" ise ya otomatiğe bağla ya da STATE.md'ye
 
 ---
 
-## L-002 — 2026-07-26 — `git pull` dump'ı tazeler, SQLite'ı tazelemez
+## L-005 — 2026-07-26 — `git pull` dump'ı tazeler, SQLite'ı tazelemez
 
 **Olay:** Oturum başında kural gereği `git pull` yapıldı (13 commit geride) ve
 `data/altin.sql` uzak sürüme güncellendi. Ama `data/altin.sqlite` **gitignore'da**

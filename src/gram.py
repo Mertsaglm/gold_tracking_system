@@ -95,6 +95,12 @@ def hukum_dogru_mu(hukum: str, gram_carry_kazanc_pct: Optional[float],
 
     Sıfır noktası da fiyat sabitliği DEĞİL, carry-nötr noktadır: gram fiyatı
     yatay kaldığı ay bile mevduat faizi yüzünden SAT kazanmıştır.
+
+    ⚠️ DİKKAT — bunun karne üzerindeki doğrudan sonucu: `SAT*` OLMAYAN her hüküm
+    (`AL_*`, `TUT`, `BEKLE`) burada tıpatıp `TUT` ile aynı cevabı alır. Yani
+    kayıtlı hükümler arasında hiç `SAT*` yoksa "tabana fark" ÖZDEŞ olarak 0
+    çıkar; bu bir ölçüm değil, fonksiyonun tanımının sonucudur. Karne bunu
+    `olculebilir_mi` bayrağıyla ayırt eder (`tahmin.karne_ozeti`, ADR #008).
     """
     if gram_carry_kazanc_pct is None:
         return None

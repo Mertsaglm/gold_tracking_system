@@ -57,7 +57,7 @@ def build_package(cfg: dict) -> dict:
     zmin = cfg["stats"]["zscore_min_samples"]
     n_days = db.count_valid_prim_days(con)
     if n_days >= zmin:
-        series = db.prim_series(con, only_valid=True)
+        series = db.prim_series(con)
         z = calc.zscore(series[:-1], series[-1], zmin)
         pkt["prim_zskoru"] = {"deger": z.value, "n": z.n, "gun": n_days}
     else:

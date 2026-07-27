@@ -42,6 +42,16 @@ _ETIKET = {
     TUT: "TUT — satma", SAT_25: "KISMİ SAT %25", SAT_50: "KISMİ SAT %50",
 }
 
+# `SAT_50` ve `BEKLE` bilerek REZERVE: hiçbir kod yolu şu an üretmiyor.
+# SAT_50 `config.yaml karar.taktik.kismi_oranlar`ın ikinci kademesi için,
+# BEKLE ise çekirdek kolun alımı kesmesi gerekirse diye ayrıldı — ama ADR #007-C
+# çekirdek kolun alımı ASLA kesmemesini kurala bağladı
+# (`test_cekirdek_hicbir_zaman_bekle_demez`). Silinmiyorlar ki etiket sözlüğü
+# ile hüküm kümesi arasındaki eşleşme bozulmasın.
+
+# "Anahtar hiç yok" ile "anahtar var ama None" ayrımı için sentinel.
+_URETICI_YOK = object()
+
 
 # ================= SAF ÇEKİRDEK (testli) =================
 
@@ -119,14 +129,33 @@ def taktik_hukum(ufuk_engel: Optional[dict], kapi: dict,
     # Kapı açık: beklenen kazanç emniyet çarpanıyla eşiği aşmalı
     if not ufuk_engel:
         return {"hukum": TUT, "guven": "düşük", "kapi_acik": True,
-                "beklenen_gram_kazanc_pct": None,
+                "beklenen_gram_kazanc_pct": None, "beklenen_kaynak": "engel_yok",
                 "gerekce": ["Engel ölçümü yok — güvenli tarafta kal."]}
-    beklenen = ufuk_engel.get("beklenen_gram_kazanc_pct")
+    beklenen = ufuk_engel.get("beklenen_gram_kazanc_pct", _URETICI_YOK)
     gerekli = ufuk_engel["taktik_esik_puan"] * emniyet_carpani
+
+    # ÜRETİCİ YOK ile "eşiğin altında" AYNI ŞEY DEĞİL — ayrılmazsa ilki
+    # ikincisi gibi okunur ("bugün sinyal zayıf"), oysa doğrusu "bu kol henüz
+    # bağlanmadı". `gram.engel_ozet` bu alanı hiç üretmiyor ve bu bir unutma
+    # değil, ÖLÇÜM SONUCU: ADR #007-H'de 458 haftalık asof üzerinde 14 aday
+    # tarandı, en iyisi +1.4p (t≈1.4) ile +3.18p eşiğinin yarısında kaldı.
+    # Dürüst bir tahminci olmadığı için buraya uydurma bir tahminci KOYULMADI.
+    if beklenen is _URETICI_YOK:
+        return {
+            "hukum": TUT, "guven": "yüksek", "kapi_acik": True,
+            "beklenen_gram_kazanc_pct": None, "beklenen_kaynak": "uretici_yok",
+            "gerekce": [
+                "Beklenen gram kazancı ÜRETİCİSİ BAĞLI DEĞİL — bu kol kapı "
+                "açık olsa bile SAT üretemez.",
+                f"Sebep unutma değil ölçüm: taranan 14 adayın en iyisi +1.4p, "
+                f"gereken +{gerekli:.2f}p (ADR #007-H).",
+                "Eşiği aşan bir aday ölçülene kadar hüküm TUT'tur.",
+            ],
+        }
     if beklenen is None or beklenen < gerekli:
         return {
             "hukum": TUT, "guven": "orta", "kapi_acik": True,
-            "beklenen_gram_kazanc_pct": beklenen,
+            "beklenen_gram_kazanc_pct": beklenen, "beklenen_kaynak": "olculdu",
             "gerekce": [
                 f"Beklenen gram kazancı "
                 f"{'hesaplanamadı' if beklenen is None else f'%{beklenen:+.2f}'}"
@@ -136,7 +165,7 @@ def taktik_hukum(ufuk_engel: Optional[dict], kapi: dict,
         }
     return {
         "hukum": SAT_25, "guven": "orta", "kapi_acik": True,
-        "beklenen_gram_kazanc_pct": beklenen,
+        "beklenen_gram_kazanc_pct": beklenen, "beklenen_kaynak": "olculdu",
         "gerekce": [f"Beklenen gram kazancı %{beklenen:+.2f} > gereken "
                     f"+{gerekli:.2f}p.",
                     "Kısmi sat; geri alım tetiği ayrıca izlenir."],
@@ -144,10 +173,22 @@ def taktik_hukum(ufuk_engel: Optional[dict], kapi: dict,
 
 
 def kapi_durumu(cfg: dict, karne: Optional[dict]) -> dict:
-    """Taktik kolun kapısı açık mı? Şart ÖNCEDEN kayıtlıdır, gevşetilmez."""
+    """Taktik kolun kapısı açık mı? Şart ÖNCEDEN kayıtlıdır, gevşetilmez.
+
+    ÖLÇÜLEBİLİRLİK KONTROLÜ (ADR #008) diğer şartlardan ÖNCE gelir: karnede hiç
+    SAT hükmü yoksa `gram_etkisi_pct` ve `isabet_farki_puan` yapısal olarak
+    0.00'dır ve şartlar "sağlanmadı" diye okunur. Bu, ölçülmüş bir olumsuzluk
+    DEĞİL, ölçümün hiç yapılmamış olmasıdır — ikisini aynı cümleyle raporlamak
+    Ekim'deki "trade kolu kalıcı kapalı" kararını bir totolojiye dayandırırdı.
+
+    Not: kapı kapalıyken kol yalnız TUT üretir, TUT tabanın kendisidir, dolayısıyla
+    karne asla ölçüm içeremez → kapı kendi kendini kilitler. Bu döngü şu an
+    KIRILMIŞ değil, yalnız GÖRÜNÜR kılınmıştır; kırmak için gölge kol gerekir
+    (ADR #008'de açık iş olarak kayıtlı).
+    """
     t = cfg["karar"]["taktik"]
     if not t.get("aktif", False):
-        return {"acik": False,
+        return {"acik": False, "olculebilir": None,
                 "gerekce": (f"config `karar.taktik.aktif: false`. Açılma şartı: "
                             f"canlı karnede ≥{t['kapi_min_cozulmus']} çözülmüş "
                             f"tahmin, gram etkisi > "
@@ -155,13 +196,22 @@ def kapi_durumu(cfg: dict, karne: Optional[dict]) -> dict:
                             f"> +{t['kapi_min_isabet_farki_puan']:.0f}p")}
     n = (karne or {}).get("cozulmus", 0)
     if n < t["kapi_min_cozulmus"]:
-        return {"acik": False,
+        return {"acik": False, "olculebilir": (karne or {}).get("olculebilir_mi"),
                 "gerekce": f"canlı karne {n}/{t['kapi_min_cozulmus']} çözülmüş tahmin"}
+    if not (karne or {}).get("olculebilir_mi", False):
+        return {
+            "acik": False, "olculebilir": False,
+            "gerekce": (f"karne ÖLÇÜM İÇERMİYOR — {n} çözülmüş hükmün hiçbiri SAT "
+                        "değil, gram etkisi ve isabet farkı yapısal olarak 0.00. "
+                        "Şart sağlanmadı DEĞİL, ölçülmedi (ADR #008)"),
+        }
     if (karne or {}).get("gram_etkisi_pct", 0.0) <= t["kapi_min_gram_etkisi_pct"]:
-        return {"acik": False, "gerekce": "karnede gram etkisi pozitif değil"}
+        return {"acik": False, "olculebilir": True,
+                "gerekce": "karnede gram etkisi pozitif değil"}
     if (karne or {}).get("isabet_farki_puan", 0.0) < t["kapi_min_isabet_farki_puan"]:
-        return {"acik": False, "gerekce": "karnede isabet farkı eşiğin altında"}
-    return {"acik": True, "gerekce": f"şart sağlandı (N={n})"}
+        return {"acik": False, "olculebilir": True,
+                "gerekce": "karnede isabet farkı eşiğin altında"}
+    return {"acik": True, "olculebilir": True, "gerekce": f"şart sağlandı (N={n})"}
 
 
 def karar_ver(ozellikler: dict, cfg: dict, engel: Optional[dict],
@@ -177,6 +227,10 @@ def karar_ver(ozellikler: dict, cfg: dict, engel: Optional[dict],
         "model_version": k["model_version"],
         "enstruman": k["enstruman"],
         "kapi": kapi,
+        # Karne ÇIKTIYA da konur: `format_karar_md` onu okuyor ve eskiden yalnız
+        # `build_karar` sonradan iliştiriyordu — yani saf `karar_ver` çıktısı
+        # biçimlendiriciyle uyumsuzdu ve karne satırı testlerde sessizce düşüyordu.
+        "karne": karne,
         "cekirdek": cekirdek_hukum(ozellikler.get("reel_net_mevduat"), k["cekirdek"]),
         "taktik": taktik_hukum(ufuk_engel, kapi,
                                k["taktik"]["maliyet_emniyet_carpani"]),
@@ -208,8 +262,7 @@ def build_karar(cfg: dict) -> dict:
     except Exception as e:                      # rapor bloğu yine de çıksın
         log.warning("ozellik/karne okunamadi: %s", e)
     out = karar_ver(ozellikler, cfg, gram.engel_oku(cfg), karne=k_karne)
-    out["karne"] = k_karne
-    out["asof_date"] = ozellikler.get("asof_date")
+    out["asof_date"] = ozellikler.get("asof_date")     # karne'yi karar_ver koyuyor
     return out
 
 
@@ -247,6 +300,14 @@ def format_karar_md(k: dict) -> str:
                   f"{kn.get('bekleyen', 0)} tahmin vadesini bekliyor"
                   + (f", ilki ~{ilk}" if ilk else "") + ". Bu hüküm ölçülen "
                   "tarihsel tabana dayanır; canlı isabet iddiası YOK._"]
+        elif not kn.get("olculebilir_mi", False):
+            # "fark +0.0p · gram etkisi +0.00%" yazmak, ölçülmemiş bir şeyi
+            # ölçülmüş göstermek olur — kayıtlı hükümlerin hiçbiri SAT değilse
+            # bu iki sayı piyasadan bağımsız olarak sabittir.
+            L += ["", f"_**Karne** ({kn['kol']}): {kn['cozulmus']} çözülmüş · "
+                  f"isabet %{kn['isabet_pct']:.0f} · **tabana fark ve gram etkisi "
+                  "ÖLÇÜLEMİYOR** (hiç SAT hükmü yok → ikisi de yapısal 0.00). "
+                  "Bu karneden taktik kapı kararı çıkmaz — ADR #008._"]
         else:
             zayif = "" if kn.get("yeterli_mi") else " ⚠️ölçüm yetersiz"
             L += ["", f"_**Karne** ({kn['kol']}): {kn['cozulmus']} çözülmüş · "

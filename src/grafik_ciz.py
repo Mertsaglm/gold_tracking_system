@@ -32,7 +32,11 @@ from . import util
 
 log = logging.getLogger("grafik_ciz")
 
-CIKTI = "data/grafik.png"
+# Yalnız SON ÇARE varsayılan: gerçek yol `config.yaml chart.gorsel.cikti`.
+# Burada sabit bir "data/grafik.png" vardı ve config'teki aynı anahtar hiç
+# okunmuyordu — yani config'i değiştirmek sessizce hiçbir şey yapmıyordu
+# (aynı yolun iki kaynağı). Kural: config varsa config kazanır.
+CIKTI_VARSAYILAN = "data/grafik.png"
 
 # Renkler: açık zeminde okunur, Telegram'ın hem açık hem koyu temasında çalışır
 C_FIYAT = "#1a1a1a"
@@ -223,7 +227,9 @@ def ciz(cfg: dict, cikti_yolu: Optional[str] = None) -> Optional[str]:
              "Seviyeler planlama geometrisidir — ölçülen yön kenarı YOKTUR.",
              ha="center", fontsize=8, color="#666666")
 
-    yol = util.abspath(cikti_yolu or CIKTI)
+    yol = util.abspath(cikti_yolu
+                       or cfg.get("chart", {}).get("gorsel", {}).get("cikti")
+                       or CIKTI_VARSAYILAN)
     yol.parent.mkdir(parents=True, exist_ok=True)
     # bbox_inches="tight" YOK: yukarıdaki subplots_adjust yerleşimi zaten
     # belirliyor; "tight" sağdaki fiyat etiketlerini de kırpıyordu.

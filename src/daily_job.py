@@ -15,6 +15,32 @@ from . import util
 
 log = logging.getLogger("daily_job")
 
+# Bu adımlar patlarsa iş BAŞARISIZ sayılır ve süreç 1 ile çıkar → Actions kırmızı.
+# Diğerleri (evds/ohlc/history/prova/tahmin/grafik) bir gün atlanabilir; rapor
+# yine de anlamlıdır ve ertesi gün kendini onarırlar.
+#
+# NEDEN VAR: eskiden altı adımın hepsi `except → log.warning` ile yutuluyordu ve
+# `run()` hiçbir koşulda yükselmiyordu. `logs/` gitignore'da olduğu için uyarılar
+# commit'lenmiyor; yani `import_actions` veya rapor günlerce patlasa Actions
+# YEŞİL kalıyor, tek işaret "Telegram'a mesaj düşmedi" oluyordu. Bu, ADR #004'te
+# 17 gün fark edilmeyen `history_daily` donmasının aynı zeminidir.
+KRITIK_ADIMLAR = ("import", "rapor")
+
+
+def _hata(result: dict, adim: str, e: Exception) -> None:
+    """Adım hatasını TEK yere yazar: log + `result["hatalar"]`.
+
+    Tek yol olması şart — eskiden bazı adımlar yalnız log'luyor, bazıları
+    `result`'a da yazıyordu; hangi adımın patladığı çıktıdan okunamıyordu.
+    """
+    log.warning("%s hata: %s", adim, e)
+    result.setdefault("hatalar", {})[adim] = str(e)
+
+
+def basarisiz_mi(result: dict) -> list[str]:
+    """Kritik adımlardan patlayanların listesi (boşsa iş başarılı)."""
+    return [a for a in KRITIK_ADIMLAR if a in result.get("hatalar", {})]
+
 
 def _zskor_prova(cfg: dict) -> dict:
     """Kuru prova ölçümünü JSONL'a ekler (append-only, günde 1 satır).
@@ -54,35 +80,34 @@ def run(cfg: dict) -> dict:
         from .import_actions import import_all
         result["import"] = import_all(cfg)
     except Exception as e:
-        log.warning("import hata: %s", e)
-        result["import_hata"] = str(e)
+        _hata(result, "import", e)
 
     # 2) EVDS günlük güncelleme
     try:
         from .evds_job import daily_update
         result["evds"] = daily_update(cfg)
     except Exception as e:
-        log.warning("evds hata: %s", e)
+        _hata(result, "evds", e)
 
     # 3) Günlük OHLC (grafik yorumu için) — artımlı, son N günü yeniden yazar
     try:
         from .ohlc_hist import update_ohlc_daily
         result["ohlc"] = update_ohlc_daily(cfg)
     except Exception as e:
-        log.warning("ohlc hata: %s", e)
+        _hata(result, "ohlc", e)
 
     # 3b) history_daily (ATR + günlük hareket alarmlarının kaynağı) — artımlı
     try:
         from .history import update_recent
         result["history"] = update_recent(cfg)
     except Exception as e:
-        log.warning("history hata: %s", e)
+        _hata(result, "history", e)
 
     # 3c) Z-skor kuru provası — kapı açılmadan dağılımı kaydet (bildirim YOK)
     try:
         result["zskor_prova"] = _zskor_prova(cfg)
     except Exception as e:
-        log.warning("zskor prova hata: %s", e)
+        _hata(result, "zskor_prova", e)
 
     # 3d) Tahmin kaydı — hüküm ver, girişi doldur, vadesi geleni çöz.
     # SIRA ÖNEMLİ: rapordan (adım 5) ÖNCE olmalı ki rapordaki karne bugünün
@@ -100,7 +125,7 @@ def run(cfg: dict) -> dict:
         finally:
             _con.close()
     except Exception as e:
-        log.warning("tahmin kaydi hata: %s", e)
+        _hata(result, "tahmin", e)
 
     # 4) Pazartesi mutabakat
     if weekday == 0:
@@ -108,7 +133,7 @@ def run(cfg: dict) -> dict:
             from .reconcile import reconcile
             result["mutabakat"] = reconcile(cfg)
         except Exception as e:
-            log.warning("mutabakat hata: %s", e)
+            _hata(result, "mutabakat", e)
 
     # 5) Rapor (pazar → haftalık derin) + Telegram
     from .report import build_report, build_weekly_report, save_report
@@ -121,8 +146,7 @@ def run(cfg: dict) -> dict:
             send_message(cfg, text)
             result["telegram"] = "gonderildi"
     except Exception as e:
-        log.warning("rapor hata: %s", e)
-        result["rapor_hata"] = str(e)
+        _hata(result, "rapor", e)
 
     # 6) Görsel grafik — rapordan SONRA ve AYRI try/except'te.
     # Ayrı olmasının sebebi: matplotlib ağır bir bağımlılık ve grafik metnin
@@ -137,12 +161,21 @@ def run(cfg: dict) -> dict:
                 from .telegram_bot import send_photo
                 send_photo(cfg, p, caption="Altın Takip — günlük grafik")
         except Exception as e:
-            log.warning("grafik hata: %s", e)
+            _hata(result, "grafik", e)
 
     log.info("daily_job: %s", {k: v for k, v in result.items() if k != "import"})
     return result
 
 
 if __name__ == "__main__":
+    import sys
+
     util.load_env()
-    print(run(util.load_config()))
+    _res = run(util.load_config())
+    print(_res)
+    _kritik = basarisiz_mi(_res)
+    if _kritik:
+        # Actions bu adımı kırmızıya düşürsün: sonraki adımlar (dbdump + commit)
+        # atlanır, yani yarım/eski veri commit'lenmez ve arıza GÖRÜNÜR olur.
+        print(f"KRITIK ADIM BASARISIZ: {', '.join(_kritik)}", file=sys.stderr)
+        sys.exit(1)

@@ -33,6 +33,16 @@ def iso(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat()
 
 
+def local_today(offset_hours: int = 3) -> str:
+    """Yerel (TR) takvim günü, ISO. `asof` kapanmışlık kapısının referansı.
+
+    UTC değil YEREL gün: GC=F ~21:00 UTC (00:00 TR) kapanıyor, yani D günü barı
+    ancak D+1'in TR gününde tam kapanmış sayılır. UTC kullanmak, TR'de gece
+    01:00'de koşan bir işte o günün yarım barını "kapanmış" gösterirdi.
+    """
+    return to_local(utcnow(), offset_hours).date().isoformat()
+
+
 # ---------- TR sayı ayrıştırma ----------
 def parse_tr_number(s: Any) -> Optional[float]:
     """'6.247,17' -> 6247.17 ; '46,8366' -> 46.8366 ; '%-0,34' -> -0.34."""

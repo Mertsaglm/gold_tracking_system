@@ -1,7 +1,7 @@
 """Pazartesi mutabakat job'ı (rehber 1.3).
 
 Hafta sonu prim noktaları prim_history'de zaten weekend=1 etiketli; bunlar
-z-skor/backtest serisinden dışlanır (db.prim_series only_valid). Bu job hafta sonu
+z-skor/backtest serisinden dışlanır (db.prim_series daima geçerli kayıtları döner). Bu job hafta sonu
 beklenti serisini pazartesi ilk GEÇERLİ prim ile karşılaştırıp raporlar.
 """
 from __future__ import annotations

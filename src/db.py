@@ -106,9 +106,13 @@ CREATE TABLE IF NOT EXISTS predictions (
     target_date     TEXT NOT NULL,
     kol             TEXT NOT NULL,   -- 'cekirdek' | 'taktik'
     hukum           TEXT NOT NULL,
-    skor            REAL,
-    guven           REAL,
-    beklenen_gram_kazanc_pct REAL,
+    skor            REAL,            -- REZERVE: hiçbir kol şu an skor üretmiyor
+                                     -- (ADR #007-D ağırlık öğrenmeyi reddetti).
+                                     -- Üretici bağlanana dek daima NULL.
+    guven           TEXT,            -- "düşük"|"orta"|"yüksek". REAL idi ve insert
+                                     -- sabit None geçiyordu: hüküm hangi güvenle
+                                     -- verildi denetimde okunamıyordu.
+    beklenen_gram_kazanc_pct REAL,   -- bkz. karar.taktik_hukum: üretici YOK
     esik_pct        REAL,            -- o an geçerli engel (taban + maliyet)
     kapi_acik       INTEGER NOT NULL,-- 0 → hüküm SAT olsa bile TUT'a kilitlendi
     ozellikler_json TEXT NOT NULL,
@@ -205,13 +209,22 @@ def insert_weekend_exp(con, ts_utc, weekend_gram, frozen_theoretical, expectatio
     )
 
 
-def prim_series(con, only_valid: bool = True, column: str = "prim_pct") -> list[float]:
-    """Z-skor için tarihsel prim serisi. only_valid: hafta sonu/indicative hariç."""
-    q = f"SELECT {column} FROM prim_history WHERE {column} IS NOT NULL"
-    if only_valid:
-        q += " AND indicative=0 AND weekend=0"
-    q += " ORDER BY ts_utc"
-    return [r[0] for r in con.execute(q).fetchall()]
+def prim_series(con, column: str = "prim_pct") -> list[float]:
+    """Z-skor için tarihsel prim serisi — DAİMA yalnız geçerli kayıtlar.
+
+    `only_valid` diye bir anahtar vardı; sekiz çağıranın sekizi de `True`
+    geçiyordu, yani `False` yolu hiç koşulmamış ölü bir daldı. Geçersiz
+    (indicative / hafta sonu) kayıtları z-skor tabanına katmak zaten kuralın
+    ihlali olurdu — seçenek olarak durması yanlış kullanıma davetiyeydi.
+
+    Not: `weekend=0` koşulu `indicative=0` altında teknik olarak fazlalık
+    (hafta sonu kayıtları zaten indicative işaretlenir) ama ikisi ayrı
+    sütunlarda tutulduğu için açıkça yazılıyor — biri bozulursa diğeri korur.
+    """
+    return [r[0] for r in con.execute(
+        f"SELECT {column} FROM prim_history "
+        f"WHERE {column} IS NOT NULL AND indicative=0 AND weekend=0 "
+        "ORDER BY ts_utc").fetchall()]
 
 
 def latest_prim(con) -> Optional[sqlite3.Row]:

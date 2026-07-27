@@ -59,7 +59,15 @@ def dump(cfg: dict, out_path: str | None = None) -> str:
         lines.append(f"-- {table}: {len(rows)} satır")
         for r in rows:
             vals = ", ".join(_sql_val(r[c]) for c in cols)
-            lines.append(f"INSERT INTO {table}({collist}) VALUES({vals});")
+            # OR IGNORE — geriye dönük restore güvenliği. `restore` daima BOŞ bir
+            # DB'ye yazdığı için (dosya siliniyor) burada bastırılabilecek tek
+            # çakışma DUMP'IN KENDİ İÇİNDEKİ tekrarlardır. Eski commit'lerdeki
+            # dump'lar `ticks` tekilliği kurulmadan önce üretildi ve kopyalar
+            # içeriyor; düz INSERT olsaydı `git checkout <eski>` + restore
+            # IntegrityError ile patlardı. Yeni dump'larda tekrar OLMAMALI —
+            # bunu `tests/test_veri_butunlugu.py` ayrıca denetliyor, yani
+            # OR IGNORE bir sorunu gizlemiyor, yalnız geçmişi okunur tutuyor.
+            lines.append(f"INSERT OR IGNORE INTO {table}({collist}) VALUES({vals});")
         lines.append("")
     con.close()
     text = "\n".join(lines)
@@ -83,9 +91,15 @@ def restore(cfg: dict, dump_path: str | None = None) -> dict:
         p = dbfile.parent / (dbfile.name + suffix)
         if p.exists():
             p.unlink()
-    con = db.connect(cfg)                       # şemayı oluşturur
+    # Şema kurulur ama `ticks` benzersiz indeksi HENÜZ kurulmaz: 2026-07-27
+    # öncesi dump'lar düz INSERT ve tekrar eden satırlar içeriyor, indeks önce
+    # kurulsa eski bir commit'ten restore patlardı. Yükleme sonrası
+    # `tekil_tick_indeksi` hem temizler hem indeksi kurar → sonuç iki biçimde de
+    # aynı: tekil veri, kurulu koruma.
+    con = db.connect(cfg, tekillestir=False)
     con.executescript(dpath.read_text(encoding="utf-8"))
     con.commit()
+    db.tekil_tick_indeksi(con)
     counts = {t: con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
               for t, _, _ in _TABLES}
     con.close()

@@ -1,5 +1,5 @@
 [Unit]
-Description=Altin Takip - SQLite yedek + git push
+Description=Altin Takip - SQLite tutarli yedek (WAL-guvenli anlik goruntu; git YOK)
 After=network-online.target
 
 [Service]

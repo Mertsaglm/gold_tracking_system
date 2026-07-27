@@ -1,6 +1,7 @@
 """SQLite şeması ve erişim yardımcıları."""
 from __future__ import annotations
 
+import logging
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -8,7 +9,14 @@ from typing import Optional
 
 from . import util
 
+log = logging.getLogger("db")
+
 SCHEMA = """
+-- (ts_utc, source, symbol) bir GÖZLEMİ tekil olarak tanımlar: ts_utc çekim anının
+-- mikrosaniyeli damgasıdır ve bir CSV satırında her sembol bir kez geçer.
+-- Tekillik BENZERSİZ İNDEKSLE zorlanıyor ama burada değil, `_tick_tekilligi()`
+-- içinde: mevcut veritabanlarında tekrar eden satırlar var ve indeks önce onlar
+-- temizlenmeden oluşturulamaz (bkz. o fonksiyonun docstring'i).
 CREATE TABLE IF NOT EXISTS ticks (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     ts_utc    TEXT NOT NULL,
@@ -144,32 +152,113 @@ CREATE TABLE IF NOT EXISTS prediction_outcomes (
 
 -- Karneyi güzelleştirmek için geçmiş bir tahmini "düzeltmek" kaçınılmaz bir
 -- ayartıdır ("şu tahmin bozuktu, elle düzelteyim"). Şema bunu imkânsız kılar.
-CREATE TRIGGER IF NOT EXISTS trg_predictions_immutable
+--
+-- DROP + CREATE (IF NOT EXISTS değil): trigger'ın TANIMI değiştiğinde
+-- `IF NOT EXISTS` eski tanımı olduğu gibi bırakır ve koruma sessizce eski
+-- kapsamda kalır. Her bağlantıda yeniden kurmak, kodda yazan kapsamın
+-- gerçekten yürürlükte olmasını garanti eder (L-011: kâğıt üstünde koruma).
+--
+-- `kaynak` ve `model_version` de listede: bir tahminin HANGİ karneye sayıldığını
+-- tam olarak bu iki kolon belirliyor. kaynak='replay' → 'canli' yapılırsa
+-- tahmin_backfill'in 458 haftalık replay'i canlı karneye karışır; oysa ADR
+-- #007-H o modülün "karne ÜRETMEZ" olduğunu özellikle yazıyor.
+DROP TRIGGER IF EXISTS trg_predictions_immutable;
+CREATE TRIGGER trg_predictions_immutable
 BEFORE UPDATE OF hukum, skor, guven, ozellikler_json, asof_date, esik_pct,
-                 kapi_acik, horizon_days, target_date, kol
+                 kapi_acik, horizon_days, target_date, kol,
+                 kaynak, model_version
 ON predictions
 BEGIN
     SELECT RAISE(ABORT, 'tahmin kaydi degistirilemez');
 END;
+
+-- Karneyi güzelleştirmenin en kısa yolu kötü tahmini "düzeltmek" DEĞİL, SİLMEKTİR.
+-- UPDATE'i engelleyip DELETE'i serbest bırakmak, kilidi takıp kapıyı açık
+-- bırakmaktır. Restore yolu satır silmiyor (dosyayı silip şemayı yeniden kuruyor),
+-- yani bu trigger hiçbir meşru akışı engellemez.
+DROP TRIGGER IF EXISTS trg_predictions_nodelete;
+CREATE TRIGGER trg_predictions_nodelete
+BEFORE DELETE ON predictions
+BEGIN
+    SELECT RAISE(ABORT, 'tahmin kaydi silinemez');
+END;
 """
 
 
-def connect(cfg: dict) -> sqlite3.Connection:
+TICK_TEKIL_INDEKS = "idx_ticks_uniq"
+
+
+def tekil_tick_indeksi(con) -> int:
+    """`ticks` tablosuna benzersiz indeksi kurar; gerekiyorsa önce onarır.
+
+    NEDEN VAR — ölçülmüş bir arıza (2026-07-27): `import_actions.import_all` her
+    `daily_job` koşumunda TÜM arşiv CSV'lerini baştan okuyor ve eski `insert_tick`
+    düz `INSERT` olduğu için aynı gözlemi her gün yeniden yazıyordu. Üretim
+    dump'ında 15 999 tick satırının yalnız 1 663'ü tekildi (9.6×); en eski satır
+    23 kez yazılmıştı. İki zararı vardı:
+      1. `data/altin.sql` her gün ~1663 satır büyüyordu — diff'lenebilir dump'ın
+         var olma sebebi olan repo şişmesi geri geliyordu (Faz 5 kararı).
+      2. Raporun "Ham tick: N" satırı veri hacmini değil KOŞUM SAYISINI ölçüyordu:
+         girdiden bağımsız büyüyen bir sayı, ölçüm kılığında bir sayaçtır (L-010).
+
+    Onarım güvenli: tekrar eden satırlar BİREBİR aynı (aynı anahtarda farklı değer
+    taşıyan tek bir satır bile yok — 2026-07-27 ölçümü), yani silinen kopyalar
+    hiçbir bilgi taşımıyor. En küçük `id` korunur.
+
+    Neden `SCHEMA` içinde değil: mevcut veritabanlarında kopyalar dururken
+    `CREATE UNIQUE INDEX` hata verir ve `connect()` çağıran HER komut patlardı.
+    Önce temizleyip sonra kurmak, koruma yolunu kendi kendini onarır kılıyor.
+    """
+    var = con.execute("SELECT 1 FROM sqlite_master WHERE type='index' AND name=?",
+                      (TICK_TEKIL_INDEKS,)).fetchone()
+    if var:
+        return 0
+    silinen = con.execute(
+        "DELETE FROM ticks WHERE id NOT IN "
+        "(SELECT MIN(id) FROM ticks GROUP BY ts_utc, source, symbol)").rowcount
+    con.execute(f"CREATE UNIQUE INDEX {TICK_TEKIL_INDEKS} "
+                "ON ticks(ts_utc, source, symbol)")
+    con.commit()
+    if silinen:
+        log.info("ticks onarildi: %d tekrar eden satir silindi", silinen)
+    return max(0, silinen)
+
+
+def connect(cfg: dict, tekillestir: bool = True) -> sqlite3.Connection:
+    """Bağlantı + şema. `tekillestir=False` YALNIZ restore içindir.
+
+    Restore, dump'ı okurken benzersiz indeksin HENÜZ kurulmamış olmasını ister:
+    2026-07-27 öncesi üretilmiş dump'lar düz `INSERT` ve tekrar eden `ticks`
+    satırları içeriyor; indeks önce kurulursa eski bir commit'e dönüp
+    `python -m src.restore_db` çalıştırmak `IntegrityError` ile patlardı.
+    Yükleme bitince `tekil_tick_indeksi()` çağrılır ve sonuç her iki dump
+    biçiminde de aynı olur: tekil veri + kurulu indeks.
+    """
     path = util.abspath(cfg["paths"]["db"])
     path.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(str(path))
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL;")
     con.executescript(SCHEMA)
+    if tekillestir:
+        tekil_tick_indeksi(con)
     return con
 
 
 def insert_tick(con, ts_utc: str, source: str, symbol: str,
-                buying: Optional[float], selling: Optional[float], raw: str = "") -> None:
-    con.execute(
-        "INSERT INTO ticks(ts_utc,source,symbol,buying,selling,raw) VALUES(?,?,?,?,?,?)",
+                buying: Optional[float], selling: Optional[float],
+                raw: str = "") -> int:
+    """Bir gözlemi yazar; AYNI gözlem ikinci kez yazılmaz (bkz. `_tick_tekilligi`).
+
+    Gerçekten eklenen satır sayısını döner (0 = zaten vardı). Çağıran bu değere
+    bakarak yalnız YENİ veriyi işlemeli — yoksa `ohlc_1m`'in örnek sayacı (`n`)
+    her yeniden okumada şişer.
+    """
+    return con.execute(
+        "INSERT OR IGNORE INTO ticks(ts_utc,source,symbol,buying,selling,raw) "
+        "VALUES(?,?,?,?,?,?)",
         (ts_utc, source, symbol, buying, selling, raw),
-    )
+    ).rowcount
 
 
 def update_ohlc(con, minute_utc: str, symbol: str, price: float) -> None:

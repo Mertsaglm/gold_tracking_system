@@ -51,11 +51,16 @@ def import_all(cfg: dict) -> dict:
                     "ceyrek": ("ceyrek_buy", "ceyrek_sell"),
                     "usd": ("usd_buy", "usd_sell"),
                 }
+                # Bu iş HER GÜN tüm arşivi baştan okuyor (dosya bazlı artımlılık
+                # yok). `insert_tick` artık tekil: daha önce yazılmış bir gözlem
+                # 0 döner ve o gözlemin `ohlc_1m` sayacı tekrar artırılmaz —
+                # yoksa yeniden okuma her turda `n`'i şişirirdi.
                 for sym, (bk, sk) in sym_map.items():
                     b, s = _f(row.get(bk)), _f(row.get(sk))
                     if b is None and s is None:
                         continue
-                    db.insert_tick(con, ts_iso, "gh_actions", sym, b, s)
+                    if not db.insert_tick(con, ts_iso, "gh_actions", sym, b, s):
+                        continue
                     n_ticks += 1
                     if s is not None:
                         db.update_ohlc(con, minute, sym, s)
@@ -63,7 +68,9 @@ def import_all(cfg: dict) -> dict:
                 usd = _f(row.get("usdtry"))
                 for sym, val in (("ons_usd", ons), ("usdtry", usd)):
                     if val is not None:
-                        db.insert_tick(con, ts_iso, "gh_actions", sym, None, val)
+                        if not db.insert_tick(con, ts_iso, "gh_actions", sym,
+                                              None, val):
+                            continue
                         db.update_ohlc(con, minute, sym, val)
                         n_ticks += 1
 

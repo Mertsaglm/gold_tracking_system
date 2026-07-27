@@ -47,6 +47,12 @@ geçmiş** ve **Durum=⏳** olan her satır için, oturumun ilk mesajında açı
 Birden fazla satır varsa hepsini tek seferde, kısa bir liste hâlinde sor —
 her oturumu sorguya çevirme. Tarihi gelmemiş satırları gündeme getirme.
 
+**Tarihsiz 👤 satırları** ("İlk uygun oturum", "Backlog'dan çıkınca" gibi) bu
+filtreye takılmaz ve sonsuza kadar görünmez kalır. Onları **ayda bir** ya da
+ilgili iş gündeme geldiğinde hatırlat — zorlamadan: "Knk müsait bir anda şunu
+da halledelim." Bir tarihsiz satır üç kez ertelendiyse ya somut bir tarih ver
+ya Backlog'a taşı; belirsiz kalmasın.
+
 **Her oturumun sonunda** (veya önemli bir iş bittiğinde):
 - `ai/STATE.md`'yi güncelle: tamamlananları işaretle, yeni durumu yaz,
   "Sıradaki 3 İş"i tazele.

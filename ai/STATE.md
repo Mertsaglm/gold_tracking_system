@@ -35,26 +35,37 @@ kaybettiriyor, bir sinyalin tabanı **+3.18p** yenmesi gerek, aşan aday yok.
 
 ---
 
-## 📅 TAKVİM — neyi ne zaman yapmalıyız
+## 📅 TAKVİM & 👤 SENDE KALANLAR — neyi ne zaman, KİM yapacak
 
-> Tarihler mutlak. Bir işi yaparken DoD'sini doğrula, sonra bu tabloyu güncelle.
+> Tarihler mutlak. Bir iş bitince **Durum'u ✅ + tarih** yap; ertelenirse tarihi
+> güncelle ve **sebebini yaz** — sessizce silme.
+>
+> **Kim:** 👤 = yalnız Mert yapabilir (karar, onay, dışarıdan doğrulama).
+> 🤖 = sistem kendiliğinden yapar ya da Usta yapar, Mert'ten bir şey beklenmez.
+>
+> ⚠️ **Usta'ya kural (AGENTS.md §2):** her oturumun başında bu tabloda
+> **Kim=👤, tarihi gelmiş/geçmiş ve Durum=⏳** olan her satırı Mert'e AÇIKÇA sor.
+> Bunlar Usta'nın yerine yapamayacağı işlerdir; sorulmazsa unutulur ve proje durur.
 
-| Ne zaman | İş | Bitti sayılır (DoD) |
-|---|---|---|
-| **Her oturum başı** | `git fetch` + yerel/uzak farkı kontrol et | Yerel güncel; "sistem durdu" teşhisi ham veriye dayanıyor |
-| **2026-07-25 akşam** (ilk günlük çalışma) | Yeni adımları üretimde doğrula | Actions commit'inde: `data/zskor_prova.jsonl` **oluştu**, raporda DXY satırı `kaynak DX-Y.NYB` yazıyor, `history` adımı hatasız |
-| **2026-07-27 akşamı** (push yapıldıysa) | **İlk hafta içi koşumu doğrula** | `data/altin.sql`'de `history_daily` son satırı **bugün DEĞİL** (asof=T−1 tutuyor); `ohlc_daily`'de bugünün barı yok; `predictions` +6 satır |
-| **~2026-07-28** (2-3 gün sonra) | **Retry etkisini ölç** | Yeni CSV satırlarında geçersiz kayıt oranı ölçüldü. %6.9'dan düştüyse ✅; düşmediyse truncgil'e yedek kaynak backlog'a |
-| **~2026-08-01** (≈7 prova satırı) | Prova birikimini ilk kez oku | z dağılımı görülebiliyor; `tetiklenir_gun` kaç kez `true` olmuş sayıldı |
-| **~2026-09-05** (kapıdan ~1 hafta önce) | ⚠️ **Z TABANI KARARI** — en kritik iş | `data/zskor_prova.jsonl` okundu; z **kayıt** tabanında mı **gün** tabanında mı hesaplanacak karara bağlandı; ADR `ai/DECISIONS.md`'ye yazıldı; kod tek tabanı kullanıyor |
-| **~2026-09-12** | 🔔 **KAPI AÇILIŞI** (60 geçerli gün) | prim z + çeyrek z sinyalleri ve `z > 2` bildirimi kendiliğinden devreye girer. Kod hazır, **ek iş yok** — yalnız izle |
-| **2026-09-12 → 09-19** | Kapı sonrası ilk hafta izleme | Günlük tavan (6) doluyor mu? z alarmları diğer bildirimleri bastırıyor mu? Gerekirse `alerts.prim_z` eşiği ayarlanır |
-| **Faz C biter bitmez** | Tahmin karnesi saatini başlat | İlk `predictions` satırı yazıldı; 1-ay tahmini ~30 gün sonra çözülecek |
-| **Gölge kol kararından ÖNCE** | ⚠️ ADR #008-B: karne ölçüm üretemiyor | Gölge kol yapılacak mı karara bağlandı. **Yapılmazsa Ekim'deki kapı kararı ölçüme dayanamaz** — o zaman "kalıcı kapalı" ADR'si ölçüm değil KABUL olarak yazılır ve öyle yazıldığı belirtilir |
-| **Faz C + ~30 çözülmüş tahmin** (≈2026-10, kayıt başlangıcına bağlı) | ⚠️ **TAKTİK KAPI KARARI** | `karne` okundu; şart (N≥30 **ve** gram etkisi>0 **ve** isabet farkı>+10p) sağlandı mı? Sağlandıysa `karar.taktik.aktif: true` + ADR. **Sağlanmadıysa "trade kolu kalıcı kapalı" ADR'si yazılır — bu da bir sonuçtur** |
-| **~2026-10** (3 ay yeni veri) | `python -m src.gram engel` tazele | `data/gram_engeli.json` yeni tarihli; taban ve eşikler değişti mi bakıldı |
-| **Faz E'den önce** | `chart.validate` faz düzeltmesiyle yeniden koş | `reports/grafik_dogrulama.md` faz-eşleştirmeli tabanla üretildi; eski uzun-ufuk bulguları gözden geçirildi (ADR #007-E) |
-| **~200 rapora ulaşınca** (≈2027 Şubat) | `reports/` yıl klasörlerine böl | `reports/2026/`, `reports/2027/`; README yolu güncel |
+| Ne zaman | Kim | İş | Bitti sayılır (DoD) | Durum |
+|---|:--:|---|---|:--:|
+| **Her oturum başı** | 🤖 | `git fetch` + yerel/uzak farkı kontrol et | Yerel güncel; "sistem durdu" teşhisi ham veriye dayanıyor (L-001) | ♻️ |
+| **2026-07-27 akşamı** | 👤 | **İlk hafta içi koşumu doğrula** — düzeltilmiş kodun canlıda ilk çalışması | `git fetch` sonrası: (a) `history_daily` son satırı **bugün DEĞİL**; (b) `ohlc_daily`'de bugünün/hafta sonunun barı yok; (c) `grep -c "INSERT INTO predictions(" data/altin.sql` → **6**; (d) raporda 🎯 HÜKÜM + "karne ÖLÇÜM İÇERMİYOR" satırı var | ⏳ |
+| **~2026-07-28** | 👤 | **FRED işini commit'le** — `src/indicators.py` + `tests/test_fred_cache.py` hâlâ commit'siz | Negatif önbellek üretimde; `daily_job` süresi ölçülen ~166 sn'lik FRED beklemesini artık ödemiyor | ⏳ |
+| **~2026-07-28** | 👤 | **Retry etkisini ölç** | Yeni CSV satırlarında geçersiz kayıt oranı ölçüldü. %6.9'dan düştüyse ✅; düşmediyse truncgil'e yedek kaynak backlog'a | ⏳ |
+| **~2026-08-01** | 👤 | Prova birikimini ilk kez oku (≈7 satır) | z dağılımı görülebiliyor; `tetiklenir_gun` kaç kez `true` olmuş sayıldı | ⏳ |
+| **~2026-08-03** | 👤 | **İlk canlı çözümü doğrula** — zincirin (kaydet→giriş→çözüm) canlıda ilk tam dönüşü | `prediction_outcomes`'ta satır var; `/karne` "1 çözülmüş" diyor; `gram_carry_kazanc_pct` makul | ⏳ |
+| **~2026-09-05** | 👤 | ⚠️ **Z TABANI KARARI** — kapıdan ~1 hafta önce, en kritik iş | `data/zskor_prova.jsonl` okundu; z **kayıt** tabanında mı **gün** tabanında mı hesaplanacak karara bağlandı; ADR yazıldı; kod tek tabanı kullanıyor | ⏳ |
+| **~2026-09-12** | 🤖 | 🔔 **KAPI AÇILIŞI** (60 geçerli gün) | prim z + çeyrek z sinyalleri ve `z > 2` bildirimi kendiliğinden devreye girer. Kod hazır, **ek iş yok** | ⏳ |
+| **2026-09-12 → 09-19** | 👤 | Kapı sonrası ilk hafta izleme | Günlük tavan (6) doluyor mu? z alarmları diğerlerini bastırıyor mu? Gerekirse `alerts.prim_z` ayarlanır | ⏳ |
+| **~2026-10 (ÖNCE)** | 👤 | ⚠️ **GÖLGE KOL KARARI** (ADR #008-B) — karne ölçüm üretemiyor | Gölge kol yapılacak mı karara bağlandı. **Yapılmazsa Ekim'deki kapı kararı ölçüme dayanamaz**; o zaman "kalıcı kapalı" ADR'si ölçüm değil **KABUL** olarak yazılır ve öyle yazıldığı belirtilir | ⏳ |
+| **~2026-10** (≈30 çözülmüş tahmin) | 👤 | ⚠️ **TAKTİK KAPI KARARI** | `karne` okundu; şart (N≥30 **ve** gram etkisi>0 **ve** isabet farkı>+10p) sağlandı mı? Sağlandıysa `karar.taktik.aktif: true` + ADR. Sağlanmadıysa "trade kolu kalıcı kapalı" ADR'si — **bu da bir sonuçtur** | ⏳ |
+| **~2026-10** (3 ay yeni veri) | 👤 | `python -m src.gram engel` tazele | `data/gram_engeli.json` yeni tarihli; taban ve eşikler değişti mi bakıldı | ⏳ |
+| **İlk uygun oturum** | 👤 | `ai/PROFILE.md` eksiklerini doldur | "öğrenmek istedikleri" ve "çalışma alışkanlıkları" alanları dolu (Usta sorup doldurur) | ⏳ |
+| **Backlog'dan çıkınca** | 👤 | `chart.validate`'i faz düzeltmesiyle yeniden koş | `reports/grafik_dogrulama.md` faz-eşleştirmeli tabanla üretildi; eski uzun-ufuk bulguları gözden geçirildi (ADR #007-E) | ⏳ |
+| **~2027-02** (~200 rapor) | 👤 | `reports/` yıl klasörlerine böl | `reports/2026/`, `reports/2027/`; README yolu güncel | ⏳ |
+| ~~2026-07-25 akşam~~ | 👤 | ~~Yeni adımları üretimde doğrula~~ | `zskor_prova.jsonl` oluştu, DXY `DX-Y.NYB`, `history` hatasız | ✅ 07-25 |
+| ~~Faz C biter bitmez~~ | 🤖 | ~~Tahmin karnesi saatini başlat~~ | Kod üretimde (`7aa3a18`); ilk `predictions` satırları 07-27 akşamı yazılacak | ✅ 07-27 |
 
 **Kapı tahmini nasıl hesaplandı (2026-07-25):** 16 geçerli gün / 18 takvim günü =
 **0.89 gün/gün**. Kalan 44 gün ÷ 0.89 ≈ 49 takvim günü → **~2026-09-12**.

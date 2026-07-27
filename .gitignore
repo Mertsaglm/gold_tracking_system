@@ -43,11 +43,21 @@ ai/PROFILE.md
 telegram çıktısı.json
 
 # "Usta" yardımcı paketi. Kanonik/canlı kopya proje KÖKÜNDEDİR (AGENTS.md + ai/);
-# bu klasör devir paketi + yeni proje şablonudur ve bilinçli olarak yerelde kalır.
-# İçinde ai/PROFILE.md (kişisel) var — public repoya girmemeli.
-# NOT: klasör adı değişirse bu satır da değişmeli, yoksa kural sessizce çalışmaz.
+# bu klasör devir paketi + yeni proje tohumudur.
+#
+# 2026-07-27: klasörün TAMAMI ignore'daydı → devir paketinin hiçbir yedeği yoktu.
+# Paketin varlık sebebi "araç/ortam değişince süreklilik" olduğu için bu bir
+# çelişkiydi: disk giderse 250 satırlık PROJE-GUNLUGU.md dahil her şey giderdi.
+# Artık yalnız KİŞİSEL dosya dışlanıyor, gerisi repoda yedekleniyor.
+# Tarandı: pakette token/chat_id/e-posta/telefon YOK; "Mert" adı zaten kökteki
+# AGENTS.md ve ai/PROJECT.md içinde public.
+#
+# NOT: dizin pattern'i (`klasör/`) kullanılırsa git içine HİÇ inmez ve alttaki
+# `!istisna` satırları çalışmaz — bu yüzden dizin değil, tek dosya dışlanıyor.
+# NOT: klasör adı değişirse aşağıdaki yol da değişmeli, yoksa kural sessizce
+# çalışmaz ve kişisel profil açığa çıkar (bu bir kez yaşandı — L-005 ailesi).
 Proje Yardımcısı/
-Proje Yardımcısı - Gold Tracking System/
+Proje Yardımcısı - Gold Tracking System/ai/PROFILE.md
 
 # --- macOS ---
 .DS_Store

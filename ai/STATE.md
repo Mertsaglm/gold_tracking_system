@@ -4,8 +4,8 @@
 > KISA TUT: ~100 satırı aşınca eskiyi `ai/archive/STATE-YYYY-MM.md`'ye taşı.
 
 **Son güncelleme:** 2026-07-27
-**Aktif milestone:** **Karar motoru** (ADR #007/#008) — kod hazır ve denetlendi;
-sırada PUSH ve ilk canlı koşum var
+**Aktif milestone:** **Karar motoru** (ADR #007/#008) — ÜRETİMDE. Sırada ilk
+canlı koşumun doğrulanması ve karne birikimi var
 
 ---
 
@@ -63,44 +63,20 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 
 ---
 
-## ✅ Tamamlananlar (özet — detay: `ai/archive/STATE-2026-07.md`)
-- İnşa dönemi Faz 1-7 bitti, sistem canlı (`docs/TESLIMAT-ARSIV.md`)
-- 2026-07-24 — Çoklu-IDE Usta sistemi kuruldu · kaynak-retry · outbox arşivi ·
-  Telegram denetimi (kural ihlali yok) · **history_daily 17 gündür donuktu, düzeltildi**
-- 2026-07-24 — Doküman düzeni, `.gitignore` onarımı, ölü script temizliği
-- 2026-07-25 — **Backlog'un tamamı kapatıldı** (DECISIONS #006): FRED yedeği,
-  z-skor kuru provası, çeyrek primi kuralı, tek kaynak eşik. **171 test.**
-- 2026-07-26 — **Karar motoru Faz A+B** (DECISIONS #007): `src/gram.py` (gram
-  hakemi + faz-düzeltmeli taban), `src/karar.py` (iki kollu hüküm + sert kapı),
-  rapor başına HÜKÜM bloğu, `/hukum` komutu, `config.yaml karar:` bölümü.
-  En riskli varsayım ("trade ederek gram artırılabilir") ölçüldü ve **düştü**.
-- 2026-07-26 — **Karar motoru Faz C**: `src/tahmin.py` (kayıt/giriş/çözüm/karne),
-  3 yeni tablo + `trg_predictions_immutable`, `daily_job` adım 3d, `/karne`
-  komutu, HÜKÜM bloğunda karne satırı. **Canlı örneklem-dışı kayıt BAŞLADI** —
-  ilk çözüm ~2026-07-31 (1 hafta), ~2026-08-22 (1 ay).
-- 2026-07-26 — **Karar motoru Faz D**: `src/ozellikler.py` tek giriş noktası
-  (41 özellik); `tahmin.kaydet` + `karar.build_karar` ikisi de buraya bağlandı.
-  Look-ahead artık yapısal olarak imkânsız; test sızıntı enjekte edilerek
-  düşebildiği doğrulandı. EVDS yayın gecikmesi bir kontaminasyonu kapattı
-  (reel net mevduat %12.7 → %13.1).
-- 2026-07-26 — **Karar motoru Faz E**: `src/tahmin_backfill.py` aday taraması
-  (karne DEĞİL — örneklem-içi üst sınır). 458 haftalık asof, 14 aday,
-  **hiçbiri +3.18p eşiğini geçemedi.** Taktik kol kapalı kalıyor — sonuç bu.
-  `reports/gram_aday_taramasi.md`.
-- 2026-07-26 — **Karar motoru Faz H**: `src/grafik_ciz.py` görsel grafik
-  (4 panel PNG), `send_photo`, `/grafik` artık görsel + metin, günlük rapora
-  eklendi. matplotlib `requirements.txt`'e girdi ama **lazy import** — yoksa
-  sessizce atlanır (`archive.yml` kurmuyor). `data/grafik.png` gitignore'da.
-  **Planlanan tüm kodlama fazları bitti.**
-- 2026-07-27 — **Uçtan uca denetim + düzeltmeler (ADR #008).** Push ÖNCESİ
-  yapıldı, iyi oldu: **karne hiçbir şey ölçmüyordu.** Kayıtlı hükümlerin hiçbiri
-  SAT olmadığı için "tabana fark" ve "gram etkisi" piyasadan bağımsız olarak
-  yapısal 0.00 çıkıyordu; taktik kapı kendi kendini kilitlemişti. Ayrıca
-  `asof=T−1` garantisi kodda zorlanmıyordu (ilk hafta içi koşumda bugünün yarım
-  barı karara girecekti), `daily_job` her hatayı yutup Actions'ı yeşil
-  bırakıyordu, "günlük hareket" alarmı akşamları fiyatı kendisiyle
-  karşılaştırıyordu, hayalet hafta sonu barları kalıcı yazılıyordu.
-  Hepsi düzeltildi + **296 test** (277 → +19, her bulguya düşebilen regresyon).
+## ✅ Tamamlananlar (detay: `ai/archive/STATE-2026-07.md`)
+
+- **2026-07-07 → 07-26:** inşa Faz 1-7 + çoklu-IDE Usta sistemi + backlog
+  kapatma + karar motoru Faz A-H. Hepsi arşivde, tarih tarih.
+- **2026-07-27 — Uçtan uca denetim (ADR #008) + PUSH** (`7aa3a18`). Push ÖNCESİ
+  denetlendi, iyi oldu: **karne hiçbir şey ölçmüyordu** (kayıtlı hükümlerin hiçbiri
+  SAT değil → "tabana fark"/"gram etkisi" piyasadan bağımsız 0.00; taktik kapı
+  kendini kilitlemişti), `asof=T−1` garantisi kodda zorlanmıyordu, `daily_job` her
+  hatayı yutup Actions'ı yeşil bırakıyordu, hayalet hafta sonu barları kalıcıydı.
+  Hepsi düzeltildi. Re-audit 3 eksik daha buldu: `history_daily`'ye bugünün yarım
+  satırı yazılmaya devam ediyordu (kaynak kapatıldı), L-005 numarası devir
+  paketiyle çakışıyordu (→L-009), kökte L-005…L-008 yoktu (tamamlandı).
+  **299 test.** Rebase'te üretim dump'ı kazandı — yerel dump 2890 tick eksikti,
+  L-009'un ta kendisi. Devir paketi de tazelendi (4 yeni ders + ADR #003).
 
 ## 🔨 Devam Edenler
 - _(yok — push Mert'in onayını bekliyor)_
@@ -111,25 +87,25 @@ Gerçek ilerleme haftalık pazar raporundaki "Arşiv İlerlemesi" satırından o
 - Z-skor kapısı → ~09-12
 
 ## 🎯 Sıradaki 3 İş
-1. **PUSH — her şey buna bağlı.** 7 commit bekliyor (6 faz + denetim).
-   Yerel `git pull` şu an **BLOKE**: `reports/rapor_2026-07-26.md` yerelde
-   untracked ama origin'de tracked (içerikler farklı), `data/zskor_prova.jsonl`
-   iki tarafta da değişmiş. DoD: Actions yeşil; raporda HÜKÜM bloğu var;
-   `data/altin.sql`'de `INSERT INTO predictions` satırları görünüyor.
-   **L-005: push öncesi dump satır sayıları azalmamış olmalı.**
+1. **BU AKŞAMKİ İLK KOŞUMU DOĞRULA (2026-07-27, 15:35 UTC).** Karar motoru
+   üretime girdi (`7aa3a18`); bu, düzeltilmiş kodun canlıda ilk çalışması.
+   DoD — `git fetch` sonrası dört kontrol:
+   (a) `data/altin.sql`'de `history_daily` son satırı **bugün DEĞİL** (asof=T−1
+       koruması tuttu); (b) `ohlc_daily`'de bugünün ve hafta sonunun barı yok;
+   (c) `grep -c "INSERT INTO predictions(" data/altin.sql` → **6**;
+   (d) raporda 🎯 HÜKÜM bloğu ve "karne ÖLÇÜM İÇERMİYOR" satırı var.
+   Actions kırmızıysa artık gerçekten arıza demektir (K-6: kritik adım exit 1).
 2. **Gölge kol kararı (ADR #008-B).** Kapı kapalıyken kol yalnız TUT ürettiği
    için karne asla ölçüm içeremez — döngü GÖRÜNÜR kılındı ama KIRILMADI.
    Kırmak için "kapı açık olsaydı ne derdim" hükmünü ayrı bir kola kaydetmek
    gerekiyor. DoD: karar verildi ve ADR'ye işlendi (yapmamak da bir karardır).
-3. **İlk canlı çözümü doğrula (~2026-07-31).** DoD: `prediction_outcomes`'ta
-   1-hafta tahmini çözülmüş; `/karne` "1 çözülmüş" diyor. Zincirin (kaydet→
-   giriş→çözüm) canlıda ilk tam dönüşü. Faz F ~Ekim'de karneye bakılıp
+3. **İlk canlı çözümü doğrula (~2026-08-03).** İlk tahmin bugün asof=2026-07-24
+   ile yazılıyor, 1-hafta ufku ~5 işlem günü sonra çözülür. DoD:
+   `prediction_outcomes`'ta satır var, `/karne` "1 çözülmüş" diyor. Zincirin
+   (kaydet→giriş→çözüm) canlıda ilk tam dönüşü. Faz F ~Ekim'de karneye bakılıp
    verilecek karar; Faz G (MTF) **askıda** (Faz E aday bulamadı).
 
 ## 📦 Backlog (şimdi değil, unutma da)
-- **Üretimdeki 2 hayalet TRY=X satırı** (`2026-07-25`, `2026-07-26` — Pazar barı
-  o=h=l=c). Yenisi artık yazılmıyor (ADR #008-E) ama mevcut ikisi duruyor;
-  silmek veri değişikliği olduğu için Mert'in kararına bırakıldı.
 - **`deploy/altin-backup.service` var olmayan `scripts/backup.sh`'ı çağırıyor.**
   Oracle Cloud senaryosu aktive edilirse bu timer patlar. `.gitignore` da
   `data/backups/` için aynı script'e atıf yapıyor.

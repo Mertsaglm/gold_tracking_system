@@ -83,6 +83,18 @@ garantisi düşerdi.**
 **Karar:** filtre **varsayılan ve zorunlu** yapıldı (filtresiz yol YOK), ikinci
 kopya silindi, referans **yerel TR günü** (UTC değil — GC=F 00:00 TR'de kapanıyor).
 
+**Sonradan bulunan EKSİK (aynı gün, re-audit'te):** yukarıdaki düzeltme yalnız
+`asof`'u koruyordu; bugünün yarım satırı `history_daily`'ye **yazılmaya devam
+ediyordu.** Tabloyu 16 ayrı yer okuyor ve hepsi korumasızdı. En kritiği
+`tahmin._fiyat_serisi`: `cozumle`'nin 3 günlük **ÇIKIŞ** ortalaması bugünün yarım
+barını içerebiliyordu ve o sonuç `prediction_outcomes`'a yazılıyor.
+16 okuma yolunu tek tek yamamak L-008'in ta kendisi olurdu → **kaynak kapatıldı**:
+`history.build_history_daily` artık bugünü kesişimden düşürüyor
+(`ohlc_hist.update_ohlc_daily` ile simetrik). Kayıp yok — `update_recent` her gün
+son 45 günü yeniden çekiyor, bugünün tam barı yarın yazılıyor; canlı fiyata
+ihtiyaç duyan tek yol (`notify`) zaten arşiv CSV'sinden okuyor.
+Ders **L-011** bu kalıbı kaydediyor: korumayı tüketiciye değil kaynağa koy.
+
 ### E) Diğer düzeltmeler
 
 | # | Sorun | Karar |

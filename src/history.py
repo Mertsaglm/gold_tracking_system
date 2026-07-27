@@ -61,7 +61,25 @@ def build_history_daily(cfg: dict, start: str = "2016-01-01", min_days: int = 20
         return {"rows": 0}
 
     # ortak günlerde birleştir (EVDS iş günü; yfinance kendi takvimi)
-    common = sorted(set(ons_map) & set(usd_map))
+    #
+    # BUGÜN DIŞLANIR — `ohlc_hist.update_ohlc_daily` ile aynı kural.
+    # Ölçüldü (üretim dump'ı, 2026-07-24 17:25Z koşumu): kesişimin HER İKİ bacağı
+    # da hafta içi aynı-gün satırını içeriyor (GC=F ve TP.DK.USD.S.YTL). daily.yml
+    # 15:35 UTC'de koşuyor, CME altın ~21:00 UTC'de kapanıyor → yazılacak satır
+    # YARIM bar olurdu ve ertesi gün INSERT OR REPLACE ile gerçek kapanışla
+    # ezilirdi.
+    #
+    # NEDEN OKUMA TARAFINDA DEĞİL DE BURADA: bu tabloyu 16 ayrı yerden okuyoruz.
+    # Onları tek tek korumak L-008'in ta kendisi olurdu ("bir tüketici unutulur").
+    # Kaynağı kapatmak hepsini birden doğru kılar. En kritik tüketici
+    # `tahmin._fiyat_serisi`'ydi: `cozumle`'nin 3 günlük ÇIKIŞ ortalaması bugünün
+    # yarım barını içerebiliyordu ve o sonuç `prediction_outcomes`'a yazılıyor.
+    #
+    # Kayıp yok: `update_recent` her gün son 45 günü yeniden çekiyor, yani bugünün
+    # tam barı yarınki koşumda yazılır. Canlı fiyata ihtiyaç duyan tek yol
+    # (`notify`) zaten arşiv CSV'sinden okuyor, bu tablodan değil.
+    bugun = util.local_today()
+    common = sorted(d for d in (set(ons_map) & set(usd_map)) if d < bugun)
     n = 0
     for d in common:
         ons, usd = ons_map[d], usd_map[d]

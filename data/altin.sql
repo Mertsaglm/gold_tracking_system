@@ -28295,7 +28295,7 @@ INSERT INTO gld_tonnage(date, tonnes) VALUES('2026-07-24', 994.5196280315432);
 INSERT INTO gld_tonnage(date, tonnes) VALUES('2026-07-25', 994.4706807006991);
 INSERT INTO gld_tonnage(date, tonnes) VALUES('2026-07-26', 993.6889528875092);
 
--- ohlc_daily: 5403 satır
+-- ohlc_daily: 5401 satır
 INSERT INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-04', 'GC=F', 1063.4000244140625, 1082.5, 1063.199951171875, 1075.0999755859375, 143.0, 'yfinance');
 INSERT INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-05', 'GC=F', 1075.5999755859375, 1081.5, 1075.300048828125, 1078.4000244140625, 82.0, 'yfinance');
 INSERT INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-06', 'GC=F', 1081.5999755859375, 1093.699951171875, 1081.5999755859375, 1091.9000244140625, 52.0, 'yfinance');
@@ -33697,5 +33697,3 @@ INSERT INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-21',
 INSERT INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-22', 'TRY=X', 47.198299407958984, 47.21780014038086, 47.184810638427734, 47.19770050048828, 0.0, 'yfinance');
 INSERT INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-23', 'TRY=X', 47.21099853515625, 47.24100112915039, 47.17176818847656, 47.212398529052734, 0.0, 'yfinance');
 INSERT INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-24', 'TRY=X', 47.32659912109375, 47.3449592590332, 47.305301666259766, 47.31679916381836, 0.0, 'yfinance');
-INSERT INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-25', 'TRY=X', 47.12889862060547, 47.34550094604492, 47.12289810180664, 47.33000183105469, 0.0, 'yfinance');
-INSERT INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-26', 'TRY=X', 47.327999114990234, 47.32899856567383, 47.327999114990234, 47.32899856567383, 0.0, 'yfinance');

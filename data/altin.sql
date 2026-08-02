@@ -1,7 +1,7 @@
 -- Altin DB dump (deterministik, diff'lenebilir). Sema koddan gelir.
 -- Restore: python -m src.restore_db
 
--- ticks: 2077 satır
+-- ticks: 2163 satır
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T15:32:13.113034+00:00', 'yfinance', 'ons_usd', NULL, 4156.60009765625, '');
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T15:32:13.113034+00:00', 'yfinance', 'usdtry', NULL, 46.83599853515625, '');
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T15:32:14.732494+00:00', 'truncgil', 'ceyrek', 10018.75, 10249.98, '');
@@ -2079,8 +2079,94 @@ INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T16:13:16.189388+00:00', 'gh_actions', 'ons_usd', NULL, 4049.10009765625, '');
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T16:13:16.189388+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T16:13:16.189388+00:00', 'gh_actions', 'usdtry', NULL, 47.5078010559082, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T17:18:19.774723+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T17:18:19.774723+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T17:18:19.774723+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T17:18:19.774723+00:00', 'gh_actions', 'ons_usd', NULL, 4049.10009765625, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T17:18:19.774723+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T17:18:19.774723+00:00', 'gh_actions', 'usdtry', NULL, 47.5078010559082, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T18:29:38.678071+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T18:29:38.678071+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T18:29:38.678071+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T18:29:38.678071+00:00', 'gh_actions', 'ons_usd', NULL, 4049.10009765625, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T18:29:38.678071+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T18:29:38.678071+00:00', 'gh_actions', 'usdtry', NULL, 47.5078010559082, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T19:47:06.361609+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T19:47:06.361609+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T19:47:06.361609+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T19:47:06.361609+00:00', 'gh_actions', 'ons_usd', NULL, 4049.10009765625, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T19:47:06.361609+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T19:47:06.361609+00:00', 'gh_actions', 'usdtry', NULL, 47.5078010559082, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T20:56:01.990966+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T20:56:01.990966+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T20:56:01.990966+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T20:56:01.990966+00:00', 'gh_actions', 'ons_usd', NULL, 4049.10009765625, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T20:56:01.990966+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T20:56:01.990966+00:00', 'gh_actions', 'usdtry', NULL, 47.5078010559082, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T21:59:35.027548+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T21:59:35.027548+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T21:59:35.027548+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T21:59:35.027548+00:00', 'gh_actions', 'ons_usd', NULL, 4049.10009765625, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T21:59:35.027548+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T21:59:35.027548+00:00', 'gh_actions', 'usdtry', NULL, 47.5078010559082, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T23:02:41.931199+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T23:02:41.931199+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T23:02:41.931199+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T23:02:41.931199+00:00', 'gh_actions', 'ons_usd', NULL, 4049.10009765625, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T23:02:41.931199+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-01T23:02:41.931199+00:00', 'gh_actions', 'usdtry', NULL, 47.5078010559082, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T00:13:15.033866+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T00:13:15.033866+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T00:13:15.033866+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T00:13:15.033866+00:00', 'gh_actions', 'ons_usd', NULL, 4049.10009765625, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T00:13:15.033866+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T00:13:15.033866+00:00', 'gh_actions', 'usdtry', NULL, 47.50550079345703, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T03:56:52.845845+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T03:56:52.845845+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T03:56:52.845845+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T03:56:52.845845+00:00', 'gh_actions', 'ons_usd', NULL, 4049.10009765625, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T03:56:52.845845+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T03:56:52.845845+00:00', 'gh_actions', 'usdtry', NULL, 47.50550079345703, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T06:39:16.592438+00:00', 'gh_actions', 'ons_usd', NULL, 4107.0, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T06:39:16.592438+00:00', 'gh_actions', 'usdtry', NULL, 47.50550079345703, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T09:00:20.568422+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T09:00:20.568422+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T09:00:20.568422+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T09:00:20.568422+00:00', 'gh_actions', 'ons_usd', NULL, 4107.0, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T09:00:20.568422+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T09:00:20.568422+00:00', 'gh_actions', 'usdtry', NULL, 47.50550079345703, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T10:47:00.339389+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T10:47:00.339389+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T10:47:00.339389+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T10:47:00.339389+00:00', 'gh_actions', 'ons_usd', NULL, 4107.0, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T10:47:00.339389+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T10:47:00.339389+00:00', 'gh_actions', 'usdtry', NULL, 47.50550079345703, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T12:04:18.664385+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T12:04:18.664385+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T12:04:18.664385+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T12:04:18.664385+00:00', 'gh_actions', 'ons_usd', NULL, 4107.0, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T12:04:18.664385+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T12:04:18.664385+00:00', 'gh_actions', 'usdtry', NULL, 47.50550079345703, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T13:55:58.256115+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T13:55:58.256115+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T13:55:58.256115+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T13:55:58.256115+00:00', 'gh_actions', 'ons_usd', NULL, 4107.0, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T13:55:58.256115+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T13:55:58.256115+00:00', 'gh_actions', 'usdtry', NULL, 47.50550079345703, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T15:06:02.636052+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T15:06:02.636052+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T15:06:02.636052+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T15:06:02.636052+00:00', 'gh_actions', 'ons_usd', NULL, 4107.0, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T15:06:02.636052+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T15:06:02.636052+00:00', 'gh_actions', 'usdtry', NULL, 47.50550079345703, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T16:12:55.765905+00:00', 'gh_actions', 'ceyrek', 9802.68, 10027.02, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T16:12:55.765905+00:00', 'gh_actions', 'gram_altin', 6174.46, 6175.37, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T16:12:55.765905+00:00', 'gh_actions', 'gram_has_altin', 6143.58, 6144.49, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T16:12:55.765905+00:00', 'gh_actions', 'ons_usd', NULL, 4107.0, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T16:12:55.765905+00:00', 'gh_actions', 'usd', 47.4681, 47.5574, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-08-02T16:12:55.765905+00:00', 'gh_actions', 'usdtry', NULL, 47.50550079345703, '');
 
--- ohlc_1m: 2077 satır
+-- ohlc_1m: 2163 satır
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T15:32', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T15:32', 'cumhuriyet', 42239.0, 42239.0, 42239.0, 42239.0, 1);
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T15:32', 'gram_altin', 6238.75, 6238.75, 6238.75, 6238.75, 1);
@@ -4158,8 +4244,94 @@ INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T16:13', 'ons_usd', 4049.10009765625, 4049.10009765625, 4049.10009765625, 4049.10009765625, 1);
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T16:13', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T16:13', 'usdtry', 47.5078010559082, 47.5078010559082, 47.5078010559082, 47.5078010559082, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T17:18', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T17:18', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T17:18', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T17:18', 'ons_usd', 4049.10009765625, 4049.10009765625, 4049.10009765625, 4049.10009765625, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T17:18', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T17:18', 'usdtry', 47.5078010559082, 47.5078010559082, 47.5078010559082, 47.5078010559082, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T18:29', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T18:29', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T18:29', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T18:29', 'ons_usd', 4049.10009765625, 4049.10009765625, 4049.10009765625, 4049.10009765625, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T18:29', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T18:29', 'usdtry', 47.5078010559082, 47.5078010559082, 47.5078010559082, 47.5078010559082, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T19:47', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T19:47', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T19:47', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T19:47', 'ons_usd', 4049.10009765625, 4049.10009765625, 4049.10009765625, 4049.10009765625, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T19:47', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T19:47', 'usdtry', 47.5078010559082, 47.5078010559082, 47.5078010559082, 47.5078010559082, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T20:56', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T20:56', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T20:56', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T20:56', 'ons_usd', 4049.10009765625, 4049.10009765625, 4049.10009765625, 4049.10009765625, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T20:56', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T20:56', 'usdtry', 47.5078010559082, 47.5078010559082, 47.5078010559082, 47.5078010559082, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T21:59', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T21:59', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T21:59', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T21:59', 'ons_usd', 4049.10009765625, 4049.10009765625, 4049.10009765625, 4049.10009765625, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T21:59', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T21:59', 'usdtry', 47.5078010559082, 47.5078010559082, 47.5078010559082, 47.5078010559082, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T23:02', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T23:02', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T23:02', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T23:02', 'ons_usd', 4049.10009765625, 4049.10009765625, 4049.10009765625, 4049.10009765625, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T23:02', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-01T23:02', 'usdtry', 47.5078010559082, 47.5078010559082, 47.5078010559082, 47.5078010559082, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T00:13', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T00:13', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T00:13', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T00:13', 'ons_usd', 4049.10009765625, 4049.10009765625, 4049.10009765625, 4049.10009765625, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T00:13', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T00:13', 'usdtry', 47.50550079345703, 47.50550079345703, 47.50550079345703, 47.50550079345703, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T03:56', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T03:56', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T03:56', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T03:56', 'ons_usd', 4049.10009765625, 4049.10009765625, 4049.10009765625, 4049.10009765625, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T03:56', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T03:56', 'usdtry', 47.50550079345703, 47.50550079345703, 47.50550079345703, 47.50550079345703, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T06:39', 'ons_usd', 4107.0, 4107.0, 4107.0, 4107.0, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T06:39', 'usdtry', 47.50550079345703, 47.50550079345703, 47.50550079345703, 47.50550079345703, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T09:00', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T09:00', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T09:00', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T09:00', 'ons_usd', 4107.0, 4107.0, 4107.0, 4107.0, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T09:00', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T09:00', 'usdtry', 47.50550079345703, 47.50550079345703, 47.50550079345703, 47.50550079345703, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T10:47', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T10:47', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T10:47', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T10:47', 'ons_usd', 4107.0, 4107.0, 4107.0, 4107.0, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T10:47', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T10:47', 'usdtry', 47.50550079345703, 47.50550079345703, 47.50550079345703, 47.50550079345703, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T12:04', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T12:04', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T12:04', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T12:04', 'ons_usd', 4107.0, 4107.0, 4107.0, 4107.0, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T12:04', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T12:04', 'usdtry', 47.50550079345703, 47.50550079345703, 47.50550079345703, 47.50550079345703, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T13:55', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T13:55', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T13:55', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T13:55', 'ons_usd', 4107.0, 4107.0, 4107.0, 4107.0, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T13:55', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T13:55', 'usdtry', 47.50550079345703, 47.50550079345703, 47.50550079345703, 47.50550079345703, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T15:06', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T15:06', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T15:06', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T15:06', 'ons_usd', 4107.0, 4107.0, 4107.0, 4107.0, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T15:06', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T15:06', 'usdtry', 47.50550079345703, 47.50550079345703, 47.50550079345703, 47.50550079345703, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T16:12', 'ceyrek', 10027.02, 10027.02, 10027.02, 10027.02, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T16:12', 'gram_altin', 6175.37, 6175.37, 6175.37, 6175.37, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T16:12', 'gram_has_altin', 6144.49, 6144.49, 6144.49, 6144.49, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T16:12', 'ons_usd', 4107.0, 4107.0, 4107.0, 4107.0, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T16:12', 'usd', 47.5574, 47.5574, 47.5574, 47.5574, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-08-02T16:12', 'usdtry', 47.50550079345703, 47.50550079345703, 47.50550079345703, 47.50550079345703, 1);
 
--- prim_history: 331 satır
+-- prim_history: 345 satır
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T15:32:14.732494+00:00', 4156.60009765625, 46.83599853515625, 6259.05963300728, 6207.56, 6238.75, -0.8228014434579878, -0.32448377548884855, 0.015466209554251539, -0.0759368583472031, 0, 0, 0, 'tum_bacaklar_taze');
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T15:33:15.000223+00:00', 4156.60009765625, 46.83599853515625, 6259.05963300728, 6207.56, 6238.75, -0.8228014434579878, -0.32448377548884855, 0.015466209554251539, -0.0759368583472031, 0, 0, 0, 'tum_bacaklar_taze');
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T15:34:15.266399+00:00', 4156.60009765625, 46.83599853515625, 6259.05963300728, 6207.56, 6238.75, -0.8228014434579878, -0.32448377548884855, 0.015466209554251539, -0.0759368583472031, 0, 0, 0, 'tum_bacaklar_taze');
@@ -4491,8 +4663,22 @@ INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-01T12:13:04.811553+00:00', 4049.10009765625, 47.5078010559082, 6184.641129730925, 6144.49, 6175.37, -0.6492071065839267, -0.1499057024724859, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-01T13:58:48.344578+00:00', 4049.10009765625, 47.5078010559082, 6184.641129730925, 6144.49, 6175.37, -0.6492071065839267, -0.1499057024724859, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-01T16:13:16.189388+00:00', 4049.10009765625, 47.5078010559082, 6184.641129730925, 6144.49, 6175.37, -0.6492071065839267, -0.1499057024724859, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-01T17:18:19.774723+00:00', 4049.10009765625, 47.5078010559082, 6184.641129730925, 6144.49, 6175.37, -0.6492071065839267, -0.1499057024724859, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-01T18:29:38.678071+00:00', 4049.10009765625, 47.5078010559082, 6184.641129730925, 6144.49, 6175.37, -0.6492071065839267, -0.1499057024724859, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-01T19:47:06.361609+00:00', 4049.10009765625, 47.5078010559082, 6184.641129730925, 6144.49, 6175.37, -0.6492071065839267, -0.1499057024724859, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-01T20:56:01.990966+00:00', 4049.10009765625, 47.5078010559082, 6184.641129730925, 6144.49, 6175.37, -0.6492071065839267, -0.1499057024724859, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-01T21:59:35.027548+00:00', 4049.10009765625, 47.5078010559082, 6184.641129730925, 6144.49, 6175.37, -0.6492071065839267, -0.1499057024724859, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-01T23:02:41.931199+00:00', 4049.10009765625, 47.5078010559082, 6184.641129730925, 6144.49, 6175.37, -0.6492071065839267, -0.1499057024724859, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-02T00:13:15.033866+00:00', 4049.10009765625, 47.50550079345703, 6184.341677905151, 6144.49, 6175.37, -0.6443964447748751, -0.14507086400489255, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-02T03:56:52.845845+00:00', 4049.10009765625, 47.50550079345703, 6184.341677905151, 6144.49, 6175.37, -0.6443964447748751, -0.14507086400489255, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-02T09:00:20.568422+00:00', 4107.0, 47.50550079345703, 6272.774359383772, 6144.49, 6175.37, -2.0450976240180774, -1.5528114643253543, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-02T10:47:00.339389+00:00', 4107.0, 47.50550079345703, 6272.774359383772, 6144.49, 6175.37, -2.0450976240180774, -1.5528114643253543, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-02T12:04:18.664385+00:00', 4107.0, 47.50550079345703, 6272.774359383772, 6144.49, 6175.37, -2.0450976240180774, -1.5528114643253543, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-02T13:55:58.256115+00:00', 4107.0, 47.50550079345703, 6272.774359383772, 6144.49, 6175.37, -2.0450976240180774, -1.5528114643253543, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-02T15:06:02.636052+00:00', 4107.0, 47.50550079345703, 6272.774359383772, 6144.49, 6175.37, -2.0450976240180774, -1.5528114643253543, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-08-02T16:12:55.765905+00:00', 4107.0, 47.50550079345703, 6272.774359383772, 6144.49, 6175.37, -2.0450976240180774, -1.5528114643253543, 0.014811113543458893, -1.2461507724998766, 1, 1, 0, 'gh_actions_import_weekend');
 
--- weekend_expectation: 104 satır
+-- weekend_expectation: 118 satır
 INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-07-10T21:08:11.051093+00:00', 6194.42, 6233.111111837655, -0.6207351536566375, 0);
 INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-07-10T22:16:57.166976+00:00', 6194.42, 6236.132384482312, -0.668882280082872, 0);
 INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-07-10T23:30:21.950232+00:00', 6194.42, 6236.132384482312, -0.668882280082872, 0);
@@ -4597,6 +4783,20 @@ INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretic
 INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-01T12:13:04.811553+00:00', 6144.49, 6184.641129730925, -0.6492071065839267, 0);
 INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-01T13:58:48.344578+00:00', 6144.49, 6184.641129730925, -0.6492071065839267, 0);
 INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-01T16:13:16.189388+00:00', 6144.49, 6184.641129730925, -0.6492071065839267, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-01T17:18:19.774723+00:00', 6144.49, 6184.641129730925, -0.6492071065839267, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-01T18:29:38.678071+00:00', 6144.49, 6184.641129730925, -0.6492071065839267, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-01T19:47:06.361609+00:00', 6144.49, 6184.641129730925, -0.6492071065839267, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-01T20:56:01.990966+00:00', 6144.49, 6184.641129730925, -0.6492071065839267, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-01T21:59:35.027548+00:00', 6144.49, 6184.641129730925, -0.6492071065839267, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-01T23:02:41.931199+00:00', 6144.49, 6184.641129730925, -0.6492071065839267, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-02T00:13:15.033866+00:00', 6144.49, 6184.341677905151, -0.6443964447748751, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-02T03:56:52.845845+00:00', 6144.49, 6184.341677905151, -0.6443964447748751, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-02T09:00:20.568422+00:00', 6144.49, 6272.774359383772, -2.0450976240180774, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-02T10:47:00.339389+00:00', 6144.49, 6272.774359383772, -2.0450976240180774, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-02T12:04:18.664385+00:00', 6144.49, 6272.774359383772, -2.0450976240180774, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-02T13:55:58.256115+00:00', 6144.49, 6272.774359383772, -2.0450976240180774, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-02T15:06:02.636052+00:00', 6144.49, 6272.774359383772, -2.0450976240180774, 0);
+INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-08-02T16:12:55.765905+00:00', 6144.49, 6272.774359383772, -2.0450976240180774, 0);
 
 -- evds_daily: 7683 satır
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-01-02', 'TP.APIFON4', 8.52);
@@ -12283,7 +12483,7 @@ INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-07-10', 
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-07-17', 'TP.TRY.MT06', 46.72);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-07-24', 'TP.TRY.MT06', 46.92);
 
--- reports: 26 satır
+-- reports: 27 satır
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-07-07', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-07-07.md', '2026-07-07T19:46:55.489031+00:00');
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-07-08', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-07-08.md', '2026-07-08T17:12:08.677798+00:00');
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-07-09', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-07-09.md', '2026-07-09T17:33:18.203551+00:00');
@@ -12310,6 +12510,7 @@ INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-07-29', '/ho
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-07-30', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-07-30.md', '2026-07-30T17:07:48.668914+00:00');
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-07-31', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-07-31.md', '2026-07-31T17:10:05.420884+00:00');
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-08-01', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-08-01.md', '2026-08-01T16:33:35.545027+00:00');
+INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-08-02', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-08-02.md', '2026-08-02T16:33:05.597628+00:00');
 
 -- history_daily: 2566 satır
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-04', 1075.0999755859375, 2.9233, 101.04464458553299, 'GC=F');
@@ -14877,9 +15078,9 @@ INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_sour
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-28', 4036.300048828125, 47.3533, 6145.040579584751, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-29', 4034.699951171875, 47.3751, 6145.432386412915, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-30', 4100.10009765625, 47.3927, 6247.366336170924, 'GC=F');
-INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-31', 4049.10009765625, 47.4126, 6172.24770480118, 'GC=F');
+INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-07-31', 4107.0, 47.4126, 6260.507449122215, 'GC=F');
 
--- gld_tonnage: 26 satır
+-- gld_tonnage: 27 satır
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-07', 981.1081828606455);
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-08', 993.7133874900146);
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-09', 978.1426763231632);
@@ -14906,6 +15107,7 @@ INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-29', 992.7622198
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-30', 970.3758919472174);
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-31', 986.7804821957418);
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-08-01', 999.0143341420186);
+INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-08-02', 984.9303720317607);
 
 -- ohlc_daily: 5411 satır
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-04', 'GC=F', 1063.4000244140625, 1082.5, 1063.199951171875, 1075.0999755859375, 143.0, 'yfinance');
@@ -17565,7 +17767,7 @@ INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('20
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-28', 'GC=F', 4025.699951171875, 4036.300048828125, 4025.699951171875, 4036.300048828125, 248.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-29', 'GC=F', 4018.10009765625, 4034.699951171875, 4017.89990234375, 4034.699951171875, 89664.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-30', 'GC=F', 4060.699951171875, 4118.5, 4028.5, 4100.10009765625, 16985.0, 'yfinance');
-INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-31', 'GC=F', 4102.39990234375, 4102.39990234375, 4022.39990234375, 4049.10009765625, 16985.0, 'yfinance');
+INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-07-31', 'GC=F', 4163.89990234375, 4170.7001953125, 4076.39990234375, 4107.0, 106211.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-01', 'TRY=X', 2.911900043487549, 2.911900043487549, 2.911900043487549, 2.911900043487549, 0.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-04', 'TRY=X', 2.9164600372314453, 2.973870038986206, 2.913789987564087, 2.9161500930786133, 0.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-05', 'TRY=X', 2.964240074157715, 2.9904301166534424, 2.9565000534057617, 2.964319944381714, 0.0, 'yfinance');

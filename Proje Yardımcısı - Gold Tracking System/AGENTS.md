@@ -189,7 +189,11 @@ bir test de yazılır. Ama "test yazdım, geçiyor" bir ölçüm değil temennid
 1. **Korumayı bilerek boz** (filtreyi gevşet, eşiği koda göm, kolonu listeden
    düşür), testi koş, **düştüğünü gör**, sonra `finally` ile geri al.
 2. Düşmüyorsa test yanlış şeyi ölçüyordur — testi düzelt, korumayı değil.
-3. Toplu mutasyon koşumundan sonra çalışma alanının temiz kaldığını doğrula.
+3. **Kaçan mutasyonun SEBEBİNİ araştır.** En sık sebep testin verisidir: düzgün/
+   tek rejimli sentetik seride korumanın tetiklendiği durum hiç oluşmaz, test
+   "vacuous" geçer. Testin kendisi kurgunun tetiklediğini assert etsin
+   ("tetikleyici üretilmediyse düş"), sentetik veri **rejimli** kurulsun.
+4. Toplu mutasyon koşumundan sonra çalışma alanının temiz kaldığını doğrula.
 
 Sor: **"Bu korumayı atlayan bir yol var mı?"** ve **"Hangi fiiller/alanlar
 kapsam dışında?"** — koruma bağlı olabilir ama kapsamı eksik olabilir.

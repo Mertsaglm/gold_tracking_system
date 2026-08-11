@@ -68,15 +68,21 @@ def cekirdek_hukum(reel_net_mevduat: Optional[float], esikler: dict) -> dict:
     """
     ust = esikler["kademe_carpani_ust"]
     alt = esikler["kademe_carpani_alt"]
+    # `kural`: kademeyi ÜRETEN koşulun adı. Aday taramasındaki (`tahmin_backfill.
+    # ADAYLAR`) anahtarla BİREBİR aynı biçimde üretilir ki rapor "bu kural
+    # eşiği geçti mi" sorusunu isim üzerinden cevaplayabilsin. İkisinin
+    # ayrışmadığını `test_kademe_kurali_tarama_adayiyla_eslesir` kilitler.
+    kural_dusuk = "reel_mevduat < %d" % esikler["reel_mevduat_dusuk_pct"]
+    kural_yuksek = "reel_mevduat > %%%d" % esikler["reel_mevduat_yuksek_pct"]
     if reel_net_mevduat is None:
         return {
-            "hukum": AL, "carpan": 1.0, "guven": "düşük",
+            "hukum": AL, "carpan": 1.0, "guven": "düşük", "kural": None,
             "gerekce": ["Reel net mevduat faizi hesaplanamadı (EVDS eksik).",
                         "Kademe uygulanmadı — düzenli alım planına dokunma."],
         }
     if reel_net_mevduat < esikler["reel_mevduat_dusuk_pct"]:
         return {
-            "hukum": AL_COK, "carpan": ust, "guven": "düşük",
+            "hukum": AL_COK, "carpan": ust, "guven": "düşük", "kural": kural_dusuk,
             "gerekce": [
                 f"Reel net mevduat %{reel_net_mevduat:+.1f} → negatif: TL'de "
                 "beklemenin maliyeti var, altının fırsat maliyeti düşük.",
@@ -85,7 +91,7 @@ def cekirdek_hukum(reel_net_mevduat: Optional[float], esikler: dict) -> dict:
         }
     if reel_net_mevduat > esikler["reel_mevduat_yuksek_pct"]:
         return {
-            "hukum": AL_AZ, "carpan": alt, "guven": "düşük",
+            "hukum": AL_AZ, "carpan": alt, "guven": "düşük", "kural": kural_yuksek,
             "gerekce": [
                 f"Reel net mevduat %{reel_net_mevduat:+.1f} → yüksek: mevduat "
                 "gerçek rakip, altının fırsat maliyeti artıyor.",
@@ -93,7 +99,7 @@ def cekirdek_hukum(reel_net_mevduat: Optional[float], esikler: dict) -> dict:
             ],
         }
     return {
-        "hukum": AL, "carpan": 1.0, "guven": "düşük",
+        "hukum": AL, "carpan": 1.0, "guven": "düşük", "kural": None,
         "gerekce": [
             f"Reel net mevduat %{reel_net_mevduat:+.1f} → ara bant "
             f"(%{esikler['reel_mevduat_dusuk_pct']:.0f}–"
@@ -172,6 +178,56 @@ def taktik_hukum(ufuk_engel: Optional[dict], kapi: dict,
     }
 
 
+def kademe_kaniti_satiri(cekirdek: dict, tarama: Optional[dict]) -> list[str]:
+    """Kademe uygulanıyorsa, onu ÜRETEN kuralın ölçüm karnesini yazar.
+
+    NEDEN VAR: kademe (0.75×/1.25×) o ay alımın bir kısmını erteletir. Bunun
+    gram olarak başa baş noktası çekirdek eşiğidir — kural o eşiği geçmiyorsa
+    kademe, ölçüme göre, ertelenen kısım kadar gram KAYBETTİRİR. Rapor bunu
+    söylemezse okuyan "ölçtü ve geçti" sanar; ADR #007'nin yasakladığı şey tam
+    olarak budur.
+
+    Kademe yokken (carpan 1.0) satır YAZILMAZ: ertelenen alım yok, ölçülecek
+    iddia da yok.
+    """
+    if cekirdek.get("carpan") == 1.0:
+        return []
+    if not tarama:
+        # SESSİZ DÜŞMEK YASAK. Eskiden burada `return []` vardı ve önbellek
+        # dosyası repoya hiç commit'lenmediği için satır 2026-07-29 → 08-10
+        # arası ÜRETİMDE HİÇ BASILMADI (7/7 rapor); STATE.md ise "hüküm bloğu
+        # bunu her gün beyan ediyor" diyordu. Ölçülmemiş bir kademe, ölçülmüş
+        # görünmemeli — dosya yoksa bunu SÖYLE.
+        from . import tahmin_backfill as _tb     # yerel: modül döngüsünü kırar
+        return ["", "_**Kademenin kanıtı:** aday taraması önbelleği YOK "
+                f"(`{_tb.TARAMA_CACHE}`) — kademe uygulanıyor ama "
+                "kanıtı raporlanamıyor. `python -m src.tahmin_backfill` ile üret._"]
+    esik = tarama.get("esik_cekirdek_puan")
+    kural = cekirdek.get("kural")
+    a = (tarama.get("adaylar") or {}).get(kural) if kural else None
+    bas = f"_**Kademenin kanıtı:** başa baş eşiği +{esik:.2f}p · "
+    if not a:
+        # Kural taramada YOK — config eşiği taramadaki adaydan ayrışmış olabilir.
+        # Sessiz kalmak yerine bunu söyle: ölçülmemiş bir kademe, ölçülmüş
+        # görünmemeli.
+        return ["", bas + (f"`{kural}` kuralı aday taramasında YOK — kademe "
+                           "ölçülmemiş bir kurala dayanıyor._" if kural else
+                           "kademeyi üreten kural bilinmiyor._")]
+    guclu = a.get("yeterli") and a.get("t") is not None and abs(a["t"]) >= 2.0
+    tv = f"{a['t']:+.2f}" if a.get("t") is not None else "—"
+    if not a.get("cekirdek_gecti"):
+        return ["", bas + f"kural `{kural}` örneklem-içi ölçümde "
+                f"**{a['fark_puan']:+.2f}p** (N={a['n']}, t={tv}) → eşiğin "
+                f"**ALTINDA**. Kademe ölçülmüş bir kenara değil, en iyi adaya "
+                f"dayanıyor; dar (0.75×/1.25×) tutulmasının sebebi bu._"]
+    if not guclu:
+        return ["", bas + f"kural `{kural}` eşiği geçti (**{a['fark_puan']:+.2f}p**) "
+                f"ama güçlü değil (N={a['n']}, t={tv}; şart N≥{tarama['zayif_n']} "
+                f"ve |t|≥2) — aday, kanıt değil._"]
+    return ["", bas + f"kural `{kural}` eşiği geçti ve güçlü: "
+            f"**{a['fark_puan']:+.2f}p** (N={a['n']}, t={tv})._"]
+
+
 def kapi_durumu(cfg: dict, karne: Optional[dict]) -> dict:
     """Taktik kolun kapısı açık mı? Şart ÖNCEDEN kayıtlıdır, gevşetilmez.
 
@@ -248,7 +304,7 @@ def build_karar(cfg: dict) -> dict:
     AYNI yol. İkinci bir okuma yolu açmak, canlı hükmün kaydedilen hükümden
     farklı girdiyle üretilmesi demek olurdu; karne o an anlamını yitirirdi.
     """
-    from . import db, gram, ozellikler as oz, tahmin
+    from . import db, gram, ozellikler as oz, tahmin, tahmin_backfill
     ozellikler, k_karne = {}, None
     try:
         con = db.connect(cfg)
@@ -263,6 +319,7 @@ def build_karar(cfg: dict) -> dict:
         log.warning("ozellik/karne okunamadi: %s", e)
     out = karar_ver(ozellikler, cfg, gram.engel_oku(cfg), karne=k_karne)
     out["asof_date"] = ozellikler.get("asof_date")     # karne'yi karar_ver koyuyor
+    out["kademe_kaniti"] = tahmin_backfill.tarama_oku(cfg)
     return out
 
 
@@ -290,6 +347,11 @@ def format_karar_md(k: dict) -> str:
         L += ["", f"_Ölçüm tabanı: {e['n_bagimsiz']} bağımsız pencere · en kötü "
               f"tek pencere %{e['en_kotu_pct']:+.1f} · çekirdek eşiği "
               f"+{e['cekirdek_esik_puan']:.2f}p_"]
+    # KADEME KENDİ KANITINI TAŞIR. Kademe uygulandığında (carpan != 1.0) sistem
+    # o ay alımın bir kısmını erteletiyor demektir; bunun gram olarak başa baş
+    # noktası çekirdek eşiğidir. Kuralın o eşiği ölçümde geçip geçmediğini
+    # SÖYLEMEK zorunda — sessiz kalmak "ölçtüm ve geçti" izlenimi verirdi.
+    L += kademe_kaniti_satiri(c, k.get("kademe_kaniti"))
     # Karne satırı: her hüküm kendi sicilini yanında taşır. Sicil yoksa bunu
     # SÖYLEMEK zorunda — sessiz kalmak "sicilim iyi" izlenimi verirdi.
     kn = k.get("karne")

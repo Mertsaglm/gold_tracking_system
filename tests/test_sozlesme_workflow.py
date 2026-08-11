@@ -25,6 +25,7 @@ Bu sıranın her bağlantısı ölçülmüş bir olaya dayanıyor:
 from __future__ import annotations
 
 import pathlib
+import re
 
 import pytest
 import yaml
@@ -192,13 +193,49 @@ def test_arsiv_cron_onbes_dakika():
 
 # ------------------------------------------------------------ ikisi için ortak
 @pytest.mark.parametrize("wf,ad", [(GUNLUK, "daily.yml"), (ARSIV, "archive.yml")])
-def test_ayni_concurrency_grubu(wf, ad):
-    """İki workflow aynı repoya push ediyor; farklı gruplara ayrılırlarsa
-    eşzamanlı push çakışması olur (retry'li pull --rebase bunu maskeler ama
-    kaybedilen tur veri kaybıdır)."""
-    assert wf["concurrency"]["group"] == "repo-commit", f"{ad}: grup değişmiş"
+def test_kosu_iptal_edilemez(wf, ad):
     assert wf["concurrency"].get("cancel-in-progress") is False, (
         f"{ad}: cancel-in-progress true → devam eden commit iptal edilebilir")
+
+
+def test_gunluk_rapor_arsivleyiciyle_AYNI_GRUPTA_DEGIL():
+    """KİLİT TEST — 2026-08-11 denetimi, ölçülmüş arıza.
+
+    Eskiden ikisi de `repo-commit` grubundaydı ve bu test AYNI olmalarını
+    kilitliyordu; gerekçesi "farklı gruplarda push çakışır"dı. Ölçüm o
+    dengeyi tersine çevirdi:
+
+    GitHub bir concurrency grubunda YALNIZ BİR bekleyen koşu tutar. Günlük
+    rapor sıraya girdikten sonra 15 dk'lık arşiv koşusu gelince BEKLEYENİ
+    DÜŞÜRÜYOR. 2026-08-06'da tam bu oldu: daily `cancelled`, o gün
+    `rapor_2026-08-06.md` üretilmedi, `asof=2026-08-05` tahmini hiç yazılmadı,
+    Telegram'a tek mesaj gitmedi — GÜNÜN TAMAMI kayboldu.
+
+    Push yarışı ise ucuz ve geri alınabilir: `git pull --rebase` + 5 deneme.
+    Yani eski testin koruduğu şey (nadir, kurtarılabilir yarış) uğruna
+    ölçülmüş ve kurtarılamayan bir kayıp göze alınıyordu. Sözleşme
+    tersine çevrildi ve yeni hâli burada kilitleniyor.
+    """
+    assert GUNLUK["concurrency"]["group"] != ARSIV["concurrency"]["group"], (
+        "daily.yml ve archive.yml aynı concurrency grubunda → arşivleyici "
+        "bekleyen günlük raporu iptal edebilir (2026-08-06'da oldu)")
+
+
+@pytest.mark.parametrize("wf,ad", [(GUNLUK, "daily.yml"), (ARSIV, "archive.yml")])
+def test_push_yarisi_rebase_denemesiyle_karsilaniyor(wf, ad):
+    """Ayrı gruplarda push yarışı mümkün; karşılığı sağlam bir retry döngüsü.
+
+    Bu test yukarıdaki ayrımın BEDELİNİ ödeyen mekanizmayı kilitler: ayrım
+    kalıcıysa retry de kalıcı olmalı, yoksa takas eksik kalır.
+    """
+    adimlar = _adimlar(wf, list(wf["jobs"])[0])
+    push = [a for a in adimlar if "git push" in str(a.get("run", ""))]
+    assert push, f"{ad}: push adımı yok"
+    kod = push[0]["run"]
+    assert "git pull --rebase" in kod, f"{ad}: rebase'siz push yarışı kaybeder"
+    denemeler = re.search(r"for i in ([\d ]+); do", kod)
+    assert denemeler and len(denemeler.group(1).split()) >= 5, (
+        f"{ad}: push retry sayısı 5'in altına düşmüş")
 
 
 @pytest.mark.parametrize("wf,ad", [(GUNLUK, "daily.yml"), (ARSIV, "archive.yml")])

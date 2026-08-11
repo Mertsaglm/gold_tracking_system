@@ -273,3 +273,94 @@ def test_karar_ver_olculemez_karneyi_raporda_bagirir():
     md = karar.format_karar_md(k)
     assert "ÖLÇÜLEMİYOR" in md
     assert "fark +0.0p" not in md, "totoloji ölçüm gibi yazılmış"
+
+
+# ---------------- kademenin kanıtı (2026-07-29) ----------------
+#
+# GERÇEK OLAY: sistemin ŞU AN AÇIK olan tek kolu (çekirdek) `reel_mevduat > %10`
+# kuralıyla "AZ AL 0.75×" diyordu, ama aynı kural aday taramasında +1.34p ile
+# kendi başa baş eşiğinin (+1.99p) ALTINDA kalıyordu. Rapor bunu hiçbir yerde
+# söylemiyordu; okuyan "ölçtü ve geçti" sanıyordu. Bu testler o satırı kilitler.
+
+def _tarama(fark=1.34, n=22, t=1.03, gecti=False, kural="reel_mevduat > %10"):
+    return {"esik_cekirdek_puan": 1.99, "esik_taktik_puan": 3.18, "zayif_n": 30,
+            "adaylar": {kural: {"fark_puan": fark, "n": n, "t": t,
+                                "yeterli": n >= 30, "cekirdek_gecti": gecti,
+                                "taktik_gecti": False}},
+            "cekirdek_gecen": [kural] if gecti else []}
+
+
+def test_kademe_kurali_tarama_adayiyla_eslesir():
+    """SÖZLEŞME: kademeyi üreten kuralın adı, taramadaki aday adıyla BİREBİR
+    aynı olmalı. Ayrışırsa rapor sessizce 'kural taramada YOK'a düşer ve
+    kademenin kanıt durumu bir daha hiç ölçülemez."""
+    from src import tahmin_backfill as tb
+    dusuk = karar.cekirdek_hukum(-1.0, ESIK)["kural"]
+    yuksek = karar.cekirdek_hukum(99.0, ESIK)["kural"]
+    assert dusuk in tb.ADAYLAR, f"{dusuk!r} aday taramasında yok"
+    assert yuksek in tb.ADAYLAR, f"{yuksek!r} aday taramasında yok"
+    assert karar.cekirdek_hukum(5.0, ESIK)["kural"] is None      # ara bant
+
+
+def test_kademe_esigin_altindaysa_raporda_ALTINDA_yazar():
+    c = karar.cekirdek_hukum(13.0, ESIK)          # AZ AL 0.75×
+    s = "\n".join(karar.kademe_kaniti_satiri(c, _tarama()))
+    assert "ALTINDA" in s
+    assert "+1.34p" in s and "1.99" in s          # sayılar gizlenmiyor
+    assert "N=22" in s
+
+
+def test_kademe_yokken_kanit_satiri_yazilmaz():
+    """Ara bantta alım ertelenmiyor → ölçülecek iddia da yok."""
+    c = karar.cekirdek_hukum(5.0, ESIK)
+    assert c["carpan"] == 1.0
+    assert karar.kademe_kaniti_satiri(c, _tarama()) == []
+
+
+def test_kademe_kural_taramada_yoksa_sessiz_kalmaz():
+    """Config eşiği taramadan ayrışırsa satır SUSMAZ — ölçülmemiş bir kademe
+    ölçülmüş görünmemeli."""
+    c = karar.cekirdek_hukum(13.0, ESIK)
+    s = "\n".join(karar.kademe_kaniti_satiri(c, _tarama(kural="baska_kural")))
+    assert "YOK" in s and "ölçülmemiş" in s
+
+
+def test_kademe_esigi_gecse_bile_zayifsa_kanit_denmez():
+    c = karar.cekirdek_hukum(13.0, ESIK)
+    s = "\n".join(karar.kademe_kaniti_satiri(c, _tarama(fark=2.9, n=6, t=1.0,
+                                                        gecti=True)))
+    assert "aday, kanıt değil" in s
+
+
+def test_kademe_kaniti_tarama_yoksa_cokmez():
+    """Niyet: `tarama=None` gelince rapor üretimi PATLAMAMALI.
+
+    2026-08-11'e kadar burada `== []` yazıyordu; bu, çökme güvenliğini değil
+    SESSİZLİĞİ kilitliyordu ve gerçek bir arızayı görünmez kıldı: önbellek
+    dosyası repoya hiç commit'lenmediği için satır 7/7 üretim raporunda
+    basılmadı. Kodun komşu dalı ("kural taramada YOK") zaten "sessiz kalmak
+    yerine söyle" diyordu — bu dal onunla tutarsızdı. İddia düzeltildi,
+    niyet korundu; sessizliği bekleyen davranış artık
+    `test_kademe_kaniti_onbellek_yokken_SESSIZ_KALMAZ` ile kilitli.
+    """
+    c = karar.cekirdek_hukum(13.0, ESIK)
+    satir = karar.kademe_kaniti_satiri(c, None)   # istisna fırlatmamalı
+    assert isinstance(satir, list)
+
+
+def test_kademe_kaniti_onbellek_yokken_SESSIZ_KALMAZ():
+    """2026-08-11 denetimi: `data/aday_taramasi.json` repoya hiç commit'lenmemişti;
+    `tarama=None` gelince satır sessizce düşüyordu ve satır 7/7 üretim raporunda
+    HİÇ basılmadı — STATE.md ise "her gün beyan ediyor" diyordu (L-008/L-011)."""
+    cekirdek = {"carpan": 0.75, "kural": "reel_mevduat > %10"}
+    satir = karar.kademe_kaniti_satiri(cekirdek, None)
+    assert satir, "önbellek yokken satır sessizce düşmemeli"
+    metin = "\n".join(satir)
+    assert "aday_taramasi.json" in metin, "hangi dosyanın eksik olduğu yazılmalı"
+    assert "YOK" in metin
+
+
+def test_kademe_yokken_satir_hala_yazilmiyor():
+    """Kademe 1.0× ise ertelenen alım yok → ölçülecek iddia da yok."""
+    assert karar.kademe_kaniti_satiri({"carpan": 1.0, "kural": "x"}, None) == []
+    assert karar.kademe_kaniti_satiri({"carpan": 1.0, "kural": "x"}, {"esik_cekirdek_puan": 2.0}) == []

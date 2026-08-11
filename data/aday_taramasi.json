@@ -1,0 +1,126 @@
+{
+  "ufuk": "1ay",
+  "ilk": "2017-01-19",
+  "son": "2026-07-24",
+  "esik_cekirdek_puan": 1.9869737014024424,
+  "esik_taktik_puan": 3.182478701402439,
+  "n_test": 14,
+  "zayif_n": 30,
+  "adaylar": {
+    "kur oynaklık > %25 (şok)": {
+      "fark_puan": 2.8536486004243873,
+      "n": 6,
+      "t": 1.0068329236791442,
+      "yeterli": false,
+      "cekirdek_gecti": true,
+      "taktik_gecti": false
+    },
+    "reel_mevduat > %10": {
+      "fark_puan": 1.3432130781787883,
+      "n": 22,
+      "t": 1.029254353875432,
+      "yeterli": false,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "gram RSI < 30": {
+      "fark_puan": 0.8288023732731331,
+      "n": 4,
+      "t": 0.3116542469278502,
+      "yeterli": false,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "gram 12ay momentum > %60": {
+      "fark_puan": 0.4531248780263495,
+      "n": 47,
+      "t": 0.5498561138900181,
+      "yeterli": true,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "ons 200GMA üstü %15+": {
+      "fark_puan": 0.0954270714885812,
+      "n": 20,
+      "t": 0.07527707418881062,
+      "yeterli": false,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "kur bacağı payı > 0.7": {
+      "fark_puan": -0.2999397532287158,
+      "n": 49,
+      "t": -0.3344654142240634,
+      "yeterli": true,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "gram Donchian55 tepede (>0.95)": {
+      "fark_puan": -0.35390812071160416,
+      "n": 51,
+      "t": -0.35119543640767553,
+      "yeterli": true,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "kur oynaklık < %5 (sürünme)": {
+      "fark_puan": -0.47150935343838474,
+      "n": 30,
+      "t": -0.48789804598562264,
+      "yeterli": true,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "ons RSI > 75": {
+      "fark_puan": -0.6165448947982639,
+      "n": 13,
+      "t": -0.39915570637746545,
+      "yeterli": false,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "gram RSI > 75": {
+      "fark_puan": -0.6765815195831528,
+      "n": 22,
+      "t": -0.49544103069205586,
+      "yeterli": false,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "ons Donchian55 tepede (>0.95)": {
+      "fark_puan": -0.7690693016538408,
+      "n": 34,
+      "t": -0.6396942371776788,
+      "yeterli": true,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "gram 200GMA üstü %15+": {
+      "fark_puan": -0.7813089714676338,
+      "n": 55,
+      "t": -0.8891303223888719,
+      "yeterli": true,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "reel_mevduat < 0": {
+      "fark_puan": -1.0556647983575285,
+      "n": 34,
+      "t": -0.7973550690815137,
+      "yeterli": true,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    },
+    "gram 3ay momentum > %25": {
+      "fark_puan": -1.220075072957383,
+      "n": 20,
+      "t": -0.5547279573557663,
+      "yeterli": false,
+      "cekirdek_gecti": false,
+      "taktik_gecti": false
+    }
+  },
+  "cekirdek_gecen": [
+    "kur oynaklık > %25 (şok)"
+  ]
+}

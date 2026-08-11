@@ -62,9 +62,10 @@ jobs:
           if [ -f data/telegram_outbox.jsonl ]; then git add data/telegram_outbox.jsonl; fi
           if ! git diff --cached --quiet; then
             git commit -m "archive: $(date -u +%Y-%m-%dT%H:%MZ)"
-            for i in 1 2 3; do
+            # 5 deneme + artan bekleme (gunluk rapor artik ayri concurrency grubunda).
+            for i in 1 2 3 4 5; do
               git pull --rebase origin main && git push && break
-              echo "push retry $i"; sleep 3
+              echo "push retry $i"; sleep $((i * 5))
             done
           else
             echo "degisiklik yok"

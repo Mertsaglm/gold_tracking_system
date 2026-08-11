@@ -6,6 +6,156 @@
 
 ---
 
+## #011 — 2026-08-11 — Bildirim hattı: kaçış + izolasyon + görünürlük (sessiz arıza sınıfı kapatıldı)
+
+**Tetikleyen:** Mert: *"proje uzun zamandır kendi çalışıyor, kaliteli sonuçlar
+üretebilmiş mi kontrol et."* Denetim ölçtü: **13 gün boyunca hiçbir anomali
+bildirimi gitmemiş** (2026-07-29 → 08-10, 125 Actions koşusu, hepsi yeşil).
+Detay: `ai/denetim-2026-08-11.md`, ders: **L-018**.
+
+**Ölçüm (kanıt zinciri değil, doğrudan deney):** üretimdeki metin canlı
+Telegram API'sine iki kez gönderildi —
+
+| Sürüm | HTTP | Telegram cevabı |
+|---|---|---|
+| Kaçışsız (eski kod) | **400** | `can't parse entities: Unsupported start tag "1.5)" at byte offset 107` |
+| Kaçışlı (yeni kod) | **200** | ok |
+
+### Karar — düzeltme METNE değil MEKANİZMAYA yapıldı
+
+Alternatif A (reddedildi): iki metindeki `<` işaretini elle temizle. Ucuz ama
+sınıfı kapatmaz — gelecekte eklenen her eşik metni aynı çukura düşebilir.
+Alternatif B (seçildi): dört katmanı birden kapat.
+
+1. **Kaçış şablonun içinde** — `notify.tg_kacir` (`html.escape`, `quote=False`);
+   `_format_alert` dinamik alanların hepsini kaçırır. Metinler olduğu gibi
+   kaldı; artık `(|%|<1.5)` doğru görüntüleniyor.
+2. **Gönderim izolasyonu** — `notify._gonder` her bildirimi bağımsız dener;
+   biri patlarsa arkasındakiler yine gider.
+3. **Damga geri alma** — `notify.damgayi_geri_al`: gönderilemeyen bildirimin
+   `last_sent` damgası ve tavan sayacı geri alınır, yoksa 24s soğuma onu
+   kalıcı susturur.
+4. **Görünürlük** — `notify.saglik_guncelle` ardışık hatayı `alert_state.json`'a
+   yazar (arşiv workflow'u zaten commit'liyor); `report.bildirim_saglik_metni`
+   bunu günlük raporun EN ÜSTÜNE basar: *"🔴 BİLDİRİM HATTI ARIZALI: N ardışık
+   gönderim hatası… GİTMİYOR."*
+
+**Neden 4. madde şart:** 1-3 arızayı önler, 4 arızayı **görünür** kılar. 13 günü
+13 gün yapan şey hatanın kendisi değil, hiçbir yerin "gönderemedim" dememesiydi.
+`continue-on-error: true` korundu (commit adımı bloklanmasın) ama artık tek
+görünürlük kanalı o değil.
+
+### Yan karar — `daily.yml` ayrı concurrency grubuna alındı
+
+Eskiden ikisi de `repo-commit` grubundaydı ve bir **kilit test bunu koruyordu**
+("farklı gruplarda push çakışır"). Ölçüm dengeyi tersine çevirdi: GitHub grup
+başına yalnız bir bekleyen koşu tutar, dolayısıyla 15 dk'lık arşiv koşusu sırada
+bekleyen günlük raporu **düşürüyor**. 2026-08-06'da oldu: rapor yok, `asof=08-05`
+tahmini hiç yazılmadı, Telegram'a tek mesaj gitmedi — **günün tamamı kayboldu.**
+
+Push yarışı ucuz ve geri alınabilir (rebase + retry); iptal edilen koşu değil.
+Grup ayrıldı, karşılığında push döngüsü 3 → **5 deneme + artan bekleme** yapıldı.
+Eski test susturulmadı, **daha güçlü sözleşmeyle değiştirildi**
+(`test_gunluk_rapor_arsivleyiciyle_AYNI_GRUPTA_DEGIL` +
+`test_push_yarisi_rebase_denemesiyle_karsilaniyor`).
+
+### Yan karar — sessiz düşme yasağı iki yerde daha uygulandı
+
+- `karar.kademe_kaniti_satiri`: `data/aday_taramasi.json` yoksa eskiden `[]`
+  dönüyordu → satır **7/7 üretim raporunda hiç basılmadı**, oysa STATE.md
+  "her gün beyan ediyor" diyordu. Artık dosya yoksa bunu **söylüyor**.
+  (Dosyanın kendisi de repoya alındı.)
+- `chart._kova_edge_line`: gösterge NÖTR iken artık ölçüm satırı basılmıyor.
+  Eskiden ikili seçim vardı ve nötr RSI, "RSI aşırı alım" kovasının ölçümünü
+  taşıyordu — yürürlükte olmayan bir koşulun kanıtı.
+
+**Doğrulama:** 839 test yeşil (+24). 6 kontrollü mutasyon uygulandı
+(kaçış, izolasyon, damga, defter, uyarı metni, rapora bağlama) → **6/6 yakalandı**.
+Ayrıca canlı Telegram deneyi yukarıdaki tabloda.
+
+**Tekrar gözden geçir:** (a) Telegram `parse_mode` politikası değişirse
+(`MarkdownV2`'ye geçilirse kaçış kümesi başkadır); (b) günlük raporun push
+denemesi 5'te de tükeniyorsa concurrency ayrımı yeniden tartışılır; (c) z-skor
+kapısı ~2026-09-14'te açıldığında `prim_z` ilk kez ateşlenecek — **o gün canlı
+doğrulama yapılmalı** (STATE TAKVİM'e işlendi).
+
+---
+
+## #010 — 2026-07-29 — Grafik ölçümü faz artefaktından arındırıldı + AÇIK kolun eşiği görünür kılındı
+
+**Tetikleyen:** Mert: *"bu projede çok önemsediğim şey grafik analizine göre
+tahmin yürütülmesi, bunun için kontrol sağlamanı istiyorum."* Denetim iki ayrı
+ölçüm hatası buldu; ikisi de aynı kökten: **eşik, ölçümün gürültüsünden küçüktü.**
+
+### A) `chart.measure_edge` artık tabanı TÜM fazlardan ölçüyor (ADR #007-E kapatıldı)
+
+#007-E'de tespit edilip Backlog'a yazılan düzeltme koda taşındı
+(`chart.phase_matched_edge_baseline`). Kural: **ölçüm eşiği faz yayılımından
+küçük olamaz** → `esik = max(min_anlamli_fark_puan, yayilim)`.
+
+Sonuç — `reports/grafik_dogrulama.md` yeniden üretildi (GC=F, 2653 bar):
+
+| | ÖNCE (tek faz) | SONRA (faz eşleşmeli) |
+|---|---:|---:|
+| "zayıf kanıt" satırı | **10** | **1** |
+| "kenar yok" satırı | 14 | 23 |
+
+Ölçülen faz yayılımı: 1ay **1.0p** · 3ay **4.1p** · 6ay **7.4p**. Config'teki
+`min_anlamli_fark_puan: 1.0` eşiği 3-6 ay ufuklarında gürültünün 4-7 katı
+altında kalıyordu; o ufuklardaki her "zayıf kanıt" satırı artefakttı.
+
+**Hüküm: grafiğin ölçülmüş bir yön kenarı YOK.** Tek ayakta kalan satır
+`RSI aşırı satım · 1ay · +2.0p` (N=16, in-sample ve OOS ikisi de "ölçüm
+yetersiz") — 54 karşılaştırmada 1 zayıf satır, Bonferroni'den sonra kanıt değil.
+Bu bir başarısızlık değil **sonuçtur**: seviyeler kademe/stop geometrisi olarak
+kalır, yön iddiası olarak kullanılmaz. Rapordaki dil zaten buna göreydi; artık
+ölçüm de dili doğruluyor.
+
+### B) Aday taraması ÇEKİRDEK eşiğini de raporluyor — ve açık kol eşiği geçemiyor
+
+`tahmin_backfill` yalnız **taktik** eşiğine (taban + gidiş-dönüş = +3.18p) göre
+hüküm veriyordu. Ama üretimde AÇIK olan kol **çekirdek** ve onun eşiği daha
+düşük (+1.99p, makas ödenmez). Yani sistemin fiilen kullandığı kol, kendi
+eşiğine göre hiç denetlenmemişti.
+
+Ölçüm (458 haftalık asof, 1ay ufku, tüm fazlar):
+
+| Kural | Fark | N | t | Taktik | Çekirdek |
+|---|---:|---:|---:|:--:|:--:|
+| `kur oynaklık > %25 (şok)` | +2.85p | 6 ⚠️ | +1.01 | ❌ | ✅ |
+| **`reel_mevduat > %10`** (kademeyi üreten kural) | **+1.34p** | 22 ⚠️ | +1.03 | ❌ | **❌** |
+| `reel_mevduat < 0` (1.25× kademesi) | −1.06p | 34 | −0.80 | ❌ | ❌ |
+
+**Sonuç: çekirdek kolun İKİ kademesi de kendi başa baş eşiğinin altında.**
+`reel_mevduat > %10` tetiklendiğinde satmanın ölçülen gram kazancı hâlâ
+**%−0.64** — yani alımın %25'ini ertelemek, ölçüme göre o ay ~%0.16 gram
+kaybettirir. t≈1.0 olduğu için bu kayıp da gürültüden ayırt edilemez.
+
+**Karar: kademe KALDIRILMADI, ama her rapor kendi kanıt durumunu beyan ediyor.**
+Hüküm bloğuna satır eklendi (`karar.kademe_kaniti_satiri`), veri
+`data/aday_taramasi.json`'dan okunur → tarama tazelenince satır kendini günceller:
+
+> _**Kademenin kanıtı:** başa baş eşiği +1.99p · kural `reel_mevduat > %10`
+> örneklem-içi ölçümde **+1.34p** (N=22, t=+1.03) → eşiğin **ALTINDA**._
+
+**Neden kaldırılmadı:** kademeyi kapatmak (`carpan=1.0`) Mert'in gerçek alım
+davranışını değiştirir; bu bir mühendislik tercihi değil onun kararıdır. Usta'nın
+işi ölçümü görünür kılmaktı, kararı almak değil. Seçenek STATE.md TAKVİM'inde
+👤 satırı olarak duruyor.
+
+**Tekrar gözden geçir:** (a) canlı karne ≥30 çözülmüş tahmine ulaşınca — o zaman
+kademe örneklem-DIŞI ölçülebilir; (b) yeni bir aday çekirdek eşiğini N≥30 ve
+|t|≥2 ile geçerse.
+
+### C) Koruma disiplini: 8 mutasyon, 8'i yakalandı — biri ilk turda KAÇTI
+
+`cekirdek_gecti` bayrağını sabit `False` yapan mutasyon ilk turda testlerden
+geçti: eşik testlerinin tamamı elle yazılmış fixture üzerinden çalışıyordu,
+üreticinin bayrağını hiçbiri doğrulamıyordu. Düz üstel sentetik seride her
+adayın farkı özdeş 0 çıktığı için üretici testi de vacuous olurdu.
+Çözüm: iki rejimli sentetik seri (`_doldur_rejimli`) + "kurgu eşiği aşan aday
+üretmediyse testi düşür" assert'i. → **L-016**
+
 ## #009 — 2026-07-27 — Regresyon zırhı: testler ARAÇ DEĞİL, devrin kendisi
 
 **Tetikleyen:** Mert: *"yakın zamanda Claude Code aboneliğim bitecek... ileride

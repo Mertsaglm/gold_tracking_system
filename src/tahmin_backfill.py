@@ -39,6 +39,10 @@ from . import gram, ozellikler as oz, util
 log = logging.getLogger("tahmin_backfill")
 
 RAPOR = "gram_aday_taramasi.md"
+# `gram_engeli.json` ile AYNI desen: markdown insan için, JSON hüküm satırı için.
+# Karar motoru bu dosyadan okur → kademenin kanıt durumu raporda kendi kendini
+# tazeler; kodda sabitlenmiş bir "+1.34p" cümlesi tarama yenilenince BAYATLARDI.
+TARAMA_CACHE = "data/aday_taramasi.json"
 
 UYARI_BASI = (
     "> ⚠️ **BU BİR KARNE DEĞİLDİR.** Buradaki eşiklerin bir kısmı bu veriye "
@@ -154,6 +158,12 @@ def tara(cfg: dict, con, adim_gun: int = 5,
                 kullanilan[ad] = cikis
 
     zayif_n = cfg["karar"]["karne"]["zayif_n"]
+    # İKİ EŞİK, TEK KAYNAK (`gram.esik_pct`): taktik gidiş-dönüş makasını da
+    # öder, çekirdek ödemez. Yalnız taktik eşiğini raporlamak, AÇIK OLAN kolu
+    # (çekirdek) ölçüsüz bırakır — bir aday taktikte "❌" görünüp çekirdekte
+    # eşiği geçiyor olabilir; o zaman ❌ okuyan kişi yanlış sonuca varır.
+    esik_taktik = gram.esik_pct(taban["ortalama"], rt, "taktik")
+    esik_cekirdek = gram.esik_pct(taban["ortalama"], rt, "cekirdek")
     sonuc = []
     for ad, orn in ornekler.items():
         if not orn:
@@ -165,14 +175,15 @@ def tara(cfg: dict, con, adim_gun: int = 5,
             "aday": ad, "n": len(orn), "ortalama": ort, "fark_puan": fark,
             "t": t_istatistigi(orn, taban["ortalama"]),
             "kazanma_pct": sum(1 for x in orn if x > 0) / len(orn) * 100.0,
-            "esigi_gecti": fark > (abs(taban["ortalama"]) + rt),
+            "esigi_gecti": fark > esik_taktik,
+            "cekirdek_gecti": fark > esik_cekirdek,
             "yeterli": len(orn) >= zayif_n,
         })
     sonuc.sort(key=lambda s: s.get("fark_puan", -999), reverse=True)
     return {
         "ufuk": ufuk_ad, "ufuk_gun": h, "n_asof": n_asof, "n_test": len(ADAYLAR),
         "roundtrip_pct": rt, "taban": taban, "zayif_n": zayif_n,
-        "esik_puan": abs(taban["ortalama"]) + rt,
+        "esik_puan": esik_taktik, "esik_cekirdek_puan": esik_cekirdek,
         "ilk": tarihler[baslangic], "son": tarihler[-1],
         "adaylar": sonuc,
     }
@@ -187,26 +198,52 @@ def format_tarama_md(cfg: dict, t: dict) -> str:
          "## Aşılması gereken eşik", "",
          f"- Taban (SAT'ın koşulsuz gram kazancı): **%{t['taban']['ortalama']:+.2f}** "
          f"(N={t['taban']['n_bagimsiz']} bağımsız pencere)",
-         f"- Bir adayın kârlı olması için tabanı yenmesi gereken fark: "
-         f"**+{t['esik_puan']:.2f} puan**", "",
+         f"- **TAKTİK** kol (sat→geri al, gidiş-dönüş %{t['roundtrip_pct']:.2f} öder): "
+         f"tabanı **+{t['esik_puan']:.2f} puan** yenmeli",
+         f"- **ÇEKİRDEK** kol (alımı ertele, makas ÖDEMEZ): tabanı "
+         f"**+{t['esik_cekirdek_puan']:.2f} puan** yenmeli — bu kol ŞU AN AÇIK",
+         "",
+         "> Çekirdek eşiği, alımı ertelemenin gram olarak başa baş noktasıdır: "
+         "farkı bu kadar yenemeyen bir kural, alımı geciktirdiği her ay "
+         "**gram kaybettirir**. Kademe (0.75×) kaybı küçültür, işaretini "
+         "değiştirmez.", "",
          "## Adaylar (fark büyükten küçüğe)", "",
-         "| Aday | N | Ort. gram kazancı | Tabana fark | t | Kazanma | Eşiği geçti? |",
-         "|---|---:|---:|---:|---:|---:|:--:|"]
+         "| Aday | N | Ort. gram kazancı | Tabana fark | t | Kazanma | Taktik | Çekirdek |",
+         "|---|---:|---:|---:|---:|---:|:--:|:--:|"]
     for a in t["adaylar"]:
         if not a["n"]:
-            L.append(f"| {a['aday']} | 0 | _hiç tetiklenmedi_ | | | | — |")
+            L.append(f"| {a['aday']} | 0 | _hiç tetiklenmedi_ | | | | — | — |")
             continue
         zayif = "" if a["yeterli"] else f" ⚠️"
         tv = f"{a['t']:+.2f}" if a["t"] is not None else "—"
         gecti = "✅" if a["esigi_gecti"] else "❌"
+        cek = "✅" if a["cekirdek_gecti"] else "❌"
         L.append(f"| {a['aday']} | {a['n']}{zayif} | %{a['ortalama']:+.2f} | "
-                 f"**{a['fark_puan']:+.2f}p** | {tv} | %{a['kazanma_pct']:.0f} | {gecti} |")
+                 f"**{a['fark_puan']:+.2f}p** | {tv} | %{a['kazanma_pct']:.0f} | "
+                 f"{gecti} | {cek} |")
 
     gecen = [a for a in t["adaylar"] if a.get("esigi_gecti")]
     guclu = [a for a in gecen if a.get("yeterli") and a.get("t")
              and abs(a["t"]) >= 2.0]
+    cek_gecen = [a for a in t["adaylar"] if a.get("cekirdek_gecti")]
+    cek_guclu = [a for a in cek_gecen if a.get("yeterli") and a.get("t")
+                 and abs(a["t"]) >= 2.0]
     L += ["", f"_⚠️ = N < {t['zayif_n']}, ölçüm yetersiz._", "",
-          "## Hüküm", ""]
+          "## Çekirdek kolun hükmü (AÇIK OLAN kol)", ""]
+    if not cek_gecen:
+        L += ["**Hiçbir aday çekirdek eşiğini de geçmedi.** Yani bugün alımı "
+              "erteleten hiçbir kuralın ölçülmüş bir gerekçesi yok."]
+    elif not cek_guclu:
+        L += [f"**{len(cek_gecen)} aday çekirdek eşiğini geçti ama hiçbiri güçlü "
+              f"değil** (|t| ≥ 2 ve N ≥ {t['zayif_n']} yok):", ""]
+        L += [f"- `{a['aday']}` — fark {a['fark_puan']:+.2f}p, "
+              f"t={(f'{a['t']:+.2f}' if a['t'] is not None else '—')}, N={a['n']}"
+              for a in cek_gecen]
+    else:
+        L += [f"**{len(cek_guclu)} aday hem çekirdek eşiğini geçti hem |t| ≥ 2:**", ""]
+        L += [f"- `{a['aday']}` — fark {a['fark_puan']:+.2f}p, t={a['t']:+.2f}, "
+              f"N={a['n']}" for a in cek_guclu]
+    L += ["", "## Taktik kolun hükmü", ""]
     if not gecen:
         L += ["**Hiçbir aday eşiği geçmedi.** Örneklem-içi ölçümde bile "
               "aşılamayan bir eşik, canlıda hiç aşılmaz. Taktik kol kapalı "
@@ -226,6 +263,33 @@ def format_tarama_md(cfg: dict, t: dict) -> str:
     return "\n".join(L)
 
 
+def tarama_ozeti(t: dict) -> dict:
+    """Hüküm satırının okuyacağı küçük özet — tam tarama JSON'a sığmaz, gerekmez."""
+    return {
+        "ufuk": t["ufuk"], "ilk": t["ilk"], "son": t["son"],
+        "esik_cekirdek_puan": t["esik_cekirdek_puan"],
+        "esik_taktik_puan": t["esik_puan"],
+        "n_test": t["n_test"], "zayif_n": t["zayif_n"],
+        # ADA GÖRE indeks: karar motoru kademeyi ÜRETEN kuralı adıyla arar
+        # (`karar.cekirdek_hukum` → "kural"). Liste olsaydı hangi adayın
+        # kademeyi doğurduğu kaybolurdu ve rapor başka bir adayın karnesini
+        # gösterirdi — ölçüm gibi görünen bir yanlış.
+        "adaylar": {
+            a["aday"]: {"fark_puan": a["fark_puan"], "n": a["n"], "t": a["t"],
+                        "yeterli": a["yeterli"],
+                        "cekirdek_gecti": a["cekirdek_gecti"],
+                        "taktik_gecti": a["esigi_gecti"]}
+            for a in t["adaylar"] if a.get("n")},
+        "cekirdek_gecen": [a["aday"] for a in t["adaylar"]
+                           if a.get("cekirdek_gecti")],
+    }
+
+
+def tarama_oku(cfg: dict) -> Optional[dict]:
+    """Önbelleklenmiş tarama özeti; yoksa None (hüküm satırı sessizce düşer)."""
+    return util.read_json(util.abspath(TARAMA_CACHE), None)
+
+
 def run(cfg: dict, ufuk_ad: Optional[str] = None) -> str:
     from . import db, logging_setup
     logging_setup.setup("tahmin_backfill", cfg)
@@ -236,7 +300,8 @@ def run(cfg: dict, ufuk_ad: Optional[str] = None) -> str:
         con.close()
     path = util.abspath(f"{cfg['paths']['reports_dir']}/{RAPOR}")
     path.write_text(format_tarama_md(cfg, t), encoding="utf-8")
-    log.info("aday taramasi yazildi: %s", path)
+    util.write_json(util.abspath(TARAMA_CACHE), tarama_ozeti(t))
+    log.info("aday taramasi yazildi: %s (+ %s)", path, TARAMA_CACHE)
     return str(path)
 
 

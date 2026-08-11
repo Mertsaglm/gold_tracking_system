@@ -33,9 +33,17 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
   çetelesi**. Seviyeler ons USD'de hesaplanır, TL'ye **bugünkü kurla izdüşüm** olarak çevrilir.
   Ölçüm sonucu: seviyelerin yön üstünlüğü yok — kademe/stop planlaması için sunulur, yön iddiası
   olarak değil (ölçüm: `docs/TESLIMAT-ARSIV.md` → Faz 6).
+  **2026-07-29 tazelendi (ADR #010-A):** taban artık TÜM fazlardan ölçülüyor ve eşik faz
+  yayılımının altına inemiyor. 54 karşılaştırmada "zayıf kanıt" satırı **10 → 1** düştü;
+  9'u yalnız pencere hizasından doğan artefaktmış. Grafiğin **ölçülmüş yön kenarı yok**.
 - **Karar:** raporun en başında **HÜKÜM** — bu ay ne kadar al (çekirdek) + satılır
   mı (taktik, doğuştan kapalı kapı). Amaç fonksiyonu **terminal gram sayısı**;
   ölçüm `reports/gram_engeli.md`. Bkz. `ai/DECISIONS.md` #007.
+  ⚠️ **Çekirdek kademesi (0.75×/1.25×) ölçülmüş bir kenara dayanmıyor** ve hüküm
+  bloğu bunu her gün yazıyor: kademeyi üreten `reel_mevduat > %10` kuralı
+  örneklem-içi taramada **+1.34p**, başa baş eşiği **+1.99p** (t=1.03).
+  İki eşik `reports/gram_aday_taramasi.md`'de ayrı sütun olarak raporlanır —
+  taktik makas öder (+3.18p), çekirdek ödemez (+1.99p). Bkz. ADR #010-B.
 - **Karne:** verilen her hüküm `predictions` tablosuna **değiştirilemez** yazılır
   (SQLite trigger), vadesi gelince gram uzayında otomatik çözülür. `/karne` ile
   okunur.
@@ -244,7 +252,7 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env      # doldur
 
-.venv/bin/python -m pytest -q                 # 800+ test (~5 sn, ağa çıkmaz)
+.venv/bin/python -m pytest -q                 # 815 test (~9 sn, ağa çıkmaz)
 .venv/bin/python -m src.restore_db            # data/altin.sql → SQLite (tüm geçmiş arşiv)
 .venv/bin/python -m src.evds_job backfill     # EVDS tarihsel (tek sefer)
 .venv/bin/python -m src.history build         # tarihsel günlük ons×kur (2016+)
@@ -263,7 +271,8 @@ cp .env.example .env      # doldur
 .venv/bin/python -m src.calculators bilezik 20 20  # bilezik başabaş
 .venv/bin/python -m src.aipaket               # AI'a yapıştırılacak veri paketi + prompt
 .venv/bin/python -m src.chart                 # destek/direnç + gösterge teyidi
-.venv/bin/python -m src.chart validate        # grafik_dogrulama.md (yavaş, elle)
+.venv/bin/python -m src.chart validate        # grafik_dogrulama.md (faz eşleşmeli taban)
+.venv/bin/python -m src.tahmin_backfill       # aday taraması + data/aday_taramasi.json
 .venv/bin/python -m src.trends                # Google Trends kalabalık göstergesi
 .venv/bin/python -m src.import_actions        # Actions CSV arşivini ana DB'ye aktar
 ```

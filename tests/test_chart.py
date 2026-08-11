@@ -251,6 +251,73 @@ def test_edge_verdict_weak_evidence_only():
     assert v.startswith("zayıf kanıt")      # asla daha guclu bir dil yok
 
 
+# ---------------- faz esleme (ADR #007-E) ----------------
+#
+# KILIT TESTLER: `measure_edge` tabani TEK fazdan olculurse, sinyalin bilgisi
+# ile pencere hizasi birbirine karisir. 2026-07-29'da bu duzeltildiginde
+# grafik_dogrulama.md'deki 10 "zayif kanit" satirinin 9'u dustu.
+
+def _dates_uzun(n):
+    import datetime
+    d0 = datetime.date(2020, 1, 1)
+    return [(d0 + datetime.timedelta(days=i)).isoformat() for i in range(n)]
+
+
+def _testere(n):
+    """5 gunluk testere, 4 gunluk ufuk: pencere hizasi sonucu degistirir.
+
+    Periyot ufka BOLUNMEZ — bolunseydi her faz ayni pencereleri gorurdu ve
+    artefakt gorunmezdi (ilk denemede tam bu oldu, period=4 ile yayilim 0).
+    """
+    return [100.0 + (6.0 if i % 5 in (1, 2) else 0.0) for i in range(n)]
+
+
+def test_faz_tabani_testere_seride_yayilim_uretir():
+    n = 240
+    d, c = _dates_uzun(n), _testere(n)
+    b = chart.phase_matched_edge_baseline(d, c, horizon=4, weak_n=15)
+    assert b["n_faz"] == 4                        # her faz ayri olculdu
+    assert b["yayilim"] > 1.0, b                  # faz secimi tabani oynatiyor
+    # tek-fazli eski deger ile tarafsiz kestirim AYNI DEGIL
+    assert abs(b["faz_0_medyan"] - b["medyan"]) > 0.5
+
+
+def test_faz_tabani_duz_seride_yayilim_sifir():
+    """Duzgun artan seride her faz ayni → yayilim ~0, esik config'e duser."""
+    n = 240
+    d = _dates_uzun(n)
+    c = [100.0 * (1.001 ** i) for i in range(n)]
+    b = chart.phase_matched_edge_baseline(d, c, horizon=4, weak_n=15)
+    assert b["yayilim"] < 0.05, b
+
+
+def test_measure_edge_esigi_faz_yayilimindan_kucuk_olamaz():
+    """EN ONEMLI ASSERT: yayilim buyukse config'teki 1.0p esigi GECERSIZDIR.
+
+    Yayilimdan kucuk bir "fark" olcum degil artefakttir; hukum 'kenar yok'
+    olmak ZORUNDA.
+    """
+    n = 240
+    d, c = _dates_uzun(n), _testere(n)
+    sinyal = list(range(0, n, 4))                 # tek bir faza kilitli sinyal
+    m = chart.measure_edge(d, c, sinyal, horizon=4, weak_n=15, min_diff_p=1.0)
+    assert m["taban_yayilim"] > 1.0
+    assert m["esik_kullanilan"] == m["taban_yayilim"]   # config alt sinir kaldi
+    assert m["esik_kullanilan"] > 1.0
+    if m["fark"] is not None and abs(m["fark"]) < m["esik_kullanilan"] \
+            and m["n"] >= 15:
+        assert m["hukum"] == "kenar yok", m
+
+
+def test_measure_edge_yayilim_kucukse_config_esigi_gecerli():
+    n = 240
+    d = _dates_uzun(n)
+    c = [100.0 * (1.001 ** i) for i in range(n)]
+    m = chart.measure_edge(d, c, list(range(0, n, 4)), horizon=4,
+                           weak_n=15, min_diff_p=1.0)
+    assert m["esik_kullanilan"] == 1.0            # taban yayilimi esigi ezmedi
+
+
 # ---------------- confirm_level ----------------
 def test_confirm_level_counts_items():
     lv = chart.Level(90, 89, 91, "karma", 4, "2026-01-01", "2026-06-01", 2.0)
@@ -433,3 +500,17 @@ def test_gecmis_tarihli_hafta_sonu_bari_da_yazilmaz(tmp_path, monkeypatch):
         "SELECT DISTINCT date FROM ohlc_daily ORDER BY date").fetchall()]
     con.close()
     assert tarihler == ["2026-07-24"], f"hafta sonu barı yazıldı: {tarihler}"
+
+
+# ---------- Nötr gösterge, yürürlükte OLMAYAN kovanın ölçümünü taşımamalı ----------
+def test_notr_gosterge_kenar_olcumu_tasimaz():
+    """2026-08-11 denetimi: RSI 45.6 iken rapor "⚪ nötr" deyip yanına
+    "RSI aşırı alım" kovasının ölçümünü (N=32) basıyordu."""
+    edge = {"RSI aşırı satım": {"1ay": {"fark": 2.1, "n": 16, "hukum": "zayıf kanıt"}},
+            "RSI aşırı alım": {"1ay": {"fark": -3.0, "n": 32, "hukum": "zayıf kanıt"}}}
+    from src.indicators import NOTR, OLUMLU, OLUMSUZ, YOK
+    assert chart._kova_edge_line(edge, NOTR, "RSI aşırı satım", "RSI aşırı alım") == ""
+    assert chart._kova_edge_line(edge, YOK, "RSI aşırı satım", "RSI aşırı alım") == ""
+    # olumlu/olumsuz DOĞRU kovayı seçmeye devam etmeli
+    assert "N=16" in chart._kova_edge_line(edge, OLUMLU, "RSI aşırı satım", "RSI aşırı alım")
+    assert "N=32" in chart._kova_edge_line(edge, OLUMSUZ, "RSI aşırı satım", "RSI aşırı alım")

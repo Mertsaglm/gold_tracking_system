@@ -96,6 +96,32 @@ def archive_health(cfg, hours: int = 24) -> dict:
             "ardisik_basarisiz": max(0, consec_fail)}
 
 
+def bildirim_saglik_metni(saglik: dict) -> str:
+    """Bildirim hattı arıza defterini rapor satırına çevirir (saf, testli).
+
+    Boş string = hat sağlıklı, rapor sessiz kalır. Dolu string = Mert'in
+    GÖRMESİ gereken bir kesinti var; ekranın en üstüne konur.
+    """
+    n = int((saglik or {}).get("ardisik_hata", 0) or 0)
+    if n <= 0:
+        return ""
+    son = (saglik.get("son_hata") or "bilinmiyor").replace("\n", " ")
+    ne_zaman = (saglik.get("son_hata_utc") or "")[:16].replace("T", " ")
+    return (f"> 🔴 **BİLDİRİM HATTI ARIZALI:** {n} ardışık gönderim hatası. "
+            f"Anomali uyarıları Telegram'a **GİTMİYOR**. "
+            f"Son hata ({ne_zaman} UTC): `{son}`")
+
+
+def bildirim_hatti_satiri(cfg: dict) -> str:
+    """Arıza defterini diskten okur; okunamazsa SESSİZ kalır (rapor bloklanmaz)."""
+    try:
+        st = util.read_json(cfg["alerts"]["state_file"], {}) or {}
+        return bildirim_saglik_metni(st.get("saglik", {}))
+    except Exception as e:                            # noqa: BLE001
+        log.warning("bildirim sağlık defteri okunamadı: %s", e)
+        return ""
+
+
 def classify_gap(prim_gap_min: float, collection_gap_min, tol_min: float):
     """Boşluğun ARIZA mı yoksa KAYNAK KALİTESİ mi olduğunu ayırır (saf, testli).
 
@@ -341,6 +367,13 @@ def build_report(cfg: dict) -> str:
                             f"GitHub Actions kontrol edilmeli.")
     except Exception as e:
         log.warning("arşiv sağlığı hata: %s", e)
+    # Bildirim hattı sağlığı — `notify.saglik_guncelle` defterinden okunur.
+    # NEDEN RAPORDA: 2026-07-29'da hat kırıldı ve 13 gün boyunca HİÇBİR yer
+    # "gönderemedim" demedi (Actions adımı continue-on-error ile yeşildi).
+    # Sessiz arıza sınıfını kapatan şey düzeltme değil, bu satır.
+    _bh = bildirim_hatti_satiri(cfg)
+    if _bh:
+        lines.insert(3, _bh)
     # Uyarı ÖNCELİKLE boşluk tabanlı: Actions'ta günlük çalışma sayısı 10-17 arası oynadığı
     # için sayım oranı tek başına güvenilir bir arıza göstergesi değil.
     _tol = effective_freq_minutes(cfg) * float(

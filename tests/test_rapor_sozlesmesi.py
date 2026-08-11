@@ -240,3 +240,72 @@ def test_alarm_mesaji_uc_bilgiyi_tasiyor():
     assert "Prim %+2.00" in mesaj
     assert "Geçersizlik" in mesaj
     assert "yatırım tavsiyesi değildir" in mesaj
+
+
+# ---------- BİLDİRİM HATTI SAĞLIĞI (L-018) ----------
+# Düzeltmenin üçüncü katmanı: hattın kırılmasını ÖNLEMEK yetmez, kırıldığında
+# Mert'in GÖRMESİ gerekir. 2026-07-29 kesintisi 13 gün sürdü çünkü hiçbir çıktı
+# "gönderemedim" demiyordu. Bu satır o sessizliği kapatır — dolayısıyla rapor
+# sözleşmesinin parçasıdır, kozmetik değil.
+def test_bildirim_hatti_saglikliyken_rapor_sessiz():
+    assert report.bildirim_saglik_metni({}) == ""
+    assert report.bildirim_saglik_metni({"ardisik_hata": 0}) == ""
+    assert report.bildirim_saglik_metni(None) == ""
+
+
+def test_bildirim_hatti_arizaliyken_rapor_BAGIRIR():
+    m = report.bildirim_saglik_metni({
+        "ardisik_hata": 37,
+        "son_hata": "prim_sapma: HTTPError: 400 Client Error: Bad Request",
+        "son_hata_utc": "2026-08-11T09:15:00+00:00"})
+    assert m, "arıza varken satır boş olamaz"
+    assert "37" in m, "kaç ardışık hata olduğu görünmeli"
+    assert "GİTMİYOR" in m, "sonucun ne olduğu açıkça yazılmalı"
+    assert "400" in m, "kök sebep metni görünmeli"
+    assert "2026-08-11" in m, "ne zamandır sürdüğü görünmeli"
+
+
+def test_bildirim_hatti_satiri_defter_yokken_patlamaz(tmp_path):
+    """Defter okunamazsa rapor SESSİZ kalmalı — rapor üretimi bloklanmamalı."""
+    cfg = {"alerts": {"state_file": str(tmp_path / "yok.json")}}
+    assert report.bildirim_hatti_satiri(cfg) == ""
+
+
+def test_bildirim_hatti_satiri_defterden_okur(tmp_path):
+    import json
+    p = tmp_path / "alert_state.json"
+    p.write_text(json.dumps({"saglik": {"ardisik_hata": 5,
+                                        "son_hata": "prim_sapma: HTTPError: 400",
+                                        "son_hata_utc": "2026-08-11T09:00:00+00:00"}}),
+                 encoding="utf-8")
+    m = report.bildirim_hatti_satiri({"alerts": {"state_file": str(p)}})
+    assert "5" in m and "GİTMİYOR" in m
+
+
+def test_ariza_defteri_TAM_RAPORA_baglanmis(rapor_ortami):
+    """KİLİT TEST (L-008: bir değer üretmek onu BAĞLAMAK değildir).
+
+    `bildirim_saglik_metni` doğru string üretse bile `build_report` onu gövdeye
+    koymuyorsa Mert için YOKTUR — 13 günlük kesintinin dersi tam buydu.
+    """
+    import json
+    cfg, _ = rapor_ortami
+    util.write_json(cfg["alerts"]["state_file"], {
+        "last_sent": {}, "daily": {},
+        "saglik": {"ardisik_hata": 42,
+                   "son_hata": "prim_sapma: HTTPError: 400 Client Error: Bad Request",
+                   "son_hata_utc": "2026-08-11T09:15:00+00:00"}})
+    metin = _rapor(cfg, prim_gun=40)
+    assert "BİLDİRİM HATTI ARIZALI" in metin, "arıza raporun gövdesine bağlanmamış"
+    assert "42" in metin and "GİTMİYOR" in metin
+    # Üstte olmalı: veri kalitesi dipnotuna gömülürse görülmez.
+    assert metin.index("BİLDİRİM HATTI ARIZALI") < metin.index("## Veri Kalitesi")
+
+
+def test_hat_saglikliyken_tam_rapor_uyari_basmiyor(rapor_ortami):
+    """Yanlış alarm da bir arızadır: sağlıklı hatta uyarı çıkmamalı."""
+    cfg, _ = rapor_ortami
+    util.write_json(cfg["alerts"]["state_file"],
+                    {"last_sent": {}, "daily": {}, "saglik": {"ardisik_hata": 0}})
+    metin = _rapor(cfg, prim_gun=40)
+    assert "BİLDİRİM HATTI ARIZALI" not in metin

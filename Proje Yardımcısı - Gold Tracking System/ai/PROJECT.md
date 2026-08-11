@@ -42,7 +42,8 @@ artefaktı kendiliğinden ölür ve her iddia yanlışlanabilir olur (ADR #007-A
   trigger), vadesi gelince gram uzayında çözülür. ⚠️ Bugün karne "tabana fark" ve
   "gram etkisi" ÜRETEMİYOR ve bunu açıkça yazıyor — aşağıya bak.
 - **Telegram bot komutları:** `/hukum` `/karne` `/durum` `/rapor` `/net`
-  `/bilezik` `/grafik` `/aipaket`
+  `/bilezik` `/grafik` `/aipaket` — ⚠️ yalnız yerelde `src.telegram_bot` açıkken
+  yanıt verir; üretim (Actions cron) **push-only**, gelen komutu okumaz.
 
 ## Kapsam Dışı (Ne YOK)
 - **Yatırım tavsiyesi** — her rapor "genel bilgilendirme amaçlıdır" ile biter
@@ -96,7 +97,9 @@ bildirim; sistem elle müdahale olmadan günlerce çalışmaya devam ediyor.
   kırmak için gölge kol gerekiyor, o karar ~Ekim 2026'ya bırakıldı
   (ADR #008-B · ders **L-010**).
 - **FRED ölü** (2026-07-07'den beri) → DXY yfinance `DX-Y.NYB` yedeğine düşüyor;
-  reel faiz göstergesi kapalı. Panel **6/7** göstergeyle çalışıyor.
-- **Prim + çeyrek z-skoru kapalı** — 60 günlük kapı ~**12 Eylül 2026**'da açılacak.
+  reel faiz göstergesi kapalı (yedeksiz, bilerek). **Google Trends de 12/14 gün
+  ölü** (pytrends 429) → panel fiilen **5/7** göstergeyle çalışıyor
+  (ölçüldü 2026-07-29, son 14 rapor).
+- **Prim + çeyrek z-skoru kapalı** — 60 günlük kapı ~**14 Eylül 2026**'da açılacak.
   Kapı açılmadan z tabanı (kayıt mı gün mü) kararlaştırılmalı; kuru prova bunun
   için her gün ölçüm biriktiriyor. Ayrıntı ve tarihler: `../../ai/STATE.md` → TAKVİM.

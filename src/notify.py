@@ -8,6 +8,7 @@ stateless olduğundan repoda data/alert_state.json'da tutulur ve workflow commit
 """
 from __future__ import annotations
 
+import html
 import json
 import logging
 import math
@@ -17,6 +18,13 @@ from datetime import datetime, timedelta, timezone
 from . import calc, db, util
 
 log = logging.getLogger("notify")
+
+# Telegram HTML modunda metin içinde SERBEST bırakılabilecek tek şey desteklenen
+# etiketlerdir; `<`, `>`, `&` kaçırılmazsa API 400 döner ve mesaj HİÇ gitmez.
+# Bunu şablonun kendisinde çözüyoruz: dinamik alanlar daima kaçırılır, böylece
+# gelecekte eklenen bir eşik metni "<" içerse bile hat kırılmaz.
+TG_HTML_ETIKETLERI = ("b", "i", "u", "s", "code", "pre", "a", "tg-spoiler",
+                      "blockquote", "em", "strong", "ins", "strike", "del")
 
 
 # ---------- SAF ÇEKİRDEK (testli) ----------
@@ -85,6 +93,56 @@ def apply_cooldown(alerts: list[dict], state: dict, now_iso: str,
         count += 1
     daily = {today: count}                    # sadece bugünü tut
     return to_send, {"last_sent": last, "daily": daily}
+
+
+def damgayi_geri_al(onceki: dict, yeni: dict, basarisiz_tipler: list[str],
+                    gun: str) -> dict:
+    """Gönderilemeyen bildirimlerin `last_sent` damgasını ve tavan sayacını GERİ ALIR.
+
+    `apply_cooldown` damgayı gönderimden ÖNCE atıyor (saf kalabilmesi için).
+    Damga geri alınmazsa gönderilemeyen bir bildirim 24 saat boyunca
+    "gönderilmiş" sayılır, soğumaya takılır ve bir daha DENENMEZ — sessiz
+    kesintiyi kalıcı hâle getiren ikinci mekanizma budur.
+    """
+    if not basarisiz_tipler:
+        return yeni
+    last = dict(yeni.get("last_sent", {}))
+    onceki_last = onceki.get("last_sent", {})
+    for tip in basarisiz_tipler:
+        if tip in onceki_last:
+            last[tip] = onceki_last[tip]      # eski damgaya dön
+        else:
+            last.pop(tip, None)               # hiç gönderilmemişti: damgayı sil
+    daily = dict(yeni.get("daily", {}))
+    daily[gun] = max(0, daily.get(gun, 0) - len(basarisiz_tipler))
+    out = dict(yeni)
+    out["last_sent"] = last
+    out["daily"] = daily
+    return out
+
+
+def saglik_guncelle(state: dict, now_iso: str, denenen: int,
+                    hatalar: list[dict]) -> dict:
+    """Bildirim hattının sağlık defteri — `data/alert_state.json` içinde yaşar.
+
+    NEDEN VAR: 2026-07-29'daki kesinti 13 gün sürdü çünkü hiçbir yer "gönderemedim"
+    demiyordu; Actions adımı `continue-on-error: true` ile yeşil kalıyordu. Sayaç
+    burada tutulur, günlük rapor buradan okuyup Mert'e söyler. Arızayı önlemek
+    yeterli değil — GÖRÜNÜR olması gerekiyor.
+    """
+    s = dict(state.get("saglik", {}))
+    if hatalar:
+        s["ardisik_hata"] = int(s.get("ardisik_hata", 0)) + len(hatalar)
+        s["son_hata_utc"] = now_iso
+        s["son_hata"] = f"{hatalar[0]['tip']}: {hatalar[0]['hata']}"[:300]
+    elif denenen:
+        s["ardisik_hata"] = 0
+        s["son_basari_utc"] = now_iso
+        s.pop("son_hata", None)
+        s.pop("son_hata_utc", None)
+    out = dict(state)
+    out["saglik"] = s
+    return out
 
 
 # ---------- IO / bağlam ----------
@@ -223,11 +281,46 @@ def build_context(cfg: dict) -> dict:
     }
 
 
+def tg_kacir(s) -> str:
+    """Telegram HTML metin kaçışı: `&`, `<`, `>`. Tırnaklara DOKUNMAZ.
+
+    quote=False bilinçli: Telegram yalnız bu üç karakteri şart koşuyor; tırnağı
+    da kaçırmak metni `&#x27;` çöplüğüne çevirirdi.
+    """
+    return html.escape(str(s), quote=False)
+
+
 def _format_alert(al: dict) -> str:
-    return (f"🔔 <b>{al['kural']}</b>\n"
-            f"{al['gerekce']}\n"
-            f"<i>Geçersizlik: {al['gecersizlik']}</i>\n"
+    """Bildirim metni. Dinamik alanların HEPSİ kaçırılır — bu bir stil tercihi
+    değil, hattın çalışma şartıdır.
+
+    2026-07-29 → 08-10 arası 13 gün boyunca HİÇBİR anomali bildirimi gitmedi:
+    `prim_sapma`'nın geçersizlik metnindeki `(|%|<1.5)` ifadesini Telegram etiket
+    başlangıcı sanıp 400 döndürdü. `prim_sapma` sırada birinci olduğu için
+    arkasındaki `makas`/`gunluk_hareket` de hiç denenmedi. Bkz. ai/LESSONS.md L-018.
+    """
+    e = tg_kacir
+    return (f"🔔 <b>{e(al['kural'])}</b>\n"
+            f"{e(al['gerekce'])}\n"
+            f"<i>Geçersizlik: {e(al['gecersizlik'])}</i>\n"
             f"— Genel bilgilendirme, yatırım tavsiyesi değildir.")
+
+
+def _gonder(cfg, to_send: list[dict], send_message) -> tuple[int, list[dict]]:
+    """Her bildirimi BAĞIMSIZ gönderir; biri patlarsa diğerleri yine gider.
+
+    Eski hâlde döngü tek `raise` ile kırılıyordu: sıradaki `prim_sapma` 400 alınca
+    `makas` ve `gunluk_hareket` hiç denenmiyor, `_save_state` hiç çalışmıyordu.
+    """
+    ok, hatalar = 0, []
+    for al in to_send:
+        try:
+            send_message(cfg, _format_alert(al), parse_mode="HTML")
+            ok += 1
+        except Exception as e:                       # noqa: BLE001 — hat kırılmasın
+            hatalar.append({"tip": al["tip"], "hata": f"{type(e).__name__}: {e}"})
+            log.error("BİLDİRİM GÖNDERİLEMEDİ (%s): %s", al["tip"], e)
+    return ok, hatalar
 
 
 def run(cfg: dict, test_mode: bool = False) -> dict:
@@ -235,6 +328,7 @@ def run(cfg: dict, test_mode: bool = False) -> dict:
     logging_setup.setup("notify", cfg)
     from .telegram_bot import send_message
     now_iso = util.utcnow().isoformat()
+    bugun_utc = now_iso[:10]
 
     if test_mode:
         msg = ("🧪 <b>Test bildirimi</b>\nBildirim motoru canlı ve Telegram'a "
@@ -262,22 +356,27 @@ def run(cfg: dict, test_mode: bool = False) -> dict:
             }]
         to_send, new_state = apply_cooldown(weekend_alert, state, now_iso,
                                             a["cooldown_hours"], 1)
-        for al in to_send:
-            send_message(cfg, _format_alert(al), parse_mode="HTML")
-        _save_state(cfg, new_state)
-        log.info("hafta sonu: %d beklenti mesajı", len(to_send))
-        return {"weekend": True, "gonderildi": len(to_send)}
+        ok, hatalar = _gonder(cfg, to_send, send_message)
+        new_state = damgayi_geri_al(state, new_state,
+                                    [h["tip"] for h in hatalar], bugun_utc)
+        new_state = saglik_guncelle(new_state, now_iso, len(to_send), hatalar)
+        _save_state(cfg, new_state)              # DAİMA: arıza defteri de yazılmalı
+        log.info("hafta sonu: %d beklenti mesajı (%d hata)", ok, len(hatalar))
+        return {"weekend": True, "gonderildi": ok, "hatalar": hatalar}
 
     alerts = evaluate_thresholds(ctx, cfg)
     to_send, new_state = apply_cooldown(alerts, state, now_iso,
                                         a["cooldown_hours"], a["daily_cap"])
-    for al in to_send:
-        send_message(cfg, _format_alert(al), parse_mode="HTML")
-    _save_state(cfg, new_state)
-    log.info("bildirim: %d tetik, %d gönderildi (soğuma/tavan sonrası)",
-             len(alerts), len(to_send))
-    return {"tetik": len(alerts), "gonderildi": len(to_send),
-            "tipler": [x["tip"] for x in to_send]}
+    ok, hatalar = _gonder(cfg, to_send, send_message)
+    new_state = damgayi_geri_al(state, new_state,
+                                [h["tip"] for h in hatalar], bugun_utc)
+    new_state = saglik_guncelle(new_state, now_iso, len(to_send), hatalar)
+    _save_state(cfg, new_state)                  # DAİMA: arıza defteri de yazılmalı
+    log.info("bildirim: %d tetik, %d gönderildi, %d HATA (soğuma/tavan sonrası)",
+             len(alerts), ok, len(hatalar))
+    return {"tetik": len(alerts), "gonderildi": ok, "hatalar": hatalar,
+            "tipler": [x["tip"] for x in to_send if
+                       x["tip"] not in {h["tip"] for h in hatalar}]}
 
 
 if __name__ == "__main__":

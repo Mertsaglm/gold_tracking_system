@@ -61,3 +61,6 @@ Proje Yardımcısı - Gold Tracking System/ai/PROFILE.md
 
 # --- macOS ---
 .DS_Store
+
+# Telegram sohbet export (denetim girdisi; uretim verisi degil, 374KB)
+telegram_chat.json

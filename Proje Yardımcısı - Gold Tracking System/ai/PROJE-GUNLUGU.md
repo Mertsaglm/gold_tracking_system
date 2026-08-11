@@ -216,6 +216,51 @@ düz-`INSERT`'li dump'ları hâlâ yükleniyor.
 
 ---
 
+### Ölçüm denetimi — 2026-07-29 (ADR #010)
+
+**Tetikleyen:** *"Projede ne dönüyor, sonuçlar ne, pek anlamıyorum... en
+önemsediğim şey grafik analizine göre tahmin yürütülmesi, bunun kontrolünü
+yap."* Denetim iki ölçüm hatası buldu ve ikisi de aynı kökten geliyordu:
+**eşik, ölçümün kendi gürültüsünden küçüktü.**
+
+**1) Grafik ölçümü faz artefaktından arındırıldı.** ADR #007-E'de tespit edilip
+Backlog'da bekleyen düzeltme koda taşındı: taban artık **tüm fazlardan**
+ölçülüyor ve `esik = max(config_esik, faz_yayilimi)`. Ölçülen yayılım 1ay 1.0p ·
+3ay 4.1p · 6ay 7.4p iken config eşiği 1.0p'ydi — yani 3-6 ay ufkundaki her
+bulgu gürültünün 4-7 kat altında bir eşikle "kanıt" sayılıyordu.
+Sonuç: **"zayıf kanıt" satırı 10 → 1**, "kenar yok" 14 → 23.
+Ayakta kalan tek satır `RSI aşırı satım · 1ay · +2.0p` (N=16); 54
+karşılaştırmada 1 zayıf satır Bonferroni'den sonra kanıt değildir.
+**Hüküm: grafiğin ölçülmüş yön kenarı yok.** Rapordaki temkinli dil zaten
+buna göreydi — artık ölçüm de dili doğruluyor.
+
+**2) AÇIK olan kol kendi eşiğine göre hiç denetlenmemişti.** Aday taraması
+yalnız **taktik** (kapalı) kolun eşiğine göre hüküm veriyordu. Üretimde her gün
+hüküm üreten kol ise **çekirdek** ve eşiği daha düşük (makas ödemez).
+Çekirdek eşiği eklenince: kademeyi üreten `reel_mevduat > %10` kuralı **+1.34p**,
+başa baş **+1.99p**, t=1.03 → **eşiğin altında**. Yani sistemin "AZ AL 0.75×"
+hükmü ölçülmüş bir kenara değil, en iyi adaya dayanıyor.
+Kademe **kaldırılmadı** (Mert'in gerçek alım davranışını değiştirir → onun
+kararı), ama hüküm bloğu artık her gün kendi kanıt durumunu beyan ediyor ve
+veriyi `data/aday_taramasi.json`'dan okuyor — tarama tazelenince satır kendini
+günceller. → Ders **L-017**
+
+**Mutasyon disiplini kendi sınırını gösterdi.** 8 mutasyon uygulandı, **7'si**
+yakalandı; `cekirdek_gecti` bayrağını sabit `False` yapan mutasyon **kaçtı**.
+Sebep testin verisiydi: düz üstel sentetik seride her adayın tabana farkı özdeş
+0.00 çıkıyor, bayrak hiç `True` olmuyor, test vacuous geçiyordu. İki rejimli
+sentetik seri + "kurgu tetikleyici üretmediyse testi düşür" assert'i eklendi;
+sonra 8/8 yakalandı. → Ders **L-016**, `AGENTS.md §5`'e 3. madde olarak yazıldı.
+
+**Yan bulgu:** `telegram_chat.json` incelendi — Mert'in gönderdiği 3 komutun
+(`/swing` ×2, `/grafik`) hiçbirine cevap yok. Sebep arıza değil mimari:
+Actions push-only, komutlar long-polling ister. README bunu yazıyordu,
+`PROJECT.md` yazmıyordu; düzeltildi.
+
+**Test:** 797 → **815**.
+
+---
+
 ## 4. Ölçülmüş ve ÇÜRÜTÜLMÜŞ iddialar (projenin ahlakı)
 
 Bu projede bir iddia ham tabana karşı ölçülür; çıkmazsa **geri çekilir ve
@@ -233,6 +278,9 @@ saklanmaz**. Bugüne kadar düşenler:
 | "Karne sistemin sicilini tutuyor" | **Tutmuyordu** — yapısal 0.00 (L-010) |
 | "Tahmin kaydı değiştirilemez" | **Yarısı doğruydu** — UPDATE kapalı, DELETE açıktı (L-014) |
 | "Ham tick sayısı veri hacmini ölçer" | **Ölçmüyordu** — koşum sayısını ölçüyordu, 9.6× şişkin (L-013) |
+| "Kaynak-retry geçersiz kayıt oranını düşürür" | **Düştü** — %6.93 → %6.67 (2026-07-29). Geçersiz kayıtların **20/20'sinde** truncgil'in 8 alanı BİRDEN boş: kesinti 3×4 sn retry'dan uzun |
+| "Grafikte 10 'zayıf kanıt' bulgusu var" | **9'u faz artefaktıydı** — taban tüm fazlardan ölçülünce 10 → 1 (ADR #010-A). Faz yayılımı 3ay'da 4.1p, eşik 1.0p'ydi |
+| "Aday taraması eşikleri denetliyor" | **Yalnız KAPALI kolu denetliyordu** — açık kolun (çekirdek) eşiği hiç raporlanmıyordu; ölçülünce kolun kendi kuralı eşiğin ALTINDA çıktı (ADR #010-B, L-017) |
 
 ---
 
@@ -243,19 +291,30 @@ saklanmaz**. Bugüne kadar düşenler:
    karar ~Ekim 2026'ya bırakıldı (ADR #008-B).
 2. **Taktik kol SAT diyemez** — beklenen kazanç üreticisi yok ve ADR #007-H'ye
    göre dürüst bir aday da yok.
-3. **Prim + çeyrek z-skoru kapalı** — 60 **gün** kapısı ~2026-09-12'de açılacak.
-   Kapı gün sayar, kayıt değil (gün içi ~10 örnek birbirinin tekrarı).
+3. **Prim + çeyrek z-skoru kapalı** — 60 **gün** kapısı ~2026-09-14'te açılacak
+   (19/60 @ 07-28, hız 0.86 gün/gün). Kapı gün sayar, kayıt değil (gün içi ~10
+   örnek birbirinin tekrarı).
 4. **FRED ölü** (2026-07-07'den beri) → DXY yfinance `DX-Y.NYB` yedeğine düşüyor;
    reel faiz göstergesi **bilerek** kapalı (`^TNX` nominaldir, TIPS reel getirisi
-   değil — nominali "reel" diye sunmak ölçümü sahtelemek olurdu). Panel 6/7.
+   değil — nominali "reel" diye sunmak ölçümü sahtelemek olurdu).
+   **Google Trends de 12/14 gün ölü** (pytrends 429) → panel fiilen **5/7**
+   (ölçüldü 2026-07-29, son 14 rapor). Kör gösterge paydadan düşer, uydurulmaz.
 5. **TÜFE serisi bayat** (`TP.FE.OKTG01` son değer 2025-12-01) — `evds_job.context`
    sessizce `enf_bek_12ay`'a düşüyor. `ozellikler.feature_vector` bilerek DÜŞMEZ.
 6. **Çeyrek priminde sezon düzeltmesi yok** — yıllar süren arşiv ister; düz z
    sezonu "anomali" sanabilir. Sınır gizlenmiyor, rapora yazılıyor.
-7. **`chart.measure_edge` faz artefaktı** — taban tek fazdan ölçülüyor; h≥63'te
-   faz gürültüsü eşiğin 3-11 katı. Düzeltme hazır (`gram.phase_matched_baseline`),
-   `chart.py`'ye taşınmadı.
-8. **Testler sözleşmeyi korur, DOĞRULUĞU değil.** Test paketi bir formülün sessizce
+7. **Grafiğin ölçülmüş yön kenarı YOK** (2026-07-29 tazelendi). Faz artefaktı
+   düzeltildi (ADR #010-A) → 54 karşılaştırmada tek "zayıf kanıt" satırı kaldı
+   (`RSI aşırı satım · 1ay · +2.0p`, N=16, in-sample ve OOS ikisi de yetersiz).
+   Bonferroni'den sonra bu kanıt değildir. Grafik bölümü **planlama geometrisi**;
+   hüküm üretmez, üretmemesi de bir hata değil ÖLÇÜM SONUCUdur.
+8. **Açık kolun kuralı kendi eşiğini geçemiyor** (ADR #010-B). Çekirdek kademesini
+   üreten `reel_mevduat > %10` +1.34p, başa baş +1.99p, t=1.03. Rapor bunu her gün
+   beyan ediyor; kademeyi kaldırma/koruma kararı 👤 Mert'te (STATE TAKVİM).
+9. **Telegram komutları üretimde ölü.** Actions push-only; `/hukum` `/karne`
+   `/grafik` yalnız yerelde `src.telegram_bot` açıkken yanıt verir. Ölçüldü:
+   `telegram_chat.json`'da 3 komut, 0 cevap.
+10. **Testler sözleşmeyi korur, DOĞRULUĞU değil.** Test paketi bir formülün sessizce
    değiştirilmesini engeller; o formülün finansal olarak doğru olup olmadığını
    hâlâ ölçüm söyler (ADR #007-B/H). Zırhı "sistem doğru çalışıyor" diye okuma.
 
@@ -282,8 +341,8 @@ O tabloda `Kim=👤` olan satırlar **yalnız Mert'in yapabileceği** işlerdir
 4. Yerelde DB'ye dokunacaksan **önce** `python -m src.restore_db`. Yerelde
    `python -m src.dbdump` **çalıştırma** — bayat sqlite'tan dump almak 1.5 günlük
    üretim verisini siler (L-009).
-5. Kararların gerekçesi `../../ai/DECISIONS.md` (#001…#009). Tuzaklar
-   `LESSONS.md` (L-001…L-015) — numara uzayı kökle **ortak**, bkz. `DECISIONS.md` #003.
+5. Kararların gerekçesi `../../ai/DECISIONS.md` (#001…#010). Tuzaklar
+   `LESSONS.md` (L-001…L-017) — numara uzayı kökle **ortak**, bkz. `DECISIONS.md` #003.
 6. Testler: `.venv/bin/python -m pytest -q` → tamamı geçmeli (~5 sn, ağa
    çıkmaz, gerçek DB'ye dokunmaz). Kırmızı bir test neredeyse daima haklıdır:
    çoğu bir ADR'yi ya da dersi kilitliyor ve gerekçesi docstring'inde yazılı.

@@ -1,104 +1,140 @@
 {
   "Desteğe yakın": {
     "1ay": {
-      "fark": -0.12774142914256936,
+      "fark": -0.2893268753288616,
       "n": 50,
-      "hukum": "kenar yok"
+      "hukum": "kenar yok",
+      "taban_yayilim": 1.045465994258743,
+      "esik_kullanilan": 1.045465994258743
     },
     "3ay": {
-      "fark": -1.6108137632113162,
+      "fark": -0.7637904430662821,
       "n": 24,
-      "hukum": "zayıf kanıt: -1.6p"
+      "hukum": "kenar yok",
+      "taban_yayilim": 4.138438927165611,
+      "esik_kullanilan": 4.138438927165611
     },
     "6ay": {
-      "fark": 3.1958053860159694,
+      "fark": 3.764207252075801,
       "n": 14,
-      "hukum": "ölçüm yetersiz (N=14)"
+      "hukum": "ölçüm yetersiz (N=14)",
+      "taban_yayilim": 7.397560873736952,
+      "esik_kullanilan": 7.397560873736952
     }
   },
   "Dirence yakın": {
     "1ay": {
-      "fark": 0.610157454745619,
+      "fark": 0.4485720085593268,
       "n": 51,
-      "hukum": "kenar yok"
+      "hukum": "kenar yok",
+      "taban_yayilim": 1.045465994258743,
+      "esik_kullanilan": 1.045465994258743
     },
     "3ay": {
-      "fark": -0.9367964442708487,
+      "fark": -0.08977312412581462,
       "n": 21,
-      "hukum": "kenar yok"
+      "hukum": "kenar yok",
+      "taban_yayilim": 4.138438927165611,
+      "esik_kullanilan": 4.138438927165611
     },
     "6ay": {
-      "fark": 1.6600069382276104,
+      "fark": 2.228408804287442,
       "n": 13,
-      "hukum": "ölçüm yetersiz (N=13)"
+      "hukum": "ölçüm yetersiz (N=13)",
+      "taban_yayilim": 7.397560873736952,
+      "esik_kullanilan": 7.397560873736952
     }
   },
   "RSI aşırı satım": {
     "1ay": {
-      "fark": 2.148455044892017,
+      "fark": 1.9868695987057248,
       "n": 16,
-      "hukum": "zayıf kanıt: +2.1p"
+      "hukum": "zayıf kanıt: +2.0p",
+      "taban_yayilim": 1.045465994258743,
+      "esik_kullanilan": 1.045465994258743
     },
     "3ay": {
-      "fark": -5.274513027663002,
+      "fark": -4.427489707517968,
       "n": 8,
-      "hukum": "ölçüm yetersiz (N=8)"
+      "hukum": "ölçüm yetersiz (N=8)",
+      "taban_yayilim": 4.138438927165611,
+      "esik_kullanilan": 4.138438927165611
     },
     "6ay": {
-      "fark": -2.4192882466160253,
+      "fark": -1.8508863805561937,
       "n": 6,
-      "hukum": "ölçüm yetersiz (N=6)"
+      "hukum": "ölçüm yetersiz (N=6)",
+      "taban_yayilim": 7.397560873736952,
+      "esik_kullanilan": 7.397560873736952
     }
   },
   "RSI aşırı alım": {
     "1ay": {
-      "fark": 0.6461730199318949,
+      "fark": 0.4845875737456027,
       "n": 32,
-      "hukum": "kenar yok"
+      "hukum": "kenar yok",
+      "taban_yayilim": 1.045465994258743,
+      "esik_kullanilan": 1.045465994258743
     },
     "3ay": {
-      "fark": -3.0128313148138575,
+      "fark": -2.1658079946688233,
       "n": 20,
-      "hukum": "zayıf kanıt: -3.0p"
+      "hukum": "kenar yok",
+      "taban_yayilim": 4.138438927165611,
+      "esik_kullanilan": 4.138438927165611
     },
     "6ay": {
-      "fark": 4.372099214406877,
+      "fark": 4.940501080466708,
       "n": 14,
-      "hukum": "ölçüm yetersiz (N=14)"
+      "hukum": "ölçüm yetersiz (N=14)",
+      "taban_yayilim": 7.397560873736952,
+      "esik_kullanilan": 7.397560873736952
     }
   },
   "Bollinger alt": {
     "1ay": {
-      "fark": 0.5508297628146086,
+      "fark": 0.3892443166283164,
       "n": 40,
-      "hukum": "kenar yok"
+      "hukum": "kenar yok",
+      "taban_yayilim": 1.045465994258743,
+      "esik_kullanilan": 1.045465994258743
     },
     "3ay": {
-      "fark": -1.6184342243911187,
+      "fark": -0.7714109042460846,
       "n": 23,
-      "hukum": "zayıf kanıt: -1.6p"
+      "hukum": "kenar yok",
+      "taban_yayilim": 4.138438927165611,
+      "esik_kullanilan": 4.138438927165611
     },
     "6ay": {
-      "fark": -0.19626886358771145,
+      "fark": 0.3721330024721201,
       "n": 14,
-      "hukum": "ölçüm yetersiz (N=14)"
+      "hukum": "ölçüm yetersiz (N=14)",
+      "taban_yayilim": 7.397560873736952,
+      "esik_kullanilan": 7.397560873736952
     }
   },
   "Bollinger üst": {
     "1ay": {
-      "fark": 0.6161815488609612,
+      "fark": 0.454596102674669,
       "n": 58,
-      "hukum": "kenar yok"
+      "hukum": "kenar yok",
+      "taban_yayilim": 1.045465994258743,
+      "esik_kullanilan": 1.045465994258743
     },
     "3ay": {
-      "fark": -1.045674161730048,
+      "fark": -0.1986508415850139,
       "n": 30,
-      "hukum": "zayıf kanıt: -1.0p"
+      "hukum": "kenar yok",
+      "taban_yayilim": 4.138438927165611,
+      "esik_kullanilan": 4.138438927165611
     },
     "6ay": {
-      "fark": 2.3459801521686803,
-      "n": 16,
-      "hukum": "zayıf kanıt: +2.3p"
+      "fark": 2.490409913159242,
+      "n": 17,
+      "hukum": "kenar yok",
+      "taban_yayilim": 7.397560873736952,
+      "esik_kullanilan": 7.397560873736952
     }
   }
 }

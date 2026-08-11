@@ -14,6 +14,97 @@
 
 ---
 
+## L-018 — 2026-08-11 — Teslim yolu test edilmiyorsa sistem 13 gün konuşmadan "çalışır"
+
+**Olay:** 2026-07-29 → 08-10 arası HİÇBİR anomali bildirimi Telegram'a gitmedi.
+125 Actions koşusu bu hatayı verdi ve **hepsi yeşil göründü**. Kesinti tam
+altının %+9.55 koştuğu döneme denk geldi; 08-05'te gram +232₺ (2×ATR eşiği 133₺)
+ve 08-07'de +153₺ hareket etti, ikisinde de uyarı çıkmadı.
+
+**Kök sebep — dört katman üst üste bindi:**
+1. `prim_sapma`'nın geçersizlik metni `(|%|<1.5)` içeriyordu; `parse_mode="HTML"`
+   ile giden metinde kaçırılmamış `<` var. Telegram'ın kendi cevabı:
+   `Bad Request: can't parse entities: Unsupported start tag "1.5)"`.
+2. `send_message` istisnayı `for al in to_send:` döngüsünden dışarı attı →
+   sıradaki `makas` ve `gunluk_hareket` **hiç denenmedi** (`prim_sapma` birinciydi).
+3. İstisna `_save_state()`'e ulaşmadı → arıza ne diske ne repoya yazıldı; üstelik
+   damga da ilerlemediği için durum her koşumda aynen tekrarlandı.
+4. `archive.yml`'daki `continue-on-error: true` adımı yeşil bıraktı.
+
+**Neden 815 test yakalamadı:** `test_notify.py`'daki 12 testin hepsi
+`evaluate_thresholds` ve `apply_cooldown` **saf fonksiyonlarına** bakıyordu.
+`_format_alert`'ün ÜRETTİĞİ metni hiçbir test görmüyordu. Karar mantığı
+kilitliydi, **teslim biçimi denetimsizdi**.
+
+**Ders:** Bir sistemin dış dünyaya çıkan yolu (serialize → protokol → API) en az
+karar mantığı kadar test edilmelidir. "Doğru kararı üretmek" ile "kararı teslim
+etmek" iki ayrı iştir ve ikincisi sessizce ölür — çünkü başarısızlığı kimseye
+görünmez, sadece **bir şeyin yokluğu** olarak tezahür eder.
+
+**Kurallar:**
+- Dış protokole giden metinde **dinamik alan asla ham gitmez**; kaçış şablonun
+  içinde olur, çağıranın nezaketine bırakılmaz.
+- Toplu gönderimde her öğe **bağımsız** denenir; biri patlayınca parti ölmez.
+- Durum/defter yazımı gönderim hatasından **sonra da** çalışmalı (`finally`
+  mantığı): arıza kaydı, arızanın kendisine kurban edilemez.
+- Gönderilemeyen bir mesajın "gönderildi" damgası **geri alınır**, yoksa soğuma
+  onu kalıcı olarak susturur.
+- **Yokluk alarm üretmeli.** Bir şeyin gelmemesi, gelmesi kadar ölçülebilir
+  olmalı: ardışık hata sayacı tut ve kullanıcının GÖRDÜĞÜ yere bas.
+- `continue-on-error: true` kullanıyorsan hatayı **başka bir kanaldan** görünür
+  kıl; yoksa o bayrak "sessizce boz" demektir.
+
+**Genel kural:** *"Sistem çalışıyor" ile "sistem konuşuyor" aynı şey değildir.
+İkincisini ölçmüyorsan, birincisini de bilmiyorsun demektir.*
+
+---
+
+## L-017 — 2026-07-29 — AÇIK olan kolu ölçmeyi unutma: kapalı kola bakarken açık kol denetimsiz kaldı
+
+**Olay:** Aday taraması 14 adayı tarayıp "hiçbiri eşiği geçemedi" hükmünü
+veriyordu ve bu hüküm doğruydu — ama yalnız **taktik** (SAT) kolunun eşiğine
+göre. Taktik kol `aktif: false` ile **kapalıydı**. Üretimde her gün hüküm üreten
+kol **çekirdek**ti ve onun eşiği daha düşüktü (+1.99p vs +3.18p, makas ödenmez).
+Yani proje aylardır kapalı kolu titizlikle denetleyip, açık kolu hiç ölçmemişti.
+Ölçüldüğünde çıkan sonuç: çekirdek kolun her iki kademesi de kendi eşiğinin
+ALTINDA (+1.34p ve −1.06p).
+
+**Neden gözden kaçtı:** Dikkat riskin BÜYÜĞÜNE gitmişti — SAT gerçek para yakar,
+kademe yalnız alımı yavaşlatır. Ama "küçük risk" ile "ölçülmemiş" aynı şey değil;
+küçük etkiler de yanlış işaretli olabilir.
+
+**Kural:** Bir eşik/hüküm raporu yazarken önce sor: **"bu rapor ŞU AN AÇIK olan
+kolu ölçüyor mu?"** Birden fazla kol/mod varsa her biri kendi eşiğine göre
+raporlanır; tek eşikli bir tablo, diğer kolun okuyucusunu yanıltır. Bir aday
+bir kolda ❌ görünüp diğerinde ✅ olabilir — sütun tek ise bu bilgi kaybolur.
+
+---
+
+## L-016 — 2026-07-29 — Mutasyon yakalanmadıysa suçlu sentetik veridir: vacuous test sessizce geçer
+
+**Olay:** `cekirdek_gecti` bayrağını sabit `False` yapan mutasyon 55 testin
+hepsinden geçti. Sebep iki katmanlıydı: (1) eşik testleri elle yazılmış fixture
+üzerinden çalışıyordu, üreticiye hiç dokunmuyordu (L-012'nin tekrarı); (2)
+üreticiyi çağıran uçtan uca test ise **düz üstel** sentetik seri kullanıyordu ve
+o seride her adayın tabana farkı özdeş **0.00** çıkıyordu — yani bayrak zaten
+hiçbir zaman `True` olmuyordu. Test "geçiyordu" çünkü ölçecek bir şey yoktu.
+
+**Ders:** Sentetik veri, korumanın tetiklendiği durumu ÜRETMİYORSA test vacuous
+olur ve mutasyonu yakalayamaz. Düzgün/monoton sentetik seriler bu tuzağın en sık
+kaynağıdır: gerçek hayatta ayrışan büyüklükler orada özdeş çıkar.
+
+**Kural:** Bir bayrağı/eşiği test ederken **testin kendisi "kurgu gerçekten
+tetikledi mi"yi assert etsin**:
+```python
+gecmesi_gereken = [a for a in adaylar if a["fark_puan"] > esik]
+assert gecmesi_gereken, "kurgu eşiği aşan aday üretmedi; test vacuous olurdu"
+```
+Bu assert olmadan yeşil bir test, korumanın çalıştığını değil yalnızca
+çökmediğini gösterir. Sentetik veriyi **rejimli** kur (bkz. `_doldur_rejimli`):
+en az iki farklı davranış bölgesi olsun.
+
+---
+
 ## L-015 — 2026-07-27 — Test yazmak yetmez: testin DÜŞEBİLDİĞİNİ kanıtla
 
 **Olay:** Regresyon zırhı için 491 yeni test yazıldı ve hepsi ilk koşumda yeşil

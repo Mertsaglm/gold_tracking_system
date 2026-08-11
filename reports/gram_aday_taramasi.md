@@ -9,30 +9,39 @@ _Tarama: 2017-01-19 → 2026-07-24 · 458 haftalık asof · örtüşmeyen pencer
 ## Aşılması gereken eşik
 
 - Taban (SAT'ın koşulsuz gram kazancı): **%-1.99** (N=121 bağımsız pencere)
-- Bir adayın kârlı olması için tabanı yenmesi gereken fark: **+3.18 puan**
+- **TAKTİK** kol (sat→geri al, gidiş-dönüş %1.20 öder): tabanı **+3.18 puan** yenmeli
+- **ÇEKİRDEK** kol (alımı ertele, makas ÖDEMEZ): tabanı **+1.99 puan** yenmeli — bu kol ŞU AN AÇIK
+
+> Çekirdek eşiği, alımı ertelemenin gram olarak başa baş noktasıdır: farkı bu kadar yenemeyen bir kural, alımı geciktirdiği her ay **gram kaybettirir**. Kademe (0.75×) kaybı küçültür, işaretini değiştirmez.
 
 ## Adaylar (fark büyükten küçüğe)
 
-| Aday | N | Ort. gram kazancı | Tabana fark | t | Kazanma | Eşiği geçti? |
-|---|---:|---:|---:|---:|---:|:--:|
-| kur oynaklık > %25 (şok) | 6 ⚠️ | %+0.87 | **+2.85p** | +1.01 | %50 | ❌ |
-| reel_mevduat > %10 | 22 ⚠️ | %-0.64 | **+1.34p** | +1.03 | %45 | ❌ |
-| gram RSI < 30 | 4 ⚠️ | %-1.16 | **+0.83p** | +0.31 | %25 | ❌ |
-| gram 12ay momentum > %60 | 47 | %-1.53 | **+0.45p** | +0.55 | %38 | ❌ |
-| ons 200GMA üstü %15+ | 20 ⚠️ | %-1.89 | **+0.10p** | +0.08 | %35 | ❌ |
-| kur bacağı payı > 0.7 | 49 | %-2.29 | **-0.30p** | -0.33 | %33 | ❌ |
-| gram Donchian55 tepede (>0.95) | 51 | %-2.34 | **-0.35p** | -0.35 | %35 | ❌ |
-| kur oynaklık < %5 (sürünme) | 30 | %-2.46 | **-0.47p** | -0.49 | %33 | ❌ |
-| ons RSI > 75 | 13 ⚠️ | %-2.60 | **-0.62p** | -0.40 | %46 | ❌ |
-| gram RSI > 75 | 22 ⚠️ | %-2.66 | **-0.68p** | -0.50 | %32 | ❌ |
-| ons Donchian55 tepede (>0.95) | 34 | %-2.76 | **-0.77p** | -0.64 | %29 | ❌ |
-| gram 200GMA üstü %15+ | 55 | %-2.77 | **-0.78p** | -0.89 | %27 | ❌ |
-| reel_mevduat < 0 | 34 | %-3.04 | **-1.06p** | -0.80 | %38 | ❌ |
-| gram 3ay momentum > %25 | 20 ⚠️ | %-3.21 | **-1.22p** | -0.55 | %50 | ❌ |
+| Aday | N | Ort. gram kazancı | Tabana fark | t | Kazanma | Taktik | Çekirdek |
+|---|---:|---:|---:|---:|---:|:--:|:--:|
+| kur oynaklık > %25 (şok) | 6 ⚠️ | %+0.87 | **+2.85p** | +1.01 | %50 | ❌ | ✅ |
+| reel_mevduat > %10 | 22 ⚠️ | %-0.64 | **+1.34p** | +1.03 | %45 | ❌ | ❌ |
+| gram RSI < 30 | 4 ⚠️ | %-1.16 | **+0.83p** | +0.31 | %25 | ❌ | ❌ |
+| gram 12ay momentum > %60 | 47 | %-1.53 | **+0.45p** | +0.55 | %38 | ❌ | ❌ |
+| ons 200GMA üstü %15+ | 20 ⚠️ | %-1.89 | **+0.10p** | +0.08 | %35 | ❌ | ❌ |
+| kur bacağı payı > 0.7 | 49 | %-2.29 | **-0.30p** | -0.33 | %33 | ❌ | ❌ |
+| gram Donchian55 tepede (>0.95) | 51 | %-2.34 | **-0.35p** | -0.35 | %35 | ❌ | ❌ |
+| kur oynaklık < %5 (sürünme) | 30 | %-2.46 | **-0.47p** | -0.49 | %33 | ❌ | ❌ |
+| ons RSI > 75 | 13 ⚠️ | %-2.60 | **-0.62p** | -0.40 | %46 | ❌ | ❌ |
+| gram RSI > 75 | 22 ⚠️ | %-2.66 | **-0.68p** | -0.50 | %32 | ❌ | ❌ |
+| ons Donchian55 tepede (>0.95) | 34 | %-2.76 | **-0.77p** | -0.64 | %29 | ❌ | ❌ |
+| gram 200GMA üstü %15+ | 55 | %-2.77 | **-0.78p** | -0.89 | %27 | ❌ | ❌ |
+| reel_mevduat < 0 | 34 | %-3.04 | **-1.06p** | -0.80 | %38 | ❌ | ❌ |
+| gram 3ay momentum > %25 | 20 ⚠️ | %-3.21 | **-1.22p** | -0.55 | %50 | ❌ | ❌ |
 
 _⚠️ = N < 30, ölçüm yetersiz._
 
-## Hüküm
+## Çekirdek kolun hükmü (AÇIK OLAN kol)
+
+**1 aday çekirdek eşiğini geçti ama hiçbiri güçlü değil** (|t| ≥ 2 ve N ≥ 30 yok):
+
+- `kur oynaklık > %25 (şok)` — fark +2.85p, t=+1.01, N=6
+
+## Taktik kolun hükmü
 
 **Hiçbir aday eşiği geçmedi.** Örneklem-içi ölçümde bile aşılamayan bir eşik, canlıda hiç aşılmaz. Taktik kol kapalı kalmalı; yeni aday aranmadan SAT açılmamalı.
 

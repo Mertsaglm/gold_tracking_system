@@ -31,7 +31,11 @@ başladın, 108 gram bitirdin → tuttu.
 - **Rapor:** günlük (18:35 TR) + pazar haftalık; grafik yorumu (destek/direnç +
   gösterge teyidi)
 - **Telegram bot komutları:** `/hukum` `/karne` `/durum` `/rapor` `/net` `/bilezik`
-  `/grafik` `/aipaket`
+  `/grafik` `/aipaket` — ⚠️ **yalnız yerelde `python -m src.telegram_bot` açıkken
+  yanıt verir.** Üretim (GitHub Actions) push-only: bot rapor/bildirim GÖNDERİR,
+  gelen komutu okumaz (long-polling'e kalıcı süreç lazım, cron'da yok). Ölçüldü
+  2026-07-29: `telegram_chat.json`'da Mert'in 3 komutunun hiçbirine cevap yok.
+  Karar STATE.md TAKVİM'de 👤 satırı olarak bekliyor.
 
 ## Kapsam Dışı (Ne YOK)
 - **Üçüncü kişilere** yatırım tavsiyesi / danışmanlık servisi. Sistem Mert'in

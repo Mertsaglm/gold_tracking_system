@@ -484,23 +484,71 @@ def indicator_signal_days(bars: Sequence, cfg: dict) -> dict:
     return out
 
 
+def phase_matched_edge_baseline(dates: Sequence[str], closes: Sequence[float],
+                                horizon: int, weak_n: int) -> dict:
+    """Taban çizgisini TÜM fazlardan ölçer — faz artefaktını görünür kılar.
+
+    NEDEN VAR (ADR #007-E): eski taban `range(len(closes))` ile tek bir fazdan
+    (0. indeksten) örnekleniyordu, sinyal kümesi ise kendi fazından geliyordu.
+    İki farklı fazın medyanını çıkarmak, sinyalin bilgisini değil FAZ SEÇİMİNİ
+    ölçer. Ölçüldü (2026-07-26, gram TL): h=63'te yalnız faz seçimi tabanı 2.64,
+    h=126'da 7.5-11.6 puan oynatıyor — `min_anlamli_fark_puan: 1.0` bu
+    gürültünün ALTINDA kalıyordu.
+
+    Döner: `medyan` (faz medyanlarının ortalaması = tarafsız kestirim),
+    `yayilim` (max-min = artefaktın büyüklüğü; gerçek ölçüm eşiğinin ALT SINIRI),
+    `faz_0_medyan` (eski tek-fazlı değer, karşılaştırma için) ve havuz istatistiği.
+    """
+    from . import backtest as bt
+    n = len(closes)
+    faz_medyanlari, havuz, faz0 = [], [], None
+    for faz in range(max(1, horizon)):
+        vals = bt.forward_returns_nonoverlap(dates, closes, list(range(faz, n)), horizon)
+        if not vals:
+            continue
+        st = bt.dist_stats(vals, weak_n)
+        if faz == 0:
+            faz0 = st
+        faz_medyanlari.append(st["medyan"])
+        havuz.extend(vals)
+    if not faz_medyanlari:
+        return {"n": 0, "weak": True, "note": "veri yok", "yayilim": 0.0}
+    # Havuz istatistiği raporlama için; N'i faz sayısı kadar ŞİŞKİN ve bağımsız
+    # DEĞİL — istatistiksel güç tek fazın N'inden okunur, havuzunkinden değil.
+    st = bt.dist_stats(havuz, weak_n)
+    st["medyan"] = sum(faz_medyanlari) / len(faz_medyanlari)
+    st["n"] = (faz0 or {}).get("n") or (len(havuz) // max(1, horizon))
+    st["n_havuz"] = len(havuz)
+    st["faz_0_medyan"] = (faz0 or {}).get("medyan")
+    st["yayilim"] = max(faz_medyanlari) - min(faz_medyanlari)
+    st["n_faz"] = len(faz_medyanlari)
+    return st
+
+
 def measure_edge(dates: Sequence[str], closes: Sequence[float], signal_idx: Sequence[int],
                  horizon: int, weak_n: int, min_diff_p: float) -> dict:
     """Bir sinyal kümesinin taban çizgisine göre ölçülen farkı.
 
-    Taban = KOŞULSUZ tüm günler, aynı örtüşmeyen pencere yöntemiyle. Bilgi mutlak
-    medyanda değil, tabandan FARKTA (backtest._fmt_stat konvansiyonu).
+    Taban = KOŞULSUZ tüm günler, aynı örtüşmeyen pencere yöntemiyle ve TÜM
+    fazlardan (`phase_matched_edge_baseline`). Bilgi mutlak medyanda değil,
+    tabandan FARKTA (backtest._fmt_stat konvansiyonu).
+
+    EŞİK FAZ YAYILIMINDAN KÜÇÜK OLAMAZ. Fazlar arası yayılım, hiçbir sinyal
+    olmadan yalnız pencere hizasından doğan farktır; ondan küçük bir "fark"
+    ölçüm değil artefakttır. Bu yüzden hüküm `max(min_diff_p, yayilim)` eşiğine
+    göre verilir — config'teki sabit eşik yalnız bir ALT sınırdır.
     """
     from . import backtest as bt
     sig = bt.dist_stats(bt.forward_returns_nonoverlap(dates, closes, signal_idx, horizon),
                         weak_n)
-    base = bt.dist_stats(
-        bt.forward_returns_nonoverlap(dates, closes, list(range(len(closes))), horizon),
-        weak_n)
+    base = phase_matched_edge_baseline(dates, closes, horizon, weak_n)
     diff = (sig["medyan"] - base["medyan"]) if (sig.get("n") and base.get("n")) else None
+    yayilim = base.get("yayilim", 0.0) or 0.0
+    esik = max(min_diff_p, yayilim)
     return {"stat": sig, "baseline": base, "fark": diff,
             "n": sig.get("n", 0),
-            "hukum": edge_verdict(diff, sig.get("n", 0), weak_n, min_diff_p),
+            "taban_yayilim": yayilim, "esik_kullanilan": esik,
+            "hukum": edge_verdict(diff, sig.get("n", 0), weak_n, esik),
             "etkin_donem": bt.effective_periods(len(signal_idx), horizon)}
 
 
@@ -565,7 +613,11 @@ def validate(cfg: dict) -> dict:
          "> **yön iddiası için kullanılamaz.**", "",
          "> " + bonferroni_note(n_test * 3), "",
          "> Hacim ağırlıklandırması KULLANILMADI (GC=F hacmi ön-vade kontrat hacmi;",
-         "> TRY=X hacmi 0). MACD dışarıda (50/200 GMA ile eşdoğrusal).", ""]
+         "> TRY=X hacmi 0). MACD dışarıda (50/200 GMA ile eşdoğrusal).", "",
+         "> **Taban tüm fazlardan ölçülür (ADR #007-E).** `faz yayılımı`, hiçbir",
+         "> sinyal olmadan yalnız pencere hizasından doğan farktır; ölçüm eşiği",
+         "> ondan küçük olamaz. Bir ufukta yayılım büyükse o ufuk, elimizdeki",
+         "> veriyle **ölçülemez** demektir — bulgu yok demek değil, ölçüm yok demek.", ""]
     for ad, per_h in sonuc.items():
         L.append("## %s" % ad)
         L.append("")
@@ -574,6 +626,9 @@ def validate(cfg: dict) -> dict:
             L.append("- **%s** (tüm dönem): %s → _%s_ · etkin dönem ~%d"
                      % (hname, bt._fmt_stat(t["stat"], t["baseline"]),
                         t["hukum"], t["etkin_donem"]))
+            L.append("  - faz yayılımı **%.1fp** → kullanılan eşik **%.1fp** "
+                     "(config alt sınırı %.1fp)"
+                     % (t["taban_yayilim"], t["esik_kullanilan"], min_diff))
             L.append("  - in-sample: _%s_ · OOS (%s+): _%s_"
                      % (d["in_sample"]["hukum"], oos, d["oos"]["hukum"]))
         L.append("")
@@ -585,7 +640,9 @@ def validate(cfg: dict) -> dict:
     out_path.write_text("\n".join(L), encoding="utf-8")
 
     cache = {ad: {h: {"fark": d["tum"]["fark"], "n": d["tum"]["n"],
-                      "hukum": d["tum"]["hukum"]}
+                      "hukum": d["tum"]["hukum"],
+                      "taban_yayilim": d["tum"]["taban_yayilim"],
+                      "esik_kullanilan": d["tum"]["esik_kullanilan"]}
                   for h, d in per_h.items()} for ad, per_h in sonuc.items()}
     cache_path = util.abspath(ch["dogrulama"]["edge_cache_file"])
     cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -598,11 +655,17 @@ def validate(cfg: dict) -> dict:
 # ============================================================================
 # Sunum — build_chart / format_chart_md
 #
-# ÖLÇÜM SONUCU (validate, 21 Tem 2026, 2649 bar): destek/dirence yakınlık taban çizgisine
-# göre 1 ay ufkunda −0.2p / −0.7p → **kenar yok**; 3-6 ay ufuklarında N=6-13 → ölçüm
-# yetersiz. Göstergelerin "zayıf kanıt" çıkan satırları ufuklar arasında çelişiyor
-# (54 karşılaştırma). Dolayısıyla bu bölüm seviyeleri **planlama geometrisi** olarak
-# sunar, yön iddiası olarak DEĞİL. Dil bu ölçüme göre seçilmiştir.
+# ÖLÇÜM SONUCU (validate, 29 Tem 2026, 2653 bar, FAZ EŞLEŞMELİ taban — ADR #010-A):
+# 54 karşılaştırmanın 23'ü "kenar yok", 30'u "ölçüm yetersiz", **1'i** zayıf kanıt
+# (`RSI aşırı satım · 1ay · +2.0p`, N=16, in-sample ve OOS ikisi de yetersiz).
+# Bonferroni'den sonra 54'te 1 zayıf satır kanıt değildir.
+#
+# Faz düzeltmesi ÖNCESİ bu tablo 10 "zayıf kanıt" satırı gösteriyordu; 9'u yalnız
+# pencere hizasından doğan artefaktmış (yayılım 1ay 1.0p · 3ay 4.1p · 6ay 7.4p,
+# config eşiği 1.0p). Yani "bulgu azaldı" bir kayıp değil, ölçümün düzelmesidir.
+#
+# Dolayısıyla bu bölüm seviyeleri **planlama geometrisi** olarak sunar, yön
+# iddiası olarak DEĞİL. Dil bu ölçüme göre seçilmiştir ve ölçüm dili doğruluyor.
 # ============================================================================
 def _edge_cache(cfg: dict) -> dict:
     import json
@@ -747,6 +810,24 @@ def _tl(ons_price: float, usdtry: Optional[float], troy: float) -> str:
         usdtry, format(calc.theoretical_gram(ons_price, usdtry, troy), ",.0f"))
 
 
+def _kova_edge_line(edge: dict, etiket: str, olumlu_kova: str,
+                    olumsuz_kova: str, ufuk: str = "1ay") -> str:
+    """Göstergenin O ANKİ kovasının ölçümünü verir; NÖTR ise HİÇBİR ŞEY vermez.
+
+    Eskiden ikili bir seçimdi (`OLUMLU ise aşırı satım, DEĞİLSE aşırı alım`) ve
+    nötr dalı yoktu: RSI 45.6 iken rapor "⚪ nötr" yazıp yanına "RSI aşırı alım"
+    kovasının ölçümünü (N=32) basıyordu — yürürlükte OLMAYAN bir koşulun kanıtı.
+    Bugün zararsız görünüyor çünkü o satır "kenar yok" diyor; ama `RSI aşırı
+    alım · 3ay` = -3.0p ve ufuk değişirse nötr bir gösterge var olmayan bir
+    kanıt taşırdı. Ölçüm, ölçtüğü koşula bağlı kalmalı.
+    """
+    if etiket == OLUMLU:
+        return _edge_line(edge, olumlu_kova, ufuk)
+    if etiket == OLUMSUZ:
+        return _edge_line(edge, olumsuz_kova, ufuk)
+    return ""                                   # NOTR / YOK → ölçüm iliştirilmez
+
+
 def _edge_line(edge: dict, ad: str, ufuk: str = "1ay") -> str:
     d = (edge.get(ad) or {}).get(ufuk)
     if not d:
@@ -817,13 +898,13 @@ def format_chart_md(result: dict) -> str:
     L.append("- RSI(14) %s: %s %s%s"
              % ("%.1f" % result["rsi"] if result["rsi"] else "—",
                 _EMOJI.get(et["rsi"], ""), et["rsi"],
-                _edge_line(edge, "RSI aşırı satım" if et["rsi"] == OLUMLU
-                           else "RSI aşırı alım")))
+                _kova_edge_line(edge, et["rsi"], "RSI aşırı satım",
+                                "RSI aşırı alım")))
     L.append("- Bollinger %%B %s: %s %s%s"
              % ("%.2f" % result["pctb"] if result["pctb"] is not None else "—",
                 _EMOJI.get(et["bollinger"], ""), et["bollinger"],
-                _edge_line(edge, "Bollinger alt" if et["bollinger"] == OLUMLU
-                           else "Bollinger üst")))
+                _kova_edge_line(edge, et["bollinger"], "Bollinger alt",
+                                "Bollinger üst")))
     c = result["uzlasi"]
     L.append("- **Grafik uzlaşısı: %s %s — skor %+d/%d**"
              % (_EMOJI.get(c["yon"], ""), c["yon"], c["score"], c["n"]))

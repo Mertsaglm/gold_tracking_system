@@ -11,8 +11,14 @@ on:
 permissions:
   contents: write
 
+# AYRI GRUP (2026-08-11). Eskiden arsivleyiciyle ayni "repo-commit" grubundaydi.
+# GitHub bir concurrency grubunda YALNIZ BIR bekleyen kosu tutar: gunluk rapor
+# siraya girdikten sonra 15 dk'lik arsiv kosusu gelince bekleyeni DUSURUYOR.
+# 2026-08-06'da tam bu oldu -> daily "cancelled", rapor_2026-08-06.md yok,
+# asof=2026-08-05 tahmini hic yazilmadi. Push cakismasi zaten asagidaki
+# "git pull --rebase + 3 deneme" dongusuyle cozuluyor; grubu paylasmaya gerek yok.
 concurrency:
-  group: repo-commit          # arsivleyiciyle ayni grup -> push cakismasi yok
+  group: daily-report
   cancel-in-progress: false
 
 jobs:
@@ -51,9 +57,12 @@ jobs:
           git add data/ reports/
           if ! git diff --cached --quiet; then
             git commit -m "daily: rapor $(date -u +%Y-%m-%d)"
-            for i in 1 2 3; do
+            # 5 deneme + artan bekleme: gunluk rapor arsivleyiciyle AYRI concurrency
+            # grubunda oldugu icin (iptal edilmesin diye) push yarisi mumkun.
+            # Yaris ucuz ve nadirdir; iptal edilen kosu ise gunun TAMAMINI kaybettirir.
+            for i in 1 2 3 4 5; do
               git pull --rebase origin main && git push && break
-              echo "push retry $i"; sleep 3
+              echo "push retry $i"; sleep $((i * 5))
             done
           else
             echo "degisiklik yok"

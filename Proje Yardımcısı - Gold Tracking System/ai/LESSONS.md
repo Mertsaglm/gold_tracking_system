@@ -11,6 +11,88 @@
 
 ---
 
+## L-018 — Teslim yolunu test etmiyorsan sistem konuşmadan "çalışır"
+
+**Olay:** Otonom bir sistem raporunu her gün teslim etmeye devam ederken, uyarı
+kanalı 13 gün boyunca tamamen ölüydü. 125 zamanlanmış koşu bu hatayı verdi ve
+**hepsi yeşil göründü**. Kesinti, tam da uyarıya en çok ihtiyaç duyulan
+hareketli döneme denk geldi.
+
+**Kök sebep — dört katman üst üste bindi:**
+1. Mesaj metni, işaretleme moduna (HTML/Markdown) giderken **kaçırılmamış bir
+   özel karakter** içeriyordu; API mesajı tümden reddetti.
+2. Gönderim döngüsü tek istisnayla kırıldı → sıradaki **diğer uyarılar hiç
+   denenmedi** (patlayan uyarı listede birinciydi).
+3. İstisna, durum kaydına ulaşmadan dışarı çıktı → arıza hiçbir yere yazılmadı
+   ve damga ilerlemediği için durum her koşumda aynen tekrarlandı.
+4. CI adımındaki "hatayı yut ve devam et" bayrağı koşuyu yeşil bıraktı.
+
+**Neden yüzlerce test yakalamadı:** testlerin hepsi **karar mantığının saf
+fonksiyonlarına** bakıyordu. Mesajı ÜRETEN biçimlendiriciyi hiçbir test
+görmüyordu. Karar kilitliydi, **teslim denetimsizdi**.
+
+**Ders:** "Doğru kararı üretmek" ile "kararı teslim etmek" iki ayrı iştir.
+İkincisi sessizce ölür, çünkü başarısızlığı bir **yokluk** olarak tezahür eder —
+kimse bakmadıkça görünmez.
+
+**Kurallar:**
+- Dış protokole giden metinde dinamik alan **asla ham gitmez**; kaçış şablonun
+  içinde olur, çağıranın nezaketine bırakılmaz.
+- Toplu gönderimde her öğe **bağımsız** denenir; biri patlayınca parti ölmez.
+- Durum/arıza kaydı, gönderim hatasından **sonra da** yazılmalı: arıza kaydı
+  arızanın kendisine kurban edilemez.
+- Gönderilemeyen mesajın "gönderildi" damgası **geri alınır**, yoksa soğuma/
+  tekrar-engelleme onu kalıcı susturur.
+- **Yokluk alarm üretmeli:** ardışık hata sayacı tut ve kullanıcının GÖRDÜĞÜ
+  yere bas. Arızayı önlemek yetmez, görünür kılmak gerekir.
+- "Hatayı yut ve devam et" kullanıyorsan hatayı **başka bir kanaldan** görünür
+  kıl; yoksa o bayrak "sessizce boz" demektir.
+
+**Genel kural:** *"Sistem çalışıyor" ile "sistem konuşuyor" aynı şey değildir.
+İkincisini ölçmüyorsan birincisini de bilmiyorsun.*
+
+---
+
+## L-017 — AÇIK olan yolu ölçmeyi unutma: riskli olana bakarken çalışan denetimsiz kalır
+
+**Olay:** Bir karar sisteminin iki kolu vardı: biri riskli ve **kapalı**, biri
+ucuz ve **açık**. Bütün doğrulama emeği kapalı kola gitmişti — onun eşiği
+titizlikle ölçülüyor, her aday o eşiğe göre "geçti/geçemedi" damgası alıyordu.
+Açık kolun eşiği ise daha düşüktü (aynı bilgiyi daha ucuza kullanıyordu) ve
+o eşiğe göre hiçbir hüküm üretilmiyordu. Ölçüldüğünde açık kolun fiilen
+kullandığı kuralın kendi başa baş noktasının **altında** olduğu çıktı.
+
+**Neden gözden kaçtı:** Dikkat riskin büyüğüne gitmişti. Ama "küçük etki" ile
+"ölçülmemiş etki" aynı şey değildir; küçük bir etki de yanlış işaretli olabilir.
+
+**Kural:** Bir eşik/karne raporu yazarken önce sor: **"bu rapor ŞU AN AÇIK olan
+yolu ölçüyor mu?"** Birden çok mod/kol varsa her biri kendi eşiğine göre ayrı
+raporlanır. Tek eşikli bir tablo, diğer modun okuyucusunu yanıltır: aynı aday
+bir kolda ❌ diğerinde ✅ olabilir ve tek sütunda bu bilgi kaybolur.
+
+---
+
+## L-016 — Mutasyon yakalanmadıysa suçlu sentetik veridir: vacuous test sessizce geçer
+
+**Olay:** Bir bayrağı sabit `False` yapan mutasyon, onlarca testin hepsinden
+geçti. İki katmanlı sebep: (1) eşik testleri elle yazılmış fixture üzerinden
+çalışıyor, üreticiye hiç dokunmuyordu (L-012'nin tekrarı); (2) üreticiyi
+çağıran uçtan uca test **düzgün/monoton** sentetik veri kullanıyordu ve o
+veride ölçülen büyüklüklerin tamamı özdeş **0** çıkıyordu — bayrak zaten hiç
+`True` olmuyordu. Test geçiyordu çünkü ölçecek bir şey yoktu.
+
+**Ders:** Sentetik veri, korumanın tetiklendiği durumu ÜRETMİYORSA test
+**vacuous** olur ve mutasyonu yakalayamaz. Düzgün seriler (sabit eğim, tek
+rejim) bu tuzağın en sık kaynağıdır: gerçekte ayrışan büyüklükler orada
+birbirinin aynı çıkar.
+
+**Kural:** Bir bayrağı/eşiği test ederken **testin kendisi "kurgu gerçekten
+tetikledi mi"yi assert etsin**: önce tetiklemesi gereken örnekleri say, boşsa
+testi düşür ("kurgu tetikleyici üretmedi; test vacuous olurdu"). Sentetik
+veriyi **rejimli** kur — en az iki farklı davranış bölgesi olsun.
+
+---
+
 ## L-015 — Test yazmak yetmez: testin DÜŞEBİLDİĞİNİ kanıtla
 
 **Olay:** Bir projeye yüzlerce koruma testi yazıldı ve hepsi ilk koşumda yeşil

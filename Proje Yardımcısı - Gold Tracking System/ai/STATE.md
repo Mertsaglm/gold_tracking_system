@@ -9,7 +9,7 @@
 >
 > Burada yalnızca **devir paketinin kendi durumu** ve tarihli bir özet durur.
 
-**Son güncelleme:** 2026-07-27
+**Son güncelleme:** 2026-07-29
 
 ---
 
@@ -22,7 +22,7 @@
 | Ne inşa edildi, ne ölçüldü, hangi iddia çürüdü, sınırlar ne? | **`PROJE-GUNLUGU.md`** (burada) |
 | Proje nedir, kapsamı/kısıtları ne? | `PROJECT.md` (burada) veya `../../ai/PROJECT.md` |
 | Bu karar neden böyle alındı? | `../../ai/DECISIONS.md` (proje) · `DECISIONS.md` (yardımcı sistemi) |
-| Hangi tuzağa bir daha düşmeyelim? | `LESSONS.md` (L-001…L-015) — numara uzayı kökle ORTAK, bkz. `DECISIONS.md` #003 |
+| Hangi tuzağa bir daha düşmeyelim? | `LESSONS.md` (L-001…L-017) — numara uzayı kökle ORTAK, bkz. `DECISIONS.md` #003 |
 | İnşa döneminde ne ölçüldü, hangi iddia çürütüldü? | `../../docs/TESLIMAT-ARSIV.md` |
 | Haftalık 5 dakikalık kontrol nasıl yapılır? | `../../İZLEME.md` |
 
@@ -74,6 +74,16 @@
   `AGENTS.md §5`'e **"Koruma disiplini — testin DÜŞTÜĞÜNÜ kanıtla"** protokolü
   eklendi (`DECISIONS.md #004`); kök ↔ paket senkronu artık altın projesinde
   bir testle denetleniyor.
+
+- 2026-07-29 — **Ölçüm denetimi paketi besledi (2 yeni ders).** Altın projesinde
+  grafik ölçümündeki faz artefaktı düzeltildi ("zayıf kanıt" 10 → 1) ve AÇIK
+  olan karar kolunun kendi eşiğine göre hiç denetlenmediği bulundu.
+  Genelleştirilip buraya işlenenler: **L-016** mutasyon yakalanmadıysa suçlu
+  sentetik veridir (vacuous test sessizce geçer) · **L-017** AÇIK olan yolu
+  ölçmeyi unutma. L-016 doğrudan L-015'in koşumundan doğdu: mutasyon disiplini
+  uygulandı, bir mutasyon KAÇTI ve kaçış sebebi testin verisiydi — yani
+  "mutasyon yakalandı" demek de tek başına yetmiyor, **yakalanmayanın sebebini
+  araştırmak** protokolün parçası.
 
 ### 🧱 Bilinen kısıt
 - **Kural değişikliği iki yere yazılmalı:** kanonik kopya proje kökündedir; buradaki

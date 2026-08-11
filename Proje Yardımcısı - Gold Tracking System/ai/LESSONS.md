@@ -48,6 +48,14 @@ kimse bakmadıkça görünmez.
 - "Hatayı yut ve devam et" kullanıyorsan hatayı **başka bir kanaldan** görünür
   kıl; yoksa o bayrak "sessizce boz" demektir.
 
+**Ek (aynı gün, üretimde yakalandı):** Bu dersin düzeltmesi de aynı hataya düştü.
+Görünürlük katmanının arıza defteri `apply_cooldown` state'i sıfırdan kurduğu için
+her sessiz koşumda siliniyordu — uyarı bir koşum görünüp kayboluyordu. Yazdığım
+test `saglik_guncelle`'yi DOĞRUDAN çağırıyordu, boru hattını görmüyordu; saf
+fonksiyon doğru, **bağlantı** yanlıştı. Dersin kendisi kanıtladı: bir korumayı
+sadece birim testiyle doğrulamak, onu doğrulamamaktır. **Testi mutlaka
+üretimdeki çağrı zincirinden geçir.**
+
 **Genel kural:** *"Sistem çalışıyor" ile "sistem konuşuyor" aynı şey değildir.
 İkincisini ölçmüyorsan birincisini de bilmiyorsun.*
 

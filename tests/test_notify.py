@@ -350,3 +350,62 @@ def test_run_basarili_gonderimde_defter_temiz(izole_kok, ag_kapali,
     assert st["saglik"]["ardisik_hata"] == 0
     from src import report
     assert report.bildirim_hatti_satiri(cfg) == "", "sağlıklı hatta yanlış alarm"
+
+
+def test_ariza_defteri_SESSIZ_KOSUMDA_SILINMEZ(izole_kok, ag_kapali,
+                                               ag_susturuldu, monkeypatch):
+    """KİLİT TEST — görünürlük katmanı kendi korumaya çalıştığı hataya kurban gitti.
+
+    ÜRETİMDE yakalandı (2026-08-11): `apply_cooldown` state'i sıfırdan kuruyor
+    ve `saglik` anahtarını düşürüyordu. Sonuç: hat kırıkken bir arıza kaydedilse
+    bile, gönderilecek bildirim olmayan İLK sessiz koşumda (soğuma/tavan) kayıt
+    siliniyor ve rapordaki "BİLDİRİM HATTI ARIZALI" uyarısı kendiliğinden
+    kayboluyordu.
+
+    Buradaki asıl ders L-018'in tekrarı: önceki testim (`saglik_guncelle`'yi
+    doğrudan çağıran birim testi) GEÇİYORDU çünkü boru hattını hiç görmüyordu.
+    Bu test `run()` üzerinden gider.
+    """
+    from src import db as _db, report, telegram_bot
+    cfg, _ = izole_kok
+    con = _db.connect(cfg)
+    con.execute("INSERT INTO prim_history(ts_utc,ons_usd,usdtry,theoretical,"
+                "market_has,gram_retail,prim_pct,prim_pct_naive,spread_pct,"
+                "quarter_prim_pct,indicative,weekend,holiday,reason) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,0,0,0,'')",
+                (util.utcnow().isoformat(), 4000.0, 47.0, 6100.0, 5980.0,
+                 6000.0, -2.5, -2.0, 0.02, -1.0))
+    con.commit()
+    con.close()
+
+    # 1) Gönderim patlar → arıza defteri dolar
+    monkeypatch.setattr(telegram_bot, "send_message",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("400")))
+    notify.run(cfg)
+    st = util.read_json(cfg["alerts"]["state_file"], {})
+    assert st["saglik"]["ardisik_hata"] >= 1
+    assert "BİLDİRİM HATTI ARIZALI" in report.bildirim_hatti_satiri(cfg)
+
+    # 2) Damga geri alındığı için bildirim yeniden denenir; bu kez HİÇ tetik
+    #    olmayan bir koşum kur (prim bandın içinde) → gönderilecek bir şey yok.
+    con = _db.connect(cfg)
+    con.execute("UPDATE prim_history SET prim_pct = -0.2, spread_pct = 0.0")
+    con.commit()
+    con.close()
+    sonuc = notify.run(cfg)
+    assert sonuc["gonderildi"] == 0 and not sonuc["hatalar"], "kurgu sessiz olmalı"
+
+    # 3) KİLİT: sessiz koşum arıza kaydını SİLMEMELİ
+    st2 = util.read_json(cfg["alerts"]["state_file"], {})
+    assert st2.get("saglik", {}).get("ardisik_hata", 0) >= 1, (
+        "sessiz koşum arıza defterini sildi → rapordaki uyarı kaybolur")
+    assert "BİLDİRİM HATTI ARIZALI" in report.bildirim_hatti_satiri(cfg)
+
+
+def test_apply_cooldown_state_anahtarlarini_dusurmez():
+    """`apply_cooldown` state'i sıfırdan kurmamalı — bilmediği alanları korumalı."""
+    st = {"last_sent": {}, "daily": {}, "saglik": {"ardisik_hata": 7},
+          "gelecekteki_alan": "korunmalı"}
+    _, yeni = notify.apply_cooldown([], st, "2026-08-11T10:00:00+00:00", 24, 6)
+    assert yeni["saglik"] == {"ardisik_hata": 7}
+    assert yeni["gelecekteki_alan"] == "korunmalı"

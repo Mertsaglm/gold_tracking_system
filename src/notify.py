@@ -92,7 +92,15 @@ def apply_cooldown(alerts: list[dict], state: dict, now_iso: str,
         last[al["tip"]] = now_iso
         count += 1
     daily = {today: count}                    # sadece bugünü tut
-    return to_send, {"last_sent": last, "daily": daily}
+    # State'in DİĞER anahtarları korunur (`saglik` gibi). Eskiden burada sıfırdan
+    # bir sözlük kuruluyordu ve arıza defteri, gönderilecek bildirim olmayan HER
+    # sessiz koşumda siliniyordu: hat kırıkken rapordaki uyarı bir sonraki
+    # koşumda kendiliğinden kaybolurdu — yani görünürlük katmanı, korumaya
+    # çalıştığı şeyin aynısına kurban gidiyordu. Üretimde yakalandı (2026-08-11).
+    out = dict(state)
+    out["last_sent"] = last
+    out["daily"] = daily
+    return to_send, out
 
 
 def damgayi_geri_al(onceki: dict, yeni: dict, basarisiz_tipler: list[str],

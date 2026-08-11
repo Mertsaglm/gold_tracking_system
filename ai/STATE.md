@@ -4,9 +4,10 @@
 > KISA TUT: ~100 satırı aşınca eskiyi `ai/archive/STATE-YYYY-MM.md`'ye taşı.
 
 **Son güncelleme:** 2026-08-11
-**Aktif milestone:** **Bildirim hattı 13 günlük sessiz kesintiden çıkarıldı
-(ADR #011, L-018).** Sistem 34/35 gün rapor teslim etti ama 2026-07-29 → 08-10
-arası hiçbir anomali bildirimi gitmedi; düzeltildi ve canlı doğrulandı.
+**Aktif milestone:** **Bildirim hattı onarıldı ve ÜRETİMDE doğrulandı**
+(ADR #011, L-018). 2026-07-29 → 08-10 arası hiçbir anomali bildirimi gitmemişti
+(125 koşu, hepsi yeşil); `9ebf868` sonrası üretim koşumu **"2 tetik, 2 gönderildi,
+0 HATA"** dedi — 13 günlük sessiz kesinti bitti.
 Sırada **karne tabanı kararı** — karne hâlâ yapısal olarak hiçbir şey ölçmüyor.
 
 ---

@@ -142,10 +142,20 @@ def test_kapi_acilabiliyor_da():
 
 
 # ------------------------------------------------------- çekirdek kol
+def _cek_esik(aktif: bool):
+    """Çekirdek eşikleri, kademe kapısı açık/kapalı. ADR #012'de kademe ÜRETİMDE
+    kapatıldı; mekanizmanın kendisi silinmedi, kapıya bağlandı. Bu testler
+    mekanizmayı `aktif=True` ile denetlemeye devam eder — kapı bir gün yeniden
+    açılırsa dejenerelik koruması hâlâ yürürlükte olsun."""
+    e = dict(CFG["karar"]["cekirdek"])
+    e["kademe_aktif"] = aktif
+    return e
+
+
 def test_cekirdek_kol_girdiye_gercekten_duyarli():
     """Çekirdek kol tek kapı değişkeni okuyor; formül dejenere olsa (ör. eşik
     karşılaştırması ters kurulsa) hep AL dönerdi ve kimse fark etmezdi."""
-    esik = CFG["karar"]["cekirdek"]
+    esik = _cek_esik(True)
     hukumler = {karar.cekirdek_hukum(r, esik)["hukum"]
                 for r in (-30.0, -5.0, -0.1, 0.5, 5.0, 9.9, 10.5, 30.0)}
     assert hukumler == {karar.AL_COK, karar.AL, karar.AL_AZ}, hukumler
@@ -156,12 +166,42 @@ def test_cekirdek_kol_girdiye_gercekten_duyarli():
 def test_cekirdek_kol_eşik_siniri_keskin():
     """Sınır davranışı belirsizse aynı gün iki kez koşan iş farklı hüküm
     üretebilir (kayıt değiştirilemez olduğu için bu kalıcı tutarsızlık olurdu)."""
-    esik = CFG["karar"]["cekirdek"]
+    esik = _cek_esik(True)
     dusuk, yuksek = esik["reel_mevduat_dusuk_pct"], esik["reel_mevduat_yuksek_pct"]
     assert karar.cekirdek_hukum(dusuk - 1e-9, esik)["hukum"] == karar.AL_COK
     assert karar.cekirdek_hukum(dusuk, esik)["hukum"] == karar.AL
     assert karar.cekirdek_hukum(yuksek, esik)["hukum"] == karar.AL
     assert karar.cekirdek_hukum(yuksek + 1e-9, esik)["hukum"] == karar.AL_AZ
+
+
+# ---- Kademe KAPALI iken: eylem düz, TEŞHİS hâlâ duyarlı (ADR #012) ----
+def test_kademe_kapaliyken_alim_plani_HIC_degismez():
+    """KİLİT: kapatmanın tek amacı bu — ölçülmemiş bir kural alımı geciktirmesin.
+
+    Ölçüm (ADR #012): kural ateşlendiğinde ertelemenin ortalama gram kazancı
+    %-0.64 (N=22, t=1.03), başa baş 0.00'ın ALTINDA; canlı doğrulamada
+    07-27 → 08-10 arası kademe -%1.55 gram götürdü.
+    """
+    esik = _cek_esik(False)
+    for r in (-30.0, -5.0, -0.1, 0.0, 5.0, 9.9, 10.5, 30.0, 12.85):
+        h = karar.cekirdek_hukum(r, esik)
+        assert h["carpan"] == 1.0, f"reel={r}: kademe kapalıyken çarpan 1.0 olmalı"
+        assert h["hukum"] == karar.AL, f"reel={r}: kapalıyken hüküm AL olmalı"
+
+
+def test_kademe_kapaliyken_TESHIS_hala_girdiye_duyarli():
+    """Eylem düzleşti ama kural GÖRÜNÜR kalmalı — "yapmadım" ile "yapacak bir
+    şey yoktu" ayrı şeylerdir. Kural adı sessizleşirse kapatma kararı da
+    denetlenemez hâle gelir."""
+    esik = _cek_esik(False)
+    kurallar = {karar.cekirdek_hukum(r, esik)["kural"]
+                for r in (-5.0, 5.0, 30.0)}
+    assert len(kurallar) == 3, f"kademe kapalıyken teşhis körleşti: {kurallar}"
+    yuksek = karar.cekirdek_hukum(30.0, esik)
+    metin = " ".join(yuksek["gerekce"])
+    assert "KAPALI" in metin and "ADR #012" in metin, "kapatma sebebi yazılmamış"
+    assert "0.75" in metin, "kademe açık olsaydı ne olacağı yazılmamış"
+    assert yuksek["kademe_olurdu"] == 0.75
 
 
 # ------------------------------------------------------- taktik kol

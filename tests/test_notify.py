@@ -6,7 +6,8 @@ CFG = util.load_config()
 
 def _ctx(**kw):
     base = {"all_fresh": True, "prim": 0.0, "prim_z": None, "spread": None,
-            "spread_p90": None, "daily_move": None, "atr": None, "quarter_z": None}
+            "spread_p90": None, "spread_medyan": None,
+            "daily_move": None, "atr": None, "quarter_z": None}
     base.update(kw)
     return base
 
@@ -409,3 +410,75 @@ def test_apply_cooldown_state_anahtarlarini_dusurmez():
     _, yeni = notify.apply_cooldown([], st, "2026-08-11T10:00:00+00:00", 24, 6)
     assert yeni["saglik"] == {"ardisik_hata": 7}
     assert yeni["gelecekteki_alan"] == "korunmalı"
+
+
+# ---------- MAKAS: yüzdelik tek başına eşik olamaz (ADR #012) ----------
+def test_makas_yuzdelik_gecse_bile_madde_taban_altindaysa_atesLEMEZ():
+    """KİLİT: 2026-08-11 ölçümü — makas serisi dar ve durağan; p90 medyanın
+    yalnız 1.08 katı. Yüzdelik tek başına eşik olsaydı alarm piyasadan bağımsız
+    olarak her gün ateşlerdi (teslim edilen 19 bildirimin 12'si buydu)."""
+    # gerçek üretim büyüklükleri: medyan 0.0146, p90 0.0158, gözlenen max 0.0260
+    al = notify.evaluate_thresholds(
+        _ctx(spread=0.0160, spread_p90=0.0158, spread_medyan=0.0146), CFG)
+    assert not any(a["tip"] == "makas" for a in al), (
+        "p90'ı 1.01 kat aşan gürültü alarma dönüştü")
+    # gözlenen EN YÜKSEK makas bile (medyanın 1.78 katı) ateşlememeli
+    al = notify.evaluate_thresholds(
+        _ctx(spread=0.0260, spread_p90=0.0158, spread_medyan=0.0146), CFG)
+    assert not any(a["tip"] == "makas" for a in al), (
+        "313 kaydın en uç değeri bile 'patlama' sayılmamalı")
+
+
+def test_makas_gercek_patlamada_HALA_atesler():
+    """Kural susturulmadı, eşiği maddi hâle getirildi: makas gerçekten açılırsa
+    (medyanın 2 katı) alarm yine çalışmalı."""
+    al = notify.evaluate_thresholds(
+        _ctx(spread=0.0400, spread_p90=0.0158, spread_medyan=0.0146), CFG)
+    m = [a for a in al if a["tip"] == "makas"]
+    assert m, "gerçek makas patlaması alarm üretmedi"
+    assert "medyan" in m[0]["kural"], "kuralın adı maddi tabanı söylemeli"
+
+
+def test_makas_medyan_yokken_eski_davranisa_duser():
+    """Arşiv 20 kayda ulaşmadan medyan None gelir; kural o zaman p90'a düşer
+    ve ÇÖKMEZ (ilk kurulumda rapor/alarm bloklanmamalı)."""
+    al = notify.evaluate_thresholds(
+        _ctx(spread=0.0160, spread_p90=0.0158, spread_medyan=None), CFG)
+    assert any(a["tip"] == "makas" for a in al)
+
+
+def test_makas_tabani_YALNIZ_FRESH_kayitlardan_hesaplanir(izole_kok, ag_kapali,
+                                                          ag_susturuldu):
+    """KİLİT: makas yüzdeliği/medyanı hafta sonu ve indicative satırları saymaz.
+
+    Z-skor kapısı yalnız FRESH kayıt sayıyor; makas tabanı ise filtresizdi.
+    Aynı arşivden iki farklı taban çıkıyordu ve bayat satırlar eşiği
+    kaydırabiliyordu. Kurgu REJİMLİ (L-016): iki grup belirgin biçimde ayrık,
+    yoksa filtre kaldırılınca hiçbir şey değişmez ve test vacuous geçer.
+    """
+    from src import db as _db
+    cfg, _ = izole_kok
+    con = _db.connect(cfg)
+    now = util.utcnow()
+
+    def ekle(i, spread, indicative, weekend):
+        ts = (now - __import__("datetime").timedelta(minutes=5 * i)).isoformat()
+        con.execute("INSERT INTO prim_history(ts_utc,ons_usd,usdtry,theoretical,"
+                    "market_has,gram_retail,prim_pct,prim_pct_naive,spread_pct,"
+                    "quarter_prim_pct,indicative,weekend,holiday,reason) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,0,'')",
+                    (ts, 4000.0, 47.0, 6100.0, 6090.0, 6100.0, -0.2, -0.1,
+                     spread, -1.0, indicative, weekend))
+
+    for i in range(40):                       # FRESH: dar makas
+        ekle(i, 0.010, 0, 0)
+    for i in range(40, 80):                   # BAYAT: 10 kat geniş makas
+        ekle(i, 0.100, 1, 1)
+    con.commit()
+    con.close()
+
+    ctx = notify.build_context(cfg)
+    assert ctx["spread_medyan"] == 0.010, (
+        f"bayat satırlar tabana sızdı: medyan={ctx['spread_medyan']}")
+    assert ctx["spread_p90"] == 0.010, (
+        f"bayat satırlar p90'a sızdı: p90={ctx['spread_p90']}")

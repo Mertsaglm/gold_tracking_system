@@ -35,7 +35,11 @@ başladın, 108 gram bitirdin → tuttu.
   yanıt verir.** Üretim (GitHub Actions) push-only: bot rapor/bildirim GÖNDERİR,
   gelen komutu okumaz (long-polling'e kalıcı süreç lazım, cron'da yok). Ölçüldü
   2026-07-29: `telegram_chat.json`'da Mert'in 3 komutunun hiçbirine cevap yok.
-  Karar STATE.md TAKVİM'de 👤 satırı olarak bekliyor.
+  **KARAR (ADR #012-E, 2026-08-11): bu sınır KABUL EDİLDİ.** Gerekçe ölçüm — 4 ayda
+  3 komut kullanımı; komutların döndüğü her şey (HÜKÜM · karne · grafik · durum)
+  zaten günlük push raporunda var; `getUpdates` polling'i eklemek onu 13 günlük
+  sessiz kesintinin yaşandığı `archive.yml` yoluna sokardı. Yeniden gözden geçir:
+  komut kullanımı ayda 5'i geçerse.
 
 ## Kapsam Dışı (Ne YOK)
 - **Üçüncü kişilere** yatırım tavsiyesi / danışmanlık servisi. Sistem Mert'in

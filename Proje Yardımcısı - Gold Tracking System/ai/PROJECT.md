@@ -93,9 +93,12 @@ bildirim; sistem elle müdahale olmadan günlerce çalışmaya devam ediyor.
   bunların hepsine tabanla (`TUT`) aynı cevabı verdiği için "tabana fark" ve
   "gram etkisi" piyasa ne yaparsa yapsın **yapısal olarak 0.00** çıkıyor. Kapı
   da açılma şartı olarak tam bu iki sayıyı okuyor → kendi kendini kilitliyor.
-  Sistem artık bunu **söylüyor** ("ÖLÇÜM İÇERMİYOR") ama döngü **KIRILMADI**;
-  kırmak için gölge kol gerekiyor, o karar ~Ekim 2026'ya bırakıldı
-  (ADR #008-B · ders **L-010**).
+  Sistem bunu **söylüyor** ("ÖLÇÜM İÇERMİYOR"). Döngüyü kırmak için gölge kol
+  düşünüldü ve **2026-08-11'de ölçümle reddedildi** (ADR #012-B): taktik gölge kol
+  %100 `TUT` kaydederdi (üretici yok), çekirdek gölge kol ise gereksiz — kural
+  deterministik ve girdileri saklandığı için karşı-olgu backtest ile tam yeniden
+  üretilebiliyor. Aynı gün çekirdek kademesi de kapatıldı, yani kol artık sapma
+  üretmiyor ve ölçülecek fark **yok** (ADR #012-A · dersler **L-010**, **L-017**).
 - **FRED ölü** (2026-07-07'den beri) → DXY yfinance `DX-Y.NYB` yedeğine düşüyor;
   reel faiz göstergesi kapalı (yedeksiz, bilerek). **Google Trends de 12/14 gün
   ölü** (pytrends 429) → panel fiilen **5/7** göstergeyle çalışıyor

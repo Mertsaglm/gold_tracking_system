@@ -116,9 +116,11 @@ Gidiş-dönüş maliyeti: `banka_hesap` **%1.20** · `altins1` **%0.40** · `fiz
 **Sonuç: satmak ortalamada gram KAYBETTİRİR.** Sistem buna göre iki kola ayrıldı:
 
 - **ÇEKİRDEK** — aylık düzenli alımı zamanlar. Makas ödemez → eşiği daima düşük →
-  **birincil kol, açık.** Kapı değişkeni: reel net mevduat faizi. Kademeler
-  bilerek **dar** (1.25× / 0.75×), çünkü ölçülen kenar t≈1.4 — en iyi aday ama
-  kanıt değil. Kol alımı **asla kesmez**.
+  **birincil kol.** Kapı değişkeni: reel net mevduat faizi. Kademeler bilerek
+  **dar** tutulmuştu (1.25× / 0.75×), çünkü ölçülen kenar t≈1.4 — en iyi aday ama
+  kanıt değil. **2026-08-11: kademe KAPATILDI (ADR #012-A)** — kural örneklem-içi
+  ölçümde bile başa başın altında kaldı (ort. %-0.64, başa baş 0.00). Hüküm artık
+  daima `NORMAL AL` 1.00×; kol alım planına **hiç dokunmuyor**.
 - **TAKTİK** — sat/geri al. ~%1.20 makas öder → **doğuştan KAPALI**
   (`karar.taktik.aktif: false`). Açılma şartı önceden config'e yazıldı ve
   gevşetilmez.
@@ -240,10 +242,13 @@ hüküm üreten kol ise **çekirdek** ve eşiği daha düşük (makas ödemez).
 Çekirdek eşiği eklenince: kademeyi üreten `reel_mevduat > %10` kuralı **+1.34p**,
 başa baş **+1.99p**, t=1.03 → **eşiğin altında**. Yani sistemin "AZ AL 0.75×"
 hükmü ölçülmüş bir kenara değil, en iyi adaya dayanıyor.
-Kademe **kaldırılmadı** (Mert'in gerçek alım davranışını değiştirir → onun
-kararı), ama hüküm bloğu artık her gün kendi kanıt durumunu beyan ediyor ve
-veriyi `data/aday_taramasi.json`'dan okuyor — tarama tazelenince satır kendini
-günceller. → Ders **L-017**
+Kademe önce **kaldırılmadı** (Mert'in gerçek alım davranışını değiştirir → onun
+kararı) ama hüküm bloğu her gün kendi kanıt durumunu beyan etmeye başladı.
+**2026-08-11'de karar verildi ve kademe KAPATILDI** (ADR #012-A): kuralın ortalama
+gram kazancı %-0.64 (başa baş 0.00'ın altında) ve canlı doğrulamada -%1.55 gram.
+"Küçük ve simetrik" savı da düştü — üst kademe erişilemez, 30/30 alt kademe
+ateşledi. Mekanizma silinmedi, kapıya bağlandı; açılma şartı N≥30 ve |t|≥2 ile
++1.99p. → Dersler **L-017**, **L-018**
 
 **Mutasyon disiplini kendi sınırını gösterdi.** 8 mutasyon uygulandı, **7'si**
 yakalandı; `cekirdek_gecti` bayrağını sabit `False` yapan mutasyon **kaçtı**.
@@ -286,9 +291,12 @@ saklanmaz**. Bugüne kadar düşenler:
 
 ## 5. Bugün bilinen sınırlar
 
-1. **Karne ölçüm üretemiyor.** Sistem bunu artık **söylüyor** ("ÖLÇÜM
-   İÇERMİYOR") ama döngü **kırılmadı**. Kırmak için gölge kol gerekiyor;
-   karar ~Ekim 2026'ya bırakıldı (ADR #008-B).
+1. **Karne ölçüm üretemiyor** — ve bu artık KABUL EDİLMİŞ bir sonuç (ADR #012-B,
+   2026-08-11). Gölge kol **yapılmayacak**, gerekçe ölçüm: (a) taktik gölge kol
+   %100 `TUT` kaydeder çünkü kapı açık olsa bile beklenen-kazanç üreticisi yok
+   → sıfır bilgi; (b) çekirdek gölge kol gereksiz, kural deterministik ve tüm
+   girdileri saklanıyor → karşı-olgu backtest ile TAM yeniden üretilebilir.
+   **Genel kural:** gölge kol, karşı-olgu yeniden ÜRETİLEMEDİĞİNDE gerekir.
 2. **Taktik kol SAT diyemez** — beklenen kazanç üreticisi yok ve ADR #007-H'ye
    göre dürüst bir aday da yok.
 3. **Prim + çeyrek z-skoru kapalı** — 60 **gün** kapısı ~2026-09-14'te açılacak
@@ -308,13 +316,25 @@ saklanmaz**. Bugüne kadar düşenler:
    (`RSI aşırı satım · 1ay · +2.0p`, N=16, in-sample ve OOS ikisi de yetersiz).
    Bonferroni'den sonra bu kanıt değildir. Grafik bölümü **planlama geometrisi**;
    hüküm üretmez, üretmemesi de bir hata değil ÖLÇÜM SONUCUdur.
-8. **Açık kolun kuralı kendi eşiğini geçemiyor** (ADR #010-B). Çekirdek kademesini
-   üreten `reel_mevduat > %10` +1.34p, başa baş +1.99p, t=1.03. Rapor bunu her gün
-   beyan ediyor; kademeyi kaldırma/koruma kararı 👤 Mert'te (STATE TAKVİM).
-9. **Telegram komutları üretimde ölü.** Actions push-only; `/hukum` `/karne`
-   `/grafik` yalnız yerelde `src.telegram_bot` açıkken yanıt verir. Ölçüldü:
-   `telegram_chat.json`'da 3 komut, 0 cevap.
-10. **Testler sözleşmeyi korur, DOĞRULUĞU değil.** Test paketi bir formülün sessizce
+8. ✅ **Açık kolun kademesi KAPATILDI** (ADR #012-A, 2026-08-11). `reel_mevduat > %10`
+   kuralı ateşlendiğinde ertelemenin ortalama gram kazancı **%-0.64** (N=22, t=1.03)
+   — başa baş **0.00**'ın ALTINDA, yani örneklem-**içi** ölçümde bile kayıp. Canlı
+   örneklem-dışı doğrulama: **-%1.55 gram**. "Küçük ve simetrik" savı da düştü: üst
+   kademe erişilemez, canlıda 30/30 alt kademe ateşledi. Hüküm artık daima
+   `NORMAL AL` 1.00×. Mekanizma silinmedi, kapıya bağlandı; açılma şartı kayıtlı
+   (**N≥30 ve |t|≥2 ile +1.99p**). **Sistem artık iki kolda da ölçemediği hiçbir
+   şeye göre davranmıyor.**
+9. **Telegram komutları üretimde ölü — KABUL EDİLDİ** (ADR #012-E). Actions
+   push-only; `/hukum` `/karne` `/grafik` yalnız yerelde `src.telegram_bot` açıkken
+   yanıt verir. Ölçüldü: 4 ayda 3 komut, 0 cevap. Komutların döndüğü her şey zaten
+   günlük push raporunda; polling eklemek onu kritik arşiv yoluna sokardı.
+10. **Bildirim hattı 13 gün sessizce ölüydü** (2026-07-29 → 08-10, ADR #011,
+   L-018) — kaçırılmamış `<` yüzünden Telegram 400 döndürüyordu ve
+   `continue-on-error: true` 125 koşuyu yeşil bırakıyordu. Onarıldı (kaçış +
+   izolasyon + damga geri alma + rapora arıza satırı) ve üretimde doğrulandı
+   ("2 tetik, 2 gönderildi, 0 HATA"). **Ders: teslim yolu, karar mantığı kadar
+   test edilmelidir.**
+11. **Testler sözleşmeyi korur, DOĞRULUĞU değil.** Test paketi bir formülün sessizce
    değiştirilmesini engeller; o formülün finansal olarak doğru olup olmadığını
    hâlâ ölçüm söyler (ADR #007-B/H). Zırhı "sistem doğru çalışıyor" diye okuma.
 

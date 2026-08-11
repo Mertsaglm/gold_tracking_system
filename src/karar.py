@@ -55,6 +55,30 @@ _URETICI_YOK = object()
 
 # ================= SAF ÇEKİRDEK (testli) =================
 
+def _kademe_kapali(reel: float, kural: str, olurdu: float, yon: str) -> dict:
+    """Kademe KAPALI iken üretilen hüküm: alım planına dokunma, ama kararı SÖYLE.
+
+    Sessizce 1.0× dönmek, kuralın hiç tetiklenmediği izlenimi verirdi. Burada
+    hüküm `AL` (1.00×) ama gerekçe hem tetiği hem kapatma sebebini yazar —
+    "yapmadım" ile "yapacak bir şey yoktu" ayrı şeylerdir (ADR #012).
+
+    `kural` DÖNER ama `carpan` 1.0'dır: `kademe_kaniti_satiri` çarpan 1.0 iken
+    satır yazmaz, çünkü ertelenen alım yoktur; ölçülecek iddia da yoktur.
+    """
+    return {
+        "hukum": AL, "carpan": 1.0, "guven": "düşük", "kural": kural,
+        "kademe_aktif": False, "kademe_olurdu": olurdu,
+        "gerekce": [
+            f"Reel net mevduat %{reel:+.1f} → {yon}: `{kural}` kuralı tetikledi, "
+            f"kademe AÇIK olsaydı alım {olurdu:.2f}× olurdu.",
+            "**Kademe KAPALI (ADR #012)** — alım planına dokunulmuyor, 1.00×.",
+            "Sebep ölçüm: kural ateşlendiğinde ertelemenin ortalama gram kazancı "
+            "%-0.64 (N=22, t=1.03) → başa baş 0.00'ın ALTINDA; canlı doğrulama "
+            "(07-27→08-10) %-1.55 gram. Ölçülmemiş bir kural alımı geciktiremez.",
+        ],
+    }
+
+
 def cekirdek_hukum(reel_net_mevduat: Optional[float], esikler: dict) -> dict:
     """Bu ayki alım şiddeti. Gidiş-dönüş makası ödenmez → ucuz kol.
 
@@ -65,9 +89,29 @@ def cekirdek_hukum(reel_net_mevduat: Optional[float], esikler: dict) -> dict:
     t≈1.4 — en iyi aday, ama KANIT DEĞİL. 2x/0.5x gibi agresif bir kademe
     t=1.4'lük bir bulguyla savunulamaz; gürültüyü kredibilite kılığına sokardı.
     Kanıt güçlenirse (Faz E/F) kademe genişletilir, önce değil.
+
+    ⚠️ KADEME 2026-08-11'DE KAPATILDI (ADR #012). `kademe_aktif: false` iken bu
+    fonksiyon daima `AL` (1.00×) döner; kademeyi ÜRETEN koşul yine değerlendirilir
+    ve gerekçede "ne olurdu" olarak yazılır — karar görünür kalsın, ama alım
+    planına dokunmasın. Gerekçe (ölçüm):
+
+      · Kuralı (`reel_mevduat > %10`) ateşlendiğinde ertelemenin ortalama gram
+        kazancı **%-0.64** (N=22, t=1.03) — başa baş **0.00**'ın ALTINDA.
+        Yani kural, en iyimser (örneklem-İÇİ) ölçümde bile gram KAYBETTİRİYOR.
+      · 0.75× kademenin beklenen aylık maliyeti = 0.25 × (-0.64) ≈ **-%0.16 gram**.
+      · Canlı örneklem-dışı doğrulama (2026-07-27 → 08-10, 11 işlem günü,
+        gram +%9.55): kademe **-%1.55 gram**.
+      · Kural 30/30 tahminde ateşledi → maliyet sürekli, kazanç ölçülmemiş.
+
+    Yeniden açma şartı ADR #012'de: kural çekirdek eşiğini (**+1.99p**) N≥30 ve
+    |t|≥2 ile geçmeli. O gün karne metriği de alım-şiddeti uzayına taşınmalı
+    (`gram_etkisi_cekirdek = (1 − carpan) × gram_carry_kazanc_pct`), çünkü
+    bugünkü `gram.hukum_dogru_mu` SAT uzayında tanımlı ve `AL_*` için özdeş
+    0 üretir (L-010).
     """
     ust = esikler["kademe_carpani_ust"]
     alt = esikler["kademe_carpani_alt"]
+    aktif = esikler.get("kademe_aktif", True)
     # `kural`: kademeyi ÜRETEN koşulun adı. Aday taramasındaki (`tahmin_backfill.
     # ADAYLAR`) anahtarla BİREBİR aynı biçimde üretilir ki rapor "bu kural
     # eşiği geçti mi" sorusunu isim üzerinden cevaplayabilsin. İkisinin
@@ -81,6 +125,8 @@ def cekirdek_hukum(reel_net_mevduat: Optional[float], esikler: dict) -> dict:
                         "Kademe uygulanmadı — düzenli alım planına dokunma."],
         }
     if reel_net_mevduat < esikler["reel_mevduat_dusuk_pct"]:
+        if not aktif:
+            return _kademe_kapali(reel_net_mevduat, kural_dusuk, ust, "negatif")
         return {
             "hukum": AL_COK, "carpan": ust, "guven": "düşük", "kural": kural_dusuk,
             "gerekce": [
@@ -90,6 +136,8 @@ def cekirdek_hukum(reel_net_mevduat: Optional[float], esikler: dict) -> dict:
             ],
         }
     if reel_net_mevduat > esikler["reel_mevduat_yuksek_pct"]:
+        if not aktif:
+            return _kademe_kapali(reel_net_mevduat, kural_yuksek, alt, "yüksek")
         return {
             "hukum": AL_AZ, "carpan": alt, "guven": "düşük", "kural": kural_yuksek,
             "gerekce": [

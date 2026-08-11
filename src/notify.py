@@ -53,10 +53,29 @@ def evaluate_thresholds(ctx: dict, cfg: dict) -> list[dict]:
             add("prim_z", f"|z| > {a['prim_z']}", primz,
                 f"Prim z-skoru {primz:+.2f} (tarihsel aşırılık).",
                 "z ortalamaya dönerse (|z|<1) geçersiz.")
+        # MAKAS: yüzdelik TEK BAŞINA eşik olamaz — pN, tanımı gereği kayıtların
+        # %(100−N)'ini aşar. Makas serisi dar ve durağan (ölçüldü 2026-08-11,
+        # N=313 FRESH kayıt: medyan %0.0146, p90 %0.0158 = medyanın 1.08 katı,
+        # gözlenen en yüksek %0.0260 = 1.78 katı). Yani "p90 aşıldı" cümlesi
+        # piyasa hakkında hiçbir şey söylemiyordu; alarm her gün ateşleniyordu
+        # (teslim edilen 19 bildirimin 12'si buydu) ve günlük tavanı (6) yiyordu.
+        # Bu, L-010'un aynısı: girdiden bağımsız aynı çıktıyı üreten bir "ölçüm"
+        # ölçüm değil KİMLİKTİR.
+        # Çözüm: yüzdelik KALIR ama yanına MADDİ bir taban eklenir — makasın
+        # gerçekten açılması (medyanın katı) şart. 2.0× eşiğinde 313 kaydın
+        # HİÇBİRİ ateşlemezdi; doğrusu da bu, çünkü bu dönemde makas patlaması
+        # olmadı. Gerçek bir stresde (kaynak makası açar) alarm yine çalışır.
         sp, p90 = ctx.get("spread"), ctx.get("spread_p90")
-        if sp is not None and p90 is not None and sp > p90:
-            add("makas", f"makas > p{a['spread_percentile']}", sp,
-                f"Makas %{sp:.3f} tarihsel p{a['spread_percentile']} (%{p90:.3f}) üstünde — talep/panik.",
+        med = ctx.get("spread_medyan")
+        k = a.get("spread_min_medyan_carpani", 2.0)
+        taban = k * med if med else None
+        if sp is not None and p90 is not None and sp > p90 and (
+                taban is None or sp > taban):
+            add("makas", f"makas > p{a['spread_percentile']} ve {k:g}× medyan", sp,
+                f"Makas %{sp:.3f} — tarihsel p{a['spread_percentile']} (%{p90:.3f}) "
+                f"VE medyanın {k:g} katı (%{taban:.3f}) üstünde: makas açıldı."
+                if taban else
+                f"Makas %{sp:.3f} tarihsel p{a['spread_percentile']} (%{p90:.3f}) üstünde.",
                 "Makas normale dönerse geçersiz.")
         move, atr = ctx.get("daily_move"), ctx.get("atr")
         if move is not None and atr and move > a["daily_move_atr"] * atr:
@@ -248,15 +267,19 @@ def build_context(cfg: dict) -> dict:
         series = db.prim_series(con)
         z = calc.zscore(series, cur_prim, zmin)     # güncel primin arşive karşı z'si
         prim_z = z.value
-    # makas p90
+    # Makas tabanı: yalnız FRESH kayıtlar. Eskiden filtre YOKTU ve hafta sonu/
+    # indicative satırlar da yüzdeliği besliyordu — oysa z-skor kapısı yalnız
+    # FRESH sayıyor. İki metrik aynı arşivden farklı tabanlar çıkarıyordu.
     spreads = [r[0] for r in con.execute(
-        "SELECT spread_pct FROM prim_history WHERE spread_pct IS NOT NULL").fetchall()]
+        "SELECT spread_pct FROM prim_history WHERE spread_pct IS NOT NULL"
+        " AND indicative = 0 AND weekend = 0").fetchall()]
     p = cfg["alerts"]["spread_percentile"]
-    spread_p90 = None
+    spread_p90 = spread_medyan = None
     if len(spreads) >= 20:
         spreads.sort()
         idx = int(p / 100 * (len(spreads) - 1))
         spread_p90 = spreads[idx]
+        spread_medyan = statistics.median(spreads)
     # Günlük hareket: güncel teorik vs SON KAPANMIŞ günün kapanışı.
     # `date < bugun` şart: `update_recent` hafta içi bugünün yarım barını da
     # yazıyor. Filtresiz "en son satır", günlük rapor koştuktan sonra BUGÜNÜN
@@ -284,6 +307,7 @@ def build_context(cfg: dict) -> dict:
         "all_fresh": all_fresh,
         "prim": cur_prim, "prim_z": prim_z,
         "spread": cur_spread, "spread_p90": spread_p90,
+        "spread_medyan": spread_medyan,
         "daily_move": daily_move, "atr": atr,
         "quarter": cur_quarter, "quarter_z": quarter_z,
     }

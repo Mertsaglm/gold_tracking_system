@@ -172,6 +172,23 @@ karar:
     reel_mevduat_yuksek_pct: 10.0   # > 10 → mevduat rekabetçi → alt kademe
     kademe_carpani_ust: 1.25
     kademe_carpani_alt: 0.75
+    # <-- KADEME KAPISI (ADR #012, 2026-08-11). false iken hüküm daima AL 1.00×;
+    # kural yine değerlendirilir ve "ne olurdu" gerekçede yazılır.
+    #
+    # KAPATMA GEREKÇESİ ÖLÇÜMDÜR, tercih değil:
+    #   · `reel_mevduat > %10` ateşlendiğinde ertelemenin ortalama gram kazancı
+    #     %-0.64 (N=22, t=1.03). Başa baş 0.00. Yani örneklem-İÇİ (en iyimser)
+    #     ölçümde bile kural gram KAYBETTİRİYOR — taramada çekirdek sütunu ❌.
+    #   · 0.75× kademenin beklenen aylık maliyeti 0.25 × (-0.64) ≈ -%0.16 gram.
+    #   · Canlı örneklem-DIŞI: 2026-07-27 → 08-10 arası -%1.55 gram (gram +%9.55).
+    #   · Kural 30/30 canlı tahminde ateşledi; kapı değişkeni %12.7-13.1 bandında
+    #     çakılı (eşik %10) → maliyet sürekli, kazanç hiç ölçülmedi.
+    #
+    # AÇILMA ŞARTI (önceden kayıtlı, sonradan gevşetilmez): aday taramasında
+    # kural çekirdek eşiğini (+1.99p) **N≥30 VE |t|≥2** ile geçmeli. O gün karne
+    # metriği de alım-şiddeti uzayına taşınmalı — bugünkü `gram.hukum_dogru_mu`
+    # SAT uzayında tanımlı ve `AL_*` için özdeş 0 üretir (L-010).
+    kademe_aktif: false
 
   taktik:                      # SAT / geri al — pahalı kol, DOĞUŞTAN KAPALI
     aktif: false               # <-- KAPI. Aşağıdaki şart sağlanmadan AÇILMAZ.
@@ -328,6 +345,15 @@ alerts:
   prim_z: 2.0                           # |z| > bu
   daily_move_atr: 2.0                   # günlük hareket > N × ATR
   spread_percentile: 90                 # makas > tarihsel pN -> bildirim
+  # Yüzdelik TEK BAŞINA eşik olamaz: pN tanımı gereği kayıtların %(100-N)'ini
+  # aşar, yani alarm piyasadan bağımsız olarak ~her gün ateşler. Ölçüldü
+  # 2026-08-11 (N=313 FRESH): medyan %0.0146 · p90 %0.0158 (medyanın 1.08 katı)
+  # · gözlenen en yüksek %0.0260 (1.78 katı). Teslim edilen 19 bildirimin 12'si
+  # bu kuraldandı ve hiçbiri sinyal değildi; üstelik günlük tavanı (6) yiyordu.
+  # Bu yüzden yüzdeliğin yanına MADDİ taban eklendi: makas medyanın bu katını da
+  # aşmalı. 2.0x'te 313 kaydın hiçbiri ateşlemezdi — doğrusu da bu, çünkü bu
+  # dönemde makas patlaması OLMADI. Gerçek stresde alarm yine çalışır. (ADR #012)
+  spread_min_medyan_carpani: 2.0
   quarter_z: 2.0                        # çeyrek primi |z| > bu
   cooldown_hours: 24                    # aynı sinyale soğuma
   daily_cap: 6                          # günlük toplam bildirim tavanı

@@ -6,6 +6,184 @@
 
 ---
 
+## #012 — 2026-08-11 — Bekleyen 4 karar kapatıldı: kademe KAPALI, gölge kol YAPILMAYACAK, makas eşiği maddi, reel faiz tabanı şeffaf
+
+**Tetikleyen:** Mert: *"bunları gerekli görüyorsan uygula veya uygulama … profesyonel
+bir BIST yatırımcısı gibi düşünebilirsin, nihai kararını ver ve gerekliyse harekete geç."*
+Denetimden (`ai/denetim-2026-08-11.md`) çıkan 4 açık karar aylardır TAKVİM'de
+bekliyordu. Hepsi **ölçümle** kapatıldı — tercihle değil.
+
+### A) ÇEKİRDEK KADEME → **KAPALI** (#010-B kapandı)
+
+| Ölçüm | Değer | Kaynak |
+|---|---:|---|
+| Kural `reel_mevduat > %10` tabana farkı | **+1.34p** | `data/aday_taramasi.json` |
+| Aynı kuralın ortalama gram kazancı | **%-0.64** | taban −1.987 + fark 1.343 |
+| Başa baş (çekirdek eşiği) | **0.00** (= +1.99p fark) | `esik_cekirdek_puan` |
+| N · t | 22 · **1.03** | tarama |
+| 0.75× kademenin beklenen aylık maliyeti | **-%0.16 gram** | 0.25 × (−0.64) |
+| Canlı örneklem-DIŞI (07-27 → 08-10) | **-%1.55 gram** | denetim §4 |
+| Kuralın canlı ateşleme oranı | **30/30 tahmin** | `predictions` |
+
+**Karar:** `karar.cekirdek.kademe_aktif: false`. Hüküm daima `AL` (1.00×).
+
+**Neden — yatırımcı gerekçesi:** amaç fonksiyonu **terminal gram** ve gram/TL'nin
+sürüklenmesi pozitif. Alımı sistematik geciktirmek, o sürüklenmeye karşı örtük bir
+kısa pozisyondur; ancak gerçek bir zamanlama kenarı varsa haklı çıkar. Burada kenar
+yok: kural örneklem-**içi** (yani olabilecek en iyimser) ölçümde bile ortalama
+**negatif** getiriyor — başa başı geçmiyor, yaklaşmıyor bile. t=1.03 gürültü.
+Projenin kendi tarama raporu zaten yazıyordu: *"farkı bu kadar yenemeyen bir kural,
+alımı geciktirdiği her ay gram kaybettirir."* İki tarafta da kayıp varsa karar
+kolaydır.
+
+**"Küçük ve simetrik, tutalım" argümanı ÖLÇÜMLE düştü:** simetrik değil. Üst kademe
+(`reel_mevduat < 0` → 1.25×) politika faizi %40'ta çakılıyken erişilemez; canlıda
+**30/30 kez alt kademe** ateşledi. Yani pratikte tek yönlü bir "az al" kuralıydı.
+
+**Mekanizma SİLİNMEDİ, kapıya bağlandı.** Çarpanlar config'te duruyor; açılma şartı
+önceden kayıtlı ve sonradan gevşetilmez: **tarama, kuralı N≥30 ve |t|≥2 ile
++1.99p'nin üstünde göstermeli.** Kapı açıldığı gün karne metriği de alım-şiddeti
+uzayına taşınmalı — bugünkü `gram.hukum_dogru_mu` SAT uzayında tanımlı ve `AL_*`
+için özdeş 0 üretir (L-010). Doğru formül şudur ve kanıtı basittir: ertelenen
+`(1−m)` pay giriş yerine çıkış fiyatından alınır, dolayısıyla
+
+> `gram_etkisi_cekirdek = (1 − carpan) × gram_carry_kazanc_pct`
+
+(`gram_carry_kazanc_pct` zaten `(giriş/çıkış)×(1+net faiz) − 1` olarak hesaplanıyor).
+Kontrol: id=19 tahmininde carry −4.871 → 0.25 × (−4.871) = **−1.22%**, ölçülen
+DCA sonucuyla (−1.55%) aynı işaret ve mertebe.
+
+**Kapatma SESSİZ değil:** kural yine değerlendirilir, hüküm bloğu "kademe AÇIK
+olsaydı alım 0.75× olurdu" + kapatma gerekçesini yazar. "Yapmadım" ile "yapacak bir
+şey yoktu" ayrı şeylerdir.
+
+### B) GÖLGE KOL → **YAPILMAYACAK** (#008-B kapandı)
+
+Bu bir erteleme değil, **ölçüme dayanan bir ret**. İki kol ayrı ayrı incelendi:
+
+**Taktik gölge kol → bilgi üretemez.** `karar.taktik_hukum`, kapı AÇIK olsa bile
+`beklenen_gram_kazanc_pct` üreticisi bağlı olmadığı için `TUT` döner
+(`_URETICI_YOK` dalı). Üretici yokluğu unutma değil ölçüm sonucudur: 458 haftalık
+asof üzerinde 14 aday tarandı, en iyisi +1.4p, gereken +3.18p (ADR #007-H). Yani
+gölge taktik kol **%100 TUT** kaydeder — bugünkü dejenere karnenin birebir aynısı.
+Sıfır bilgi için paralel bir kayıt yolu kurmak, karneye bulaşma riskini bedavaya
+almaktır.
+
+**Çekirdek gölge kol → gereksiz.** Kural **deterministik** ve girdilerinin TAMAMI
+zaten saklanıyor (`predictions.ozellikler_json` her tahminin tam özellik vektörünü
+tutuyor). Karşı-olgu bu yüzden **tam olarak yeniden üretilebilir**; `tahmin_backfill`
+bunu 458 haftalık asof üzerinde zaten yapıyor. Canlı gölge kol, arşiv büyüdükçe
+taramayı yeniden koşmanın vermediği hiçbir bilgi vermez.
+
+**Kural (genelleştirilebilir):** gölge kol, karşı-olgu **yeniden üretilemediğinde**
+gerekir (saklanmayan girdi, sürüklenen model ağırlığı, dış duruma bağlı karar).
+Deterministik + girdisi saklanan bir kuralda gölge kol, backtest'in pahalı ve
+kırılgan bir kopyasıdır. **Yeniden gözden geçir:** taktik kola gerçek bir
+beklenen-kazanç üreticisi bağlanırsa (o gün karşı-olgu artık trivially TUT olmaz),
+ya da karar saklanmayan bir girdiye bağlanırsa.
+
+### C) `makas > p90` → **MADDİ TABAN EKLENDİ**
+
+Ölçüm (2026-08-11, N=313 FRESH kayıt):
+
+| | Değer | Medyana oran |
+|---|---:|---:|
+| Medyan | %0.0146 | 1.00× |
+| p90 | %0.0158 | **1.08×** |
+| Gözlenen en yüksek | %0.0260 | 1.78× |
+
+Yüzdelik, **tanımı gereği** kayıtların %10'unu aşar. Seri dar ve durağan olduğu için
+"p90 aşıldı" cümlesi piyasa hakkında hiçbir şey söylemiyordu: alarm her gün
+ateşliyordu (teslim edilen 19 bildirimin **12'si** buydu, hepsi "%0.016 > p90
+(%0.016)") ve günlük tavanı (6) yiyordu. **L-010'un aynısı: girdiden bağımsız aynı
+çıktıyı üreten bir "ölçüm" ölçüm değil KİMLİKTİR.**
+
+**Karar:** kural susturulmadı, eşiği maddi hâle getirildi —
+`spread_min_medyan_carpani: 2.0`. Makas hem p90'ı hem **medyanın 2 katını** aşmalı.
+Bu eşikte 313 kaydın **hiçbiri** ateşlemezdi; doğrusu da bu, çünkü bu dönemde makas
+patlaması olmadı. Gerçek bir stresde (kaynak makası açar) alarm yine çalışır.
+
+**Yan düzeltme:** makas tabanı artık yalnız **FRESH** kayıtlardan hesaplanıyor.
+Filtre yoktu; hafta sonu/indicative satırlar yüzdeliği besliyordu, oysa z-skor kapısı
+yalnız FRESH sayıyor — aynı arşivden iki farklı taban çıkıyordu.
+
+### D) REEL FAİZ TABANI → **RAPORDA GÖRÜNÜR**
+
+Çekirdek kolun tek kapı değişkeni ve rapor dayanağını hiç söylemiyordu. `ozellikler.py`
+bilinçli olarak **12 ay beklentiyi** kullanıyor (TÜFE 8 aydır bayat; sessiz yedeğe
+düşme replay'de kesişim kuralını ihlal ederdi) — doğru bir mühendislik seçimi, ama
+sonuç tamamen bu seçime bağlı:
+
+| Taban | Değer | Kural |
+|---|---:|---|
+| 12 ay beklenti (kullanılan) | **%12.67** | tetikler (>%10) |
+| Gerçekleşen TÜFE (2025-12) | **%6.69** | tetiklemez |
+
+Rapor artık ikisini de yazıyor. Karar değişmedi, **şeffaflık** eklendi: okuyan
+sayının hangi seriden geldiğini ve alternatifin ne vereceğini görüyor.
+
+### E) TELEGRAM KOMUTLARI → **KABUL + BELGELE** (seçenek a)
+
+Üretim push-only; `/hukum` `/karne` `/grafik` yanıt vermiyor (long-polling'e kalıcı
+süreç lazım, cron'da yok). Üç seçenek vardı: (a) kabul + net uyarı, (b) `archive.yml`'a
+"bekleyen komutları yanıtla" adımı (gecikme ≤ ~3 saat), (c) kapsamdan çıkar.
+
+**Karar: (a).** Gerekçe risk/getiri:
+
+| | Ölçüm |
+|---|---|
+| Talep | Chat export'ta **4 ayda 3 komut** (2026-07-09 ×2, 07-26) |
+| İçerik fazlalığı | Komutların döndüğü her şey (HÜKÜM · karne · grafik · durum) zaten **günlük push raporunda** var |
+| (b)'nin maliyeti | `getUpdates` döngüsü **archive.yml**'a girer — 13 günlük sessiz kesintinin yaşandığı kritik yol. Yeni bir arıza modu, yeni bir `continue-on-error` yüzeyi |
+
+Ayda ~0.75 kullanımlık bir kolaylık için, az önce onardığımız yola yeni bir arıza
+modu eklemek kötü bir takas. **Yeniden gözden geçir:** komut kullanımı ayda 5'i
+geçerse (b) yeniden değerlendirilir.
+
+### F) Z-SKOR PROVASI İLK KEZ OKUNDU (karar değil, ÖLÇÜM — ~09-05'i besler)
+
+TAKVİM'deki "~2026-08-01 prova birikimini oku" işi yapıldı. N=17 prova
+(18 olmalıydı; 08-06'daki iptal edilen koşum bir satır götürdü):
+
+| Bulgu | Değer |
+|---|---|
+| **İki taban (kayıt/gün) aynı kararı verdi** | **17/17 prova** — ampirik fark YOK |
+| `prim |z|>2` tetiklerdi | **6/17 (%35)** — nominal beklenti ~%5 |
+| `çeyrek |z|>2` tetiklerdi | **3/17 (%18)** |
+| `std_gun` büyümesi | 0.081 → 0.589 = **7.2×** |
+| Gözlenen en uç z | **−6.06** (gün) / **−6.30** (kayıt) |
+
+**Yorum:** z=−6 bir anomali değil, **kısa taban artefaktı**. 07-29'da prim −0.63 →
+−2.43 rejim kayması yaptı; 16 günlük dar bir tabana (std 0.081) karşı ölçülünce z
+patladı. Taban genişledikçe (std 7.2×) aynı sapma normalleşti. Bu, provanın tam
+olarak yakalaması için var olduğu şey.
+
+**İki sonuç, ikisi de ~09-05'e taşınıyor (şimdi karar VERİLMİYOR — 17 örnekle karar
+vermek, kapattığımız kademe hatasının aynısı olurdu):**
+1. **Taban seçimi ampirik olarak fark etmiyor** → ilkeye göre seçilecek. Bugünkü
+   eğilim **gün tabanı**: (i) kapının kendisi gün sayıyor, iki farklı taban bir
+   sistemde karışmamalı; (ii) gün içi prim kayıtları seri korelasyonlu, onları
+   bağımsız örnek saymak etkin N'i şişirir ve |z|'yi olduğundan büyük gösterir;
+   (iii) kayıt tabanı Actions throttling'ine rehin (29 kayıtlı gün, 6 kayıtlı günün
+   5 katı ağırlık alır) — bu bilgi değil örnekleme artefaktı.
+2. ⚠️ **Kapı açılışında alarm seli riski.** %35 tetikleme oranı × günlük tavan 6 →
+   z alarmları diğerlerini bastırabilir. `alerts.prim_z: 2.0` eşiği ~09-05'te
+   **prova dağılımına bakılarak** yeniden değerlendirilmeli.
+
+**Doğrulama:** 851 test yeşil (845 → 851). 5 kontrollü mutasyon; biri
+(makas FRESH filtresi) **ilk turda kaçtı** — sebebi L-016'nın kendisiydi: hiçbir test
+filtreyi DB üzerinden görmüyordu. Rejimli veriyle (FRESH %0.010 · bayat %0.100) yeni
+test yazıldı, mutasyon yakalandı. Uçtan uca render (üretim DB'si): hüküm bloğu
+`NORMAL AL` + kapatma gerekçesi, makro bölümü taban + duyarlılık satırı.
+
+**Tekrar gözden geçir:** (a) tarama kuralı N≥30 ve |t|≥2 ile +1.99p'nin üstüne
+taşırsa kademe yeniden açılır; (b) taktik kola beklenen-kazanç üreticisi bağlanırsa
+gölge kol kararı yeniden değerlendirilir; (c) TÜFE serisi tazelenirse reel faiz
+tabanı seçimi yeniden tartışılır; (d) makas serisi rejim değiştirirse (kaynak
+değişimi, gerçek stres) 2.0× çarpanı yeniden ölçülür.
+
+---
+
 ## #011 — 2026-08-11 — Bildirim hattı: kaçış + izolasyon + görünürlük (sessiz arıza sınıfı kapatıldı)
 
 **Tetikleyen:** Mert: *"proje uzun zamandır kendi çalışıyor, kaliteli sonuçlar

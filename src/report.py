@@ -96,6 +96,32 @@ def archive_health(cfg, hours: int = 24) -> dict:
             "ardisik_basarisiz": max(0, consec_fail)}
 
 
+def reel_faiz_tabani_satiri(ctx: dict) -> list[str]:
+    """Reel net mevduatın HANGİ enflasyon serisiyle hesaplandığını + duyarlılığını yazar.
+
+    NEDEN VAR (denetim 2026-08-11): bu tek sayı çekirdek kolun tek kapı
+    değişkeni ve rapor dayanağını hiç söylemiyordu. `ozellikler.py` bilinçli
+    olarak **12 ay beklentiyi** kullanıyor (TÜFE serisi bayat; sessiz yedeğe
+    düşme replay'de kesişim kuralını ihlal ederdi) — doğru bir seçim, ama
+    SONUCU tamamen bu seçime bağlı: ölçüldü, beklentiyle %12.85 (kural
+    tetikler), gerçekleşen TÜFE ile %6.87 (tetiklemez). Okuyan bunu görmeden
+    sayıya güvenemez.
+    """
+    bek, brut = ctx.get("enf_bek_12ay"), ctx.get("mevduat_1yil_brut")
+    net = ctx.get("mevduat_1yil_net")
+    if bek is None or net is None:
+        return []
+    out = [f"  - _Taban: **12 ay enflasyon BEKLENTİSİ** ({bek:.2f}%) — "
+           f"gerçekleşen TÜFE değil._"]
+    tufe = ctx.get("tufe_yoy")
+    if tufe is not None:
+        alt = ((1 + net / 100) / (1 + tufe / 100) - 1) * 100
+        tar = ctx.get("tufe_date", "")
+        out.append(f"  - _Duyarlılık: gerçekleşen TÜFE ({tufe:.2f}%, {tar}) "
+                   f"kullanılsaydı **{alt:+.2f}%** olurdu._")
+    return out
+
+
 def bildirim_saglik_metni(saglik: dict) -> str:
     """Bildirim hattı arıza defterini rapor satırına çevirir (saf, testli).
 
@@ -306,6 +332,7 @@ def build_report(cfg: dict) -> str:
         if "reel_net_mevduat" in ctx:
             lines.append(f"- **Reel net mevduat faizi: {_fmt(ctx['reel_net_mevduat'],'%',2)}** "
                          f"(altın tutmanın fırsat maliyeti)")
+            lines += reel_faiz_tabani_satiri(ctx)
         lines.append("")
 
     # ---- Kadran / gösterge uzlaşı paneli (E.2) ----

@@ -11,14 +11,24 @@ import pytest
 from src import karar, util
 
 CFG = util.load_config()
-ESIK = CFG["karar"]["cekirdek"]
+ESIK_URETIM = CFG["karar"]["cekirdek"]          # üretim: kademe KAPALI (ADR #012)
+
+# Kademe MEKANİZMASININ testleri kapıyı açık kullanır. ADR #012 kademeyi
+# üretimde kapattı ama mekanizmayı SİLMEDİ — açılma şartı config'te kayıtlı.
+# Mekanizma denetimsiz kalırsa, kapı bir gün açıldığında bozuk açılır.
+ESIK = {**ESIK_URETIM, "kademe_aktif": True}
 
 
-def _cfg(**taktik):
-    """config kopyası — testler gerçek config'i bozmasın."""
+def _cfg(kademe_aktif: bool = False, **taktik):
+    """config kopyası — testler gerçek config'i bozmasın.
+
+    `kademe_aktif` varsayılanı **False**: üretimin gerçek hâli (ADR #012).
+    Mekanizmayı sınayan testler bunu açıkça True geçer.
+    """
     import copy
     c = copy.deepcopy(CFG)
     c["karar"]["taktik"].update(taktik)
+    c["karar"]["cekirdek"]["kademe_aktif"] = kademe_aktif
     return c
 
 
@@ -153,10 +163,34 @@ def test_taktik_engel_olcumu_yoksa_tut():
 
 # ---------- birleşik ----------
 def test_karar_ver_iki_kol_da_uretir():
+    """ÜRETİM yapılandırması: kademe kapalı → çekirdek AL 1.00× (ADR #012)."""
     k = karar.karar_ver({"reel_net_mevduat": 12.7}, _cfg(aktif=False), _engel())
-    assert k["cekirdek"]["hukum"] == karar.AL_AZ
+    assert k["cekirdek"]["hukum"] == karar.AL
+    assert k["cekirdek"]["carpan"] == 1.0
     assert k["taktik"]["hukum"] == karar.TUT
     assert k["kapi"]["acik"] is False
+
+
+def test_karar_ver_kademe_acikken_eski_davranis_korunur():
+    """Mekanizma silinmedi, kapıya bağlandı — açılırsa AL_AZ üretmeli."""
+    k = karar.karar_ver({"reel_net_mevduat": 12.7},
+                        _cfg(kademe_aktif=True, aktif=False), _engel())
+    assert k["cekirdek"]["hukum"] == karar.AL_AZ
+    assert k["cekirdek"]["carpan"] == 0.75
+
+
+def test_uretim_configinde_kademe_KAPALI():
+    """KİLİT (ADR #012): config'te kapı sessizce yeniden açılmasın.
+
+    Açılma şartı önceden kayıtlı: aday taramasında `reel_mevduat > %10` kuralı
+    çekirdek eşiğini (+1.99p) **N≥30 VE |t|≥2** ile geçmeli. Bugün: +1.34p,
+    N=22, t=1.03 → geçmiyor. Bu test o şartın bekçisidir.
+    """
+    assert ESIK_URETIM["kademe_aktif"] is False, (
+        "kademe üretimde yeniden açılmış — ADR #012'deki açılma şartı sağlandı mı?")
+    # Çarpanlar SİLİNMEDİ: kapı açıldığında kullanılacaklar.
+    assert ESIK_URETIM["kademe_carpani_alt"] == 0.75
+    assert ESIK_URETIM["kademe_carpani_ust"] == 1.25
 
 
 def test_karar_ver_engelsiz_de_cokmez():

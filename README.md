@@ -39,11 +39,17 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
 - **Karar:** raporun en başında **HÜKÜM** — bu ay ne kadar al (çekirdek) + satılır
   mı (taktik, doğuştan kapalı kapı). Amaç fonksiyonu **terminal gram sayısı**;
   ölçüm `reports/gram_engeli.md`. Bkz. `ai/DECISIONS.md` #007.
-  ⚠️ **Çekirdek kademesi (0.75×/1.25×) ölçülmüş bir kenara dayanmıyor** ve hüküm
-  bloğu bunu her gün yazıyor: kademeyi üreten `reel_mevduat > %10` kuralı
-  örneklem-içi taramada **+1.34p**, başa baş eşiği **+1.99p** (t=1.03).
-  İki eşik `reports/gram_aday_taramasi.md`'de ayrı sütun olarak raporlanır —
-  taktik makas öder (+3.18p), çekirdek ödemez (+1.99p). Bkz. ADR #010-B.
+  ✅ **Çekirdek kademesi 2026-08-11'de KAPATILDI (ADR #012)** — hüküm artık daima
+  `NORMAL AL` (1.00×); alım planına dokunulmuyor. Kapatma gerekçesi ölçüm:
+  kademeyi üreten `reel_mevduat > %10` kuralı ateşlendiğinde ertelemenin ortalama
+  gram kazancı **%-0.64** (N=22, t=1.03) — başa baş **0.00**'ın ALTINDA, yani
+  örneklem-**içi** (en iyimser) ölçümde bile gram kaybettiriyor. Canlı
+  örneklem-dışı doğrulama (2026-07-27 → 08-10, gram +%9.55): **-%1.55 gram**.
+  Mekanizma silinmedi, `karar.cekirdek.kademe_aktif: false` kapısına bağlandı;
+  açılma şartı config'te kayıtlı (**N≥30 ve |t|≥2 ile +1.99p**). Kural yine
+  değerlendirilir ve hüküm bloğu "kademe açık olsaydı 0.75× olurdu" diye yazar.
+  İki eşik `reports/gram_aday_taramasi.md`'de ayrı sütun — taktik makas öder
+  (+3.18p), çekirdek ödemez (+1.99p).
 - **Karne:** verilen her hüküm `predictions` tablosuna **değiştirilemez** yazılır
   (SQLite trigger), vadesi gelince gram uzayında otomatik çözülür. `/karne` ile
   okunur.

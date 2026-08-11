@@ -4,11 +4,11 @@
 > KISA TUT: ~100 satırı aşınca eskiyi `ai/archive/STATE-YYYY-MM.md`'ye taşı.
 
 **Son güncelleme:** 2026-08-11
-**Aktif milestone:** **Bildirim hattı onarıldı ve ÜRETİMDE doğrulandı**
-(ADR #011, L-018). 2026-07-29 → 08-10 arası hiçbir anomali bildirimi gitmemişti
-(125 koşu, hepsi yeşil); `9ebf868` sonrası üretim koşumu **"2 tetik, 2 gönderildi,
-0 HATA"** dedi — 13 günlük sessiz kesinti bitti.
-Sırada **karne tabanı kararı** — karne hâlâ yapısal olarak hiçbir şey ölçmüyor.
+**Aktif milestone:** **Bildirim hattı onarıldı (ADR #011) + bekleyen 4 karar
+kapatıldı (ADR #012).** Kesinti bitti (üretim: "2 tetik, 2 gönderildi, 0 HATA").
+Çekirdek **kademe KAPALI** → hüküm daima `NORMAL AL` 1.00×; gölge kol ölçümle
+**reddedildi**; makas alarmına maddi taban; reel faiz tabanı raporda görünür.
+Sırada **bekleme** — z-skor kapısı (~09-14) ve karne birikimi.
 
 ---
 
@@ -41,10 +41,13 @@ Kırmızı bir "KİLİT TEST" neredeyse daima haklıdır.
 Raporun en başında **HÜKÜM** bloğu var. İki kol: **ÇEKİRDEK** (aylık alım
 şiddeti, AÇIK) + **TAKTİK** (sat/geri al, **doğuştan kapalı**).
 Ölçüldü: satmak 1 ayda ortalama **−1.99% gram** kaybettiriyor. İki eşik var ve
-**ikisi de aşılamadı** (ADR #010-B): taktik **+3.18p** (makas öder), çekirdek
-**+1.99p** (ödemez). Çekirdek kademesini üreten `reel_mevduat > %10` kuralı
-**+1.34p** (N=22, t=1.03) → kendi eşiğinin ALTINDA; hüküm bloğu bunu her gün
-beyan ediyor. Ölçüm: `reports/gram_engeli.md`, `reports/gram_aday_taramasi.md`
+**ikisi de aşılamadı**: taktik **+3.18p** (makas öder), çekirdek **+1.99p** (ödemez).
+✅ **Çekirdek kademesi 2026-08-11'de KAPATILDI (ADR #012)** — kuralı üreten
+`reel_mevduat > %10` ateşlendiğinde ertelemenin ort. gram kazancı **%-0.64**
+(N=22, t=1.03), başa baş 0.00'ın ALTINDA; canlı doğrulama **-%1.55 gram**.
+Hüküm artık daima `NORMAL AL` (1.00×); kural yine değerlendirilip "açık olsaydı
+0.75× olurdu" diye yazılıyor. **Her iki kol da artık alım/satım planına
+DOKUNMUYOR** — sistem ölçemediği hiçbir şeye göre davranmıyor. Ölçüm: `reports/gram_engeli.md`, `reports/gram_aday_taramasi.md`
 + `data/gram_engeli.json`, `data/aday_taramasi.json` (önbellek).
 
 **GRAFİK (ADR #010-A):** `chart.measure_edge` tabanı artık TÜM fazlardan ölçer;
@@ -78,17 +81,17 @@ koşmuyor. README bunu yazıyor, ama `telegram_chat.json` gösteriyor ki Mert
 |---|:--:|---|---|:--:|
 | **Her oturum başı** | 🤖 | `git fetch` + yerel/uzak farkı kontrol et | Yerel güncel; "sistem durdu" teşhisi ham veriye dayanıyor (L-001) | ♻️ |
 | **Her oturum başı** | 🤖 | ⚠️ `git status` — **commit'lenmemiş kaynak var mı?** | Çalışma ağacında bekleyen `src/` değişikliği YOK, ya da varsa Mert'e soruldu. **Ölçüldü 2026-08-11: ADR #010'un TAMAMI (3 fonksiyon + 2 veri dosyası) 13 gündür commit'lenmemiş, üretimde yok.** Belge "yapıldı" derken repo "yapılmadı" diyordu; `HEAD↔origin` farkına bakmak bunu YAKALAMAZ (§2.5) | ♻️ |
-| **2026-07-29** | 👤 | ⚠️ **KADEME KARARI** (ADR #010-B) — açık kolun kuralı kendi eşiğini geçemiyor | Karar verildi: `karar.cekirdek` kademesi (0.75×/1.25×) **kalsın mı, 1.0×'a mı düşsün**? Ölçüm: kural +1.34p, başa baş +1.99p, t=1.03. Kalırsa "ölçülmemiş ama küçük ve simetrik, tutuyoruz" ADR'si; kalkarsa `kademe_carpani_*: 1.0`. **Yapmamak da karardır ama YAZILMALI** | ⏳ |
-| **2026-07-29** | 👤 | **Telegram komutları kararı** | `/hukum` `/karne` `/grafik` üretimde yanıt vermiyor (push-only). Üç seçenekten biri seçildi: (a) kabul + PROJECT.md/README'de net uyarı, (b) `archive.yml`'a "bekleyen komutları yanıtla" adımı (gecikme ≤ ~3 saat), (c) komutları kapsamdan çıkar | ⏳ |
-| **~2026-08-01** | 👤 | Prova birikimini ilk kez oku (≈7 satır) | z dağılımı görülebiliyor; `tetiklenir_gun` kaç kez `true` olmuş sayıldı | ⏳ |
-| **2026-08-11** | 👤 | ⚠️ **KARNE TABANI KARARI** (denetimden çıktı, ADR #010-B/#008-B ile aynı kök) | Çekirdek kolun tabanı "hep TUT" olduğu için `gram_etkisi` 8/8 çözümde **0.000**; 60 tahminin 60'ı aynı. Taban **"hep 1.0× al"** yapılırsa kademenin gerçek gram bedeli ölçülür (07-27→08-10 penceresinde **−%1.55**). Karar: taban değişsin mi? | ⏳ |
+| ~~2026-07-29~~ | 👤 | ~~KADEME KARARI (ADR #010-B)~~ | **KAPATILDI (ADR #012).** `kademe_aktif: false` → hüküm daima `NORMAL AL` 1.00×. Ölçüm: kural ateşlendiğinde ertelemenin ort. gram kazancı **%-0.64** (N=22, t=1.03) — başa baş 0.00'ın ALTINDA; canlı doğrulama **-%1.55 gram**. "Simetrik" savı da düştü: üst kademe erişilemez, 30/30 alt kademe ateşledi. Mekanizma silinmedi, açılma şartı config'te (N≥30 ve \|t\|≥2 ile +1.99p) | ✅ 08-11 |
+| ~~2026-07-29~~ | 👤 | ~~Telegram komutları kararı~~ | **(a) KABUL + BELGELE (ADR #012-E).** Ölçüm: 4 ayda 3 komut kullanımı; komutların döndüğü her şey zaten günlük push raporunda var; (b) seçeneği `getUpdates` döngüsünü **archive.yml**'a — 13 günlük kesintinin yaşandığı kritik yola — sokardı. Ayda ~0.75 kullanım için yeni arıza modu kötü takas. Yeniden gözden geçir: kullanım ayda 5'i geçerse | ✅ 08-11 |
+| ~~~2026-08-01~~ | 👤 | ~~Prova birikimini ilk kez oku~~ | **OKUNDU (ADR #012-F), N=17.** İki taban (kayıt/gün) **17/17 provada aynı kararı** verdi → seçim ampirik değil ilkesel olacak. `prim |z|>2` **6/17 (%35)** tetiklerdi (nominal ~%5); sebep kısa taban artefaktı: 07-29 rejim kaymasında z=−6.06, sonra `std_gun` 7.2× büyüyünce normalleşti. **İki sonuç da ~09-05'e taşındı** | ✅ 08-11 |
+| ~~2026-08-11~~ | 👤 | ~~KARNE TABANI KARARI~~ | **ŞİMDİLİK GEREKSİZ (ADR #012).** Kademe kapandığı için çekirdek kol artık sapma üretmiyor (carpan ≡ 1.0) → ölçülecek fark YOK; metriği değiştirmek dead code olurdu (YAGNI). Doğru formül ADR #012-A'ya YAZILDI ve kademe yeniden açılmasının ÖN ŞARTI yapıldı: `gram_etkisi_cekirdek = (1 − carpan) × gram_carry_kazanc_pct` | ✅ 08-11 |
 | **2026-09-14 ±3 gün** | 👤 | 🔴 **KAPI GÜNÜ CANLI DOĞRULAMA** — `prim_z` ilk kez ateşlenecek | Kapı açıldığı gün Telegram'a `prim_z` bildirimi GELDİ mi bakıldı. Metni `(|z|<1)` içeriyor; kaçış düzeltmesi (ADR #011) tam bu yolu koruyor ama canlıda hiç ateşlenmedi. Gelmezse `data/alert_state.json → saglik` ve Actions logu | ⏳ |
 | ~~2026-08-03~~ | 👤 | ~~İlk canlı çözümü doğrula~~ | **Ölçüldü 08-11:** `prediction_outcomes`=8 satır, zincir (kaydet→giriş→çözüm) canlıda tam döndü. `gram_carry_kazanc_pct` −4.87…+0.16 aralığında, makul. ⚠️ Ama `gram_etkisi` 8/8 **0.000** → yukarıdaki taban kararı | ✅ 08-11 |
-| **~2026-09-05** | 👤 | ⚠️ **Z TABANI KARARI** — kapıdan ~1 hafta önce, en kritik iş | `data/zskor_prova.jsonl` okundu; z **kayıt** tabanında mı **gün** tabanında mı hesaplanacak karara bağlandı; ADR yazıldı; kod tek tabanı kullanıyor | ⏳ |
+| **~2026-09-05** | 👤 | ⚠️ **Z TABANI + EŞİK KARARI** — kapıdan ~1 hafta önce, en kritik iş | (1) Taban: kayıt mı gün mü? **08-11 ölçümü: 17/17 provada iki taban aynı kararı verdi** → ilkeye göre seç; ADR #012-F gün tabanını öneriyor (kapı gün sayıyor · gün içi kayıtlar seri korelasyonlu, etkin N'i şişirir · kayıt tabanı Actions throttling'ine rehin). (2) ⚠️ **EŞİK:** provada `|z|>2` **%35** tetikledi (nominal %5), günlük tavan 6 → kapı açılışında z alarmları diğerlerini bastırabilir. `alerts.prim_z` prova dağılımına bakılarak yeniden ölçülmeli. DoD: ADR yazıldı, kod tek tabanı kullanıyor, eşik gerekçeli | ⏳ |
 | **~2026-09-12** | 🤖 | 🔔 **KAPI AÇILIŞI** (60 geçerli gün) | prim z + çeyrek z sinyalleri ve `z > 2` bildirimi kendiliğinden devreye girer. Kod hazır, **ek iş yok** | ⏳ |
 | **2026-09-12 → 09-19** | 👤 | Kapı sonrası ilk hafta izleme | Günlük tavan (6) doluyor mu? z alarmları diğerlerini bastırıyor mu? Gerekirse `alerts.prim_z` ayarlanır | ⏳ |
-| **~2026-10 (ÖNCE)** | 👤 | ⚠️ **GÖLGE KOL KARARI** (ADR #008-B) — karne ölçüm üretemiyor | Gölge kol yapılacak mı karara bağlandı. **Yapılmazsa Ekim'deki kapı kararı ölçüme dayanamaz**; o zaman "kalıcı kapalı" ADR'si ölçüm değil **KABUL** olarak yazılır ve öyle yazıldığı belirtilir | ⏳ |
-| **~2026-10** (≈30 çözülmüş tahmin) | 👤 | ⚠️ **TAKTİK KAPI KARARI** | `karne` okundu; şart (N≥30 **ve** gram etkisi>0 **ve** isabet farkı>+10p) sağlandı mı? Sağlandıysa `karar.taktik.aktif: true` + ADR. Sağlanmadıysa "trade kolu kalıcı kapalı" ADR'si — **bu da bir sonuçtur** | ⏳ |
+| ~~~2026-10 (ÖNCE)~~ | 👤 | ~~GÖLGE KOL KARARI (ADR #008-B)~~ | **YAPILMAYACAK — ölçüme dayanan RET (ADR #012-B).** (a) Taktik gölge kol %100 `TUT` kaydederdi: `taktik_hukum` kapı açıkken bile `_URETICI_YOK` dalından TUT döner (14 aday tarandı, en iyi +1.4p vs +3.18p). Sıfır bilgi. (b) Çekirdek gölge kol gereksiz: kural deterministik ve `ozellikler_json` tam özellik vektörünü saklıyor → karşı-olgu `tahmin_backfill` ile TAM yeniden üretilebilir. Yeniden gözden geçir: taktik kola beklenen-kazanç ÜRETİCİSİ bağlanırsa | ✅ 08-11 |
+| **~2026-10** (≈30 çözülmüş tahmin) | 👤 | ⚠️ **TAKTİK KAPI KARARI** | ⚠️ ADR #012-B'den sonra şart matematiksel olarak SAĞLANAMAZ: kol hiç SAT üretmediği için gram etkisi ≡ 0 kalır. Dolayısıyla o gün verilecek karar "kalıcı kapalı" olacak ve **ölçüm değil KABUL** olarak yazılmalı. Gerçek şart şudur: **önce taktik kola beklenen-kazanç üreticisi bağlanmalı** (bugün yok, sebebi ölçüm — ADR #007-H). Üretici yoksa kapı tartışması açılmaz | ⏳ |
 | **~2026-10** (3 ay yeni veri) | 👤 | `python -m src.gram engel` tazele | `data/gram_engeli.json` yeni tarihli; taban ve eşikler değişti mi bakıldı | ⏳ |
 | **İlk uygun oturum** | 👤 | `ai/PROFILE.md` eksiklerini doldur | "öğrenmek istedikleri" ve "çalışma alışkanlıkları" alanları dolu (Usta sorup doldurur) | ⏳ |
 | **~2027-02** (~200 rapor) | 👤 | `reports/` yıl klasörlerine böl | `reports/2026/`, `reports/2027/`; README yolu güncel | ⏳ |
@@ -137,25 +140,22 @@ takvim günü → **~2026-09-14** (tahmin değişmedi). Gerçek ilerleme günlü
 - İlk canlı çözüm → ~08-03
 
 ## 🎯 Sıradaki 3 İş
-1. **Karne tabanı + kademe kararı (ADR #010-B) — 👤 Mert.** İkisi tek karar oldu.
-   Denetim ölçtü: çekirdek kol 30/30 `AL_AZ` üretti, altın aynı dönemde **%+9.55**
-   koştu, 0.75× kademenin gram bedeli **−%1.55** — ve karne bunu **0.000** yazdı,
-   çünkü tabanı "hep TUT". Seçenekler: (a) taban "hep 1.0× al" yapılsın → karne
-   ilk kez gerçek bir şey ölçer; (b) `kademe_carpani_ust/alt: 1.0` → sistem
-   ölçemediği sürece alım planına dokunmasın; (c) kademe kalsın + "ölçülmemiş ama
-   dar, tutuyoruz" ADR'si. DoD: karar ADR'ye işlendi. **Yapmamak da karardır.**
-   _Not: "Kademenin kanıtı" satırı artık üretimde gerçekten basılıyor (ADR #011) —
-   07-29 → 08-10 arası 7/7 raporda YOKTU, dosya commit'lenmemişti._
-2. **Gölge kol kararı (ADR #008-B).** Kapı kapalıyken kol yalnız TUT ürettiği
-   için karne asla ölçüm içeremez — döngü GÖRÜNÜR kılındı ama KIRILMADI.
-   Kırmak için "kapı açık olsaydı ne derdim" hükmünü ayrı bir kola kaydetmek
-   gerekiyor. DoD: karar verildi ve ADR'ye işlendi (yapmamak da bir karardır).
-   _Not: #010-B ile aynı kökten — ikisi de "ölçemediğim şeyi nasıl raporlarım"._
-3. **İlk canlı çözümü doğrula (~2026-08-03).** İlk tahmin asof=2026-07-24 ile
-   yazıldı, 1-hafta ufku ~5 işlem günü sonra çözülür. DoD:
-   `prediction_outcomes`'ta satır var, karne "1 çözülmüş" diyor. Zincirin
-   (kaydet→giriş→çözüm) canlıda ilk tam dönüşü. Faz F ~Ekim'de karneye bakılıp
-   verilecek karar; Faz G (MTF) **askıda** (Faz E aday bulamadı).
+
+> ⚠️ Üçü de **bekleme** — kodlanacak açık iş kalmadı. ADR #011 + #012 ile hem
+> sessiz arıza sınıfı hem 4 bekleyen karar kapandı.
+
+1. **Z-skor kapısı (~2026-09-14) — 🤖 kendiliğinden.** 30/60 geçerli gün, hız
+   0.857. Kapı açılınca `prim_z` **canlıda ilk kez** ateşlenecek; metni `(|z|<1)`
+   içeriyor ve tam o yolu ADR #011'in kaçış düzeltmesi koruyor — ama canlıda hiç
+   sınanmadı. DoD: kapı günü Telegram'a `prim_z` bildirimi geldi (TAKVİM'de).
+2. **Z tabanı kararı (~2026-09-05) — 👤 Mert.** Kapıdan ~1 hafta önce
+   `data/zskor_prova.jsonl` okunacak: z **kayıt** tabanında mı **gün** tabanında mı?
+   DoD: ADR yazıldı, kod tek tabanı kullanıyor.
+3. **Aday taramasını tazele (~2026-10, 3 ay yeni veri) — 👤 Mert.** Bu, kademe
+   kapısının **açılma şartının** ölçüldüğü yer: `reel_mevduat > %10` kuralı
+   +1.99p'yi N≥30 **ve** |t|≥2 ile geçiyor mu? Bugün +1.34p / N=22 / t=1.03.
+   DoD: `data/aday_taramasi.json` yeni tarihli; şart sağlandıysa ADR #012-A
+   yeniden değerlendirilir, sağlanmadıysa kademe kapalı kalır.
 
 ## 📦 Backlog (şimdi değil, unutma da)
 - **Truncgil'e yedek kaynak** (2026-07-29 ölçümü) — geçersiz kayıtların %100'ü

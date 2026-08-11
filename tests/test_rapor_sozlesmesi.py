@@ -309,3 +309,24 @@ def test_hat_saglikliyken_tam_rapor_uyari_basmiyor(rapor_ortami):
                     {"last_sent": {}, "daily": {}, "saglik": {"ardisik_hata": 0}})
     metin = _rapor(cfg, prim_gun=40)
     assert "BİLDİRİM HATTI ARIZALI" not in metin
+
+
+# ---------- Reel faiz TABANI görünür olmalı (denetim 2026-08-11) ----------
+def test_reel_faiz_hangi_enflasyonla_hesaplandi_YAZILIYOR():
+    """KİLİT: çekirdek kolun TEK kapı değişkeni bu sayı ve sonuç tamamen
+    hangi enflasyon serisinin seçildiğine bağlı. Rapor dayanağı söylemiyorsa
+    okuyan sayıya güvenemez."""
+    ctx = {"enf_bek_12ay": 23.95, "mevduat_1yil_brut": 46.92,
+           "mevduat_1yil_net": 39.88, "tufe_yoy": 30.89, "tufe_date": "2025-12-01"}
+    s = " ".join(report.reel_faiz_tabani_satiri(ctx))
+    assert "BEKLENTİSİ" in s and "23.95" in s, "hangi seri kullanıldığı yazılmalı"
+    assert "30.89" in s and "2025-12-01" in s, "alternatif seri ve tarihi yazılmalı"
+    # Duyarlılık: gerçekleşen TÜFE ile (1.3988/1.3089-1) = %+6.87
+    assert "+6.87" in s, f"duyarlılık yanlış hesaplandı: {s}"
+
+
+def test_reel_faiz_tabani_tufe_yokken_cokmez():
+    ctx = {"enf_bek_12ay": 23.95, "mevduat_1yil_net": 39.88}
+    s = report.reel_faiz_tabani_satiri(ctx)
+    assert len(s) == 1 and "BEKLENTİSİ" in s[0]
+    assert report.reel_faiz_tabani_satiri({}) == []

@@ -11,6 +11,54 @@
 
 ---
 
+## L-019 — Döngüsel test, kaynağın altındaki enstrümanın değişmesini göremez
+
+**Olay:** Sistemin çekirdek metriği, bir fiyat sağlayıcısından gelen "sürekli"
+görünen bir seriye dayanıyordu. Sağlayıcı, sembolü değiştirmeden **altındaki
+enstrümanı değiştirdi** (vadeli bir kontratın vadesi doldu, kotasyon bir sonraki
+vadeye atladı). İki enstrüman arasındaki taşıma maliyeti farkı metriğe doğrudan
+girdi ve metrik haftalarca sabit bir hatayla ölçüldü. **Kod değişmedi, kaynak
+değişti.** Bu arada eşik-tabanlı bir alarm günlerce boşuna ateşledi.
+
+**Neden yüzlerce test yakalamadı — hepsi DÖNGÜSELDİ:**
+
+```
+beklenen = formul(girdi_a, girdi_b)
+assert kayitli_sonuc == beklenen
+```
+
+Bu, **aritmetiğin doğru yapıldığını** doğrular; girdinin doğru şeyi ölçtüğünü
+değil. Girdi yanlış kaynaktan gelse test yine yeşildir. Türetilmiş bir büyüklüğü
+kendi girdileriyle sınamak ölçüm değil **totolojidir**.
+
+**İşin acısı:** bağımsız tanık zaten sistemin içindeydi — başka bir kaynak aynı
+büyüklüğü ayrıca veriyordu ve bir test onu ayrıştırmayı bile biliyordu. Kimse
+iki ucu birbirine bağlamamıştı.
+
+**Ders:** Dış dünyadan gelen her seri için iki soru sorulur:
+
+> 1. *"Bu sayının doğruluğunu, onu üreten kaynaktan **bağımsız** neyle sınıyorum?"*
+> 2. *"Bu sembol sabit bir şeyi mi gösteriyor, yoksa altındaki değişebilir mi?"*
+
+Birincinin cevabı yoksa seri denetimsizdir. İkincisi özellikle vadeli kontratlar,
+endeksler, "sürekli" seriler ve birleşik göstergeler için kritiktir: **ticker aynı
+kalır, gösterdiği şey değişir.**
+
+**Kurallar:**
+- Çekirdek bir metriği besleyen seri, **ikinci bir kaynağa karşı** çapraz
+  kontrol edilmeden üretime alınmaz; kontrol bir test olarak kilitlenir.
+- Tercihen aynı büyüklüğün iki bacağı **tek kaynaktan ve tek zaman damgasından**
+  alınır — kaynaklar arası zaman kayması da böylece ölür.
+- Bilinen-yanlış bir kaynağa **sessiz yedek** konmaz: yanlış bir değer,
+  değersizlikten kötüdür. Veri yoksa kayıt "geçersiz" işaretlenir.
+- Bir seri geçmişe dönük kirlendiyse **ham arşiv düzeltilmez** (uydurma olur);
+  kirli aralık işaretlenip türev hesaplardan düşülür.
+
+**Anti-pattern:** tek kaynaktan gelen bir seriyi yalnız kendi içindeki
+aritmetikle test etmek.
+
+---
+
 ## L-018 — Teslim yolunu test etmiyorsan sistem konuşmadan "çalışır"
 
 **Olay:** Otonom bir sistem raporunu her gün teslim etmeye devam ederken, uyarı

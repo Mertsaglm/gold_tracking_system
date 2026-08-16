@@ -45,12 +45,17 @@ def local_today(offset_hours: int = 3) -> str:
 
 # ---------- TR sayı ayrıştırma ----------
 def parse_tr_number(s: Any) -> Optional[float]:
-    """'6.247,17' -> 6247.17 ; '46,8366' -> 46.8366 ; '%-0,34' -> -0.34."""
+    """'6.247,17' -> 6247.17 ; '46,8366' -> 46.8366 ; '%-0,34' -> -0.34.
+
+    '$' de düşer: Truncgil ons alanını '$4.376,71' biçiminde veriyor (TL
+    alanlarında para birimi işareti yok). İşaret düşmeseydi ons sessizce None
+    kalırdı ve prim yfinance'in vadeli kontratına geri düşerdi.
+    """
     if s is None:
         return None
     if isinstance(s, (int, float)):
         return float(s)
-    t = str(s).strip().replace("%", "").replace(" ", "").replace(" ", "")
+    t = str(s).strip().replace("%", "").replace("$", "").replace(" ", "").replace(" ", "")
     if t in ("", "-", "N/A", "null", "None"):
         return None
     # nokta = binlik ayraç, virgül = ondalık

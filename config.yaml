@@ -29,6 +29,13 @@ sources:
     # Truncgil JSON anahtar eşlemesi (şema değişirse buradan güncelle)
     keys:
       usd: "USD"
+      # ons SPOT (XAU/USD). Prim'in teorik bacağı bundan hesaplanır.
+      # 2026-08-15 ölçümü: yfinance `GC=F` hafta içi ARALIK VADELİ kontratı
+      # (GCZ26, spot+%1.39) döndürüyordu; 2026-07-29'daki kontrat roll'ünden beri
+      # prim 1.25 puan sahte iskonto gösteriyor ve |prim|>%1.5 alarmı her gün
+      # yanlış ateşliyordu. Truncgil ons ile gram AYNI kaynaktan ve AYNI
+      # zaman damgasıyla gelir → kaynaklar arası zaman kayması da biter.
+      ons: "ons"
       gram_altin: "gram-altin"          # perakende gram (saflık düzeltmesi GEREKTİRİR)
       gram_has_altin: "gram-has-altin"  # has (saf) referans — prim bunun üzerinden
       ceyrek: "ceyrek-altin"
@@ -124,6 +131,29 @@ stats:
   # tetiklenmediğini önceden bilmek (bkz. signals.zscore_dry_run).
   zskor_prova_aktif: true
   zskor_prova_dosyasi: "data/zskor_prova.jsonl"
+  # ---- KİRLİ KAYNAK PENCERELERİ (ADR #013) ----
+  # Bu aralıklardaki prim kayıtları `indicative=1` işaretlenir → z-skor tabanına
+  # ve 60 günlük kapı sayacına GİRMEZ. Kayıt SİLİNMEZ, yalnız tabandan düşer.
+  #
+  # Neden gerekli (ölçüldü 2026-08-15/16): z-skor GENİŞLEYEN pencere kullanıyor
+  # (calc.zscore + db.prim_series), yani kirli günler asla dışarı çıkmaz. 15 kirli
+  # gün bırakılsaydı kapı gününde std 0.097 yerine 0.522 olurdu → tespit eşiği
+  # 0.22 puandan 1.05 puana çıkar, detektör 5 KAT SAĞIRLAŞIRDI. Gerçek bir
+  # 1 puanlık Kapalıçarşı kopuşu (kapının var oluş sebebi) z=-1.12 verip HİÇ
+  # ATEŞLEMEZDİ. Seyrelmesini beklemek çözüm değil: 760 geçerli günde (≈Aralık
+  # 2028) bile eşik 0.39p, temiz referansın ~2 katı.
+  prim_kirli_pencereler:
+    - ad: "ons_vadeli_kontrat_gcz26"
+      baslangic_utc: "2026-07-29T10:00:00+00:00"
+      bitis_utc: "2026-08-17T00:00:00+00:00"
+      # yfinance `GC=F` canlı kotasyonu, Ağustos kontratı vadesini doldurunca
+      # ARALIK kontratına (GCZ26) atladı; contango farkı (+%1.39) doğrudan
+      # `theoretical`'e girdi ve prim'i 1.25 puan sahte iskontoya oturttu.
+      # Ölçüm: kırılma 07-29 07:20Z (prim -0.43) → 10:09Z (prim -1.91) arasında;
+      # ons +%1.18 zıplarken Kapalıçarşı -%0.32 geriledi, kur sabitti.
+      # Bitiş Pazartesi 00:00: 08-16 Pazar, o günün tüm kayıtları zaten hafta
+      # sonu (indicative=1) — yani sınırı ileri almak TEK BİR geçerli gün
+      # kaybettirmiyor, ama düzeltmenin üretime inmesi için güvenli pay bırakıyor.
 
 # ----------------- Backtest (Bölüm 2) -----------------
 backtest:

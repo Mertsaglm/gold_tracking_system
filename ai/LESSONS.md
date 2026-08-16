@@ -14,6 +14,48 @@
 
 ---
 
+## L-019 — 2026-08-16 — Döngüsel test, kaynağın enstrüman değiştirmesini göremez
+
+**Olay:** 2026-07-29'da `yfinance GC=F` canlı kotasyonu, Ağustos kontratı vadesini
+doldurunca **Aralık kontratına** atladı. Contango farkı (+%1.39) `theoretical`'e
+girdi; prim 17 gün boyunca 1.25 puan sahte iskonto gösterdi. `|prim|>%1.5` alarmı
+4 gün üst üste yanlış ateşleyip Telegram'a gitti. Kod değişmedi, kaynak değişti.
+
+**Neden 851 test yakalamadı — hepsi DÖNGÜSELDİ:**
+
+```python
+beklenen = calc.theoretical_gram(r["ons_usd"], r["usdtry"], troy)
+assert r["gram_teorik"] == pytest.approx(beklenen)
+```
+
+Bu, çarpmanın doğru yapıldığını doğrular; **`ons`'un doğru enstrüman olduğunu
+değil.** Girdi yanlış kontrattan gelse test yine yeşildir. Aynı şey
+`prim == piyasa/teorik − 1` testi için de geçerli: kendi içinde tutarlı, dışarıya
+karşı kör.
+
+**Bağımsız tanık zaten elimizdeydi:** Truncgil hem `gram-has-altin` hem de `ons`
+veriyor. Dahası `test_truncgil_prim_ornek_yanitta_makul` o `ons` alanını
+**biliyordu** — `$` işaretini elle temizleyip kullanıyordu bile. Düzeltme bir satır
+uzaktaydı; kimse iki ucu birbirine bağlamadı.
+
+**Ders:** Türetilmiş bir büyüklüğü kendi girdileriyle doğrulayan test, ölçüm değil
+**totolojidir.** Dış dünyadan gelen her seri için sorulacak soru şudur:
+
+> *"Bu sayının doğru olduğunu, onu üreten kaynaktan BAĞIMSIZ neyle sınıyorum?"*
+
+Cevap yoksa o seri denetimsizdir. Fiyat serilerinde ikinci soru: **"bu sembol
+sabit bir enstrüman mı, yoksa altındaki şey değişebilir mi?"** Vadeli kontratlar,
+endeksler ve "sürekli" seriler zamanla farklı şeyleri gösterir; ticker aynı kalır.
+
+**Anti-pattern:** tek kaynaktan gelen bir seriyi yalnız kendi içindeki aritmetikle
+test etmek — özellikle o seri sistemin çekirdek metriğini besliyorsa.
+
+**Nasıl kapatıldı (ADR #013):** ons Truncgil spot'a taşındı (gram ile aynı kaynak,
+aynı zaman damgası); yfinance'e sessiz yedek YASAKLANDI; `fetch_row`'un ons'u
+nereden aldığını kilitleyen 2 test yazıldı ve **mutasyonla düştüğü kanıtlandı**.
+
+---
+
 ## L-018 — 2026-08-11 — Teslim yolu test edilmiyorsa sistem 13 gün konuşmadan "çalışır"
 
 **Olay:** 2026-07-29 → 08-10 arası HİÇBİR anomali bildirimi Telegram'a gitmedi.

@@ -3,12 +3,13 @@
 > Usta her oturumun başında bu dosyayı okur, sonunda günceller.
 > KISA TUT: ~100 satırı aşınca eskiyi `ai/archive/STATE-YYYY-MM.md`'ye taşı.
 
-**Son güncelleme:** 2026-08-11
-**Aktif milestone:** **Bildirim hattı onarıldı (ADR #011) + bekleyen 4 karar
-kapatıldı (ADR #012).** Kesinti bitti (üretim: "2 tetik, 2 gönderildi, 0 HATA").
-Çekirdek **kademe KAPALI** → hüküm daima `NORMAL AL` 1.00×; gölge kol ölçümle
-**reddedildi**; makas alarmına maddi taban; reel faiz tabanı raporda görünür.
-Sırada **bekleme** — z-skor kapısı (~09-14) ve karne birikimi.
+**Son güncelleme:** 2026-08-16
+**Aktif milestone:** **Ons kaynağı onarıldı (ADR #013).** Denetimde bulundu:
+`yfinance GC=F` canlı kotasyonu 2026-07-29'daki vade roll'ünde **Aralık kontratına**
+atlamış; prim 17 gün 1.25 puan yanlış ölçülmüş ve `|prim|>%1.5` alarmı 4 kez boşuna
+Telegram'a gitmiş. Ons artık **Truncgil spot**'tan (gram ile aynı kaynak/zaman
+damgası). Kirli 14 gün z tabanından düşüldü → **kapı ~09-16'dan ~10-02'ye kaydı**.
+Test 851 → **855**; 7 mutasyon, 7/7 yakalandı.
 
 ---
 
@@ -79,33 +80,24 @@ koşmuyor. README bunu yazıyor, ama `telegram_chat.json` gösteriyor ki Mert
 
 | Ne zaman | Kim | İş | Bitti sayılır (DoD) | Durum |
 |---|:--:|---|---|:--:|
+| **2026-08-17 (ilk hafta içi koşum)** | 👤 | 🔴 **ONS DÜZELTMESİNİ ÜRETİMDE DOĞRULA (ADR #013)** | Pazartesi raporunda **prim ≈ −0.5%** (−1.75 DEĞİL) · `|prim|>%1.5` alarmı GELMEDİ · `data/archive/2026-08.csv`'de yeni satırların `ons_usd`'si Truncgil biçiminde (2 ondalık, ör. 4376.71) — float32 artığı (4380.39990234375) varsa düzeltme üretime inmemiştir | ⏳ |
+| **2026-08-17** | 👤 | Kirli pencere sınırını doğrula | Pazartesi kayıtları `indicative=0` (kirli DEĞİL); rapordaki geçerli gün sayacı 20'den ilerliyor. İlerlemiyorsa `stats.prim_kirli_pencereler.bitis_utc` fazla ileri kalmış | ⏳ |
+| **~2026-11-25 ±3 gün** | 👤 | 🔁 **BİR SONRAKİ COMEX ROLL'Ü** (Aralık→Şubat) | O hafta prim serisinde basamak **YOK** doğrulandı. Varsa Truncgil ons'u da vadeli olmuş demektir → ADR #013 yeniden açılır. (Roll takvimi: yılda 5 — Oca-Mar-May-Tem-Kas) | ⏳ |
 | **Her oturum başı** | 🤖 | `git fetch` + yerel/uzak farkı kontrol et | Yerel güncel; "sistem durdu" teşhisi ham veriye dayanıyor (L-001) | ♻️ |
 | **Her oturum başı** | 🤖 | ⚠️ `git status` — **commit'lenmemiş kaynak var mı?** | Çalışma ağacında bekleyen `src/` değişikliği YOK, ya da varsa Mert'e soruldu. **Ölçüldü 2026-08-11: ADR #010'un TAMAMI (3 fonksiyon + 2 veri dosyası) 13 gündür commit'lenmemiş, üretimde yok.** Belge "yapıldı" derken repo "yapılmadı" diyordu; `HEAD↔origin` farkına bakmak bunu YAKALAMAZ (§2.5) | ♻️ |
-| ~~2026-07-29~~ | 👤 | ~~KADEME KARARI (ADR #010-B)~~ | **KAPATILDI (ADR #012).** `kademe_aktif: false` → hüküm daima `NORMAL AL` 1.00×. Ölçüm: kural ateşlendiğinde ertelemenin ort. gram kazancı **%-0.64** (N=22, t=1.03) — başa baş 0.00'ın ALTINDA; canlı doğrulama **-%1.55 gram**. "Simetrik" savı da düştü: üst kademe erişilemez, 30/30 alt kademe ateşledi. Mekanizma silinmedi, açılma şartı config'te (N≥30 ve \|t\|≥2 ile +1.99p) | ✅ 08-11 |
-| ~~2026-07-29~~ | 👤 | ~~Telegram komutları kararı~~ | **(a) KABUL + BELGELE (ADR #012-E).** Ölçüm: 4 ayda 3 komut kullanımı; komutların döndüğü her şey zaten günlük push raporunda var; (b) seçeneği `getUpdates` döngüsünü **archive.yml**'a — 13 günlük kesintinin yaşandığı kritik yola — sokardı. Ayda ~0.75 kullanım için yeni arıza modu kötü takas. Yeniden gözden geçir: kullanım ayda 5'i geçerse | ✅ 08-11 |
-| ~~~2026-08-01~~ | 👤 | ~~Prova birikimini ilk kez oku~~ | **OKUNDU (ADR #012-F), N=17.** İki taban (kayıt/gün) **17/17 provada aynı kararı** verdi → seçim ampirik değil ilkesel olacak. `prim |z|>2` **6/17 (%35)** tetiklerdi (nominal ~%5); sebep kısa taban artefaktı: 07-29 rejim kaymasında z=−6.06, sonra `std_gun` 7.2× büyüyünce normalleşti. **İki sonuç da ~09-05'e taşındı** | ✅ 08-11 |
-| ~~2026-08-11~~ | 👤 | ~~KARNE TABANI KARARI~~ | **ŞİMDİLİK GEREKSİZ (ADR #012).** Kademe kapandığı için çekirdek kol artık sapma üretmiyor (carpan ≡ 1.0) → ölçülecek fark YOK; metriği değiştirmek dead code olurdu (YAGNI). Doğru formül ADR #012-A'ya YAZILDI ve kademe yeniden açılmasının ÖN ŞARTI yapıldı: `gram_etkisi_cekirdek = (1 − carpan) × gram_carry_kazanc_pct` | ✅ 08-11 |
-| **2026-09-14 ±3 gün** | 👤 | 🔴 **KAPI GÜNÜ CANLI DOĞRULAMA** — `prim_z` ilk kez ateşlenecek | Kapı açıldığı gün Telegram'a `prim_z` bildirimi GELDİ mi bakıldı. Metni `(|z|<1)` içeriyor; kaçış düzeltmesi (ADR #011) tam bu yolu koruyor ama canlıda hiç ateşlenmedi. Gelmezse `data/alert_state.json → saglik` ve Actions logu | ⏳ |
-| ~~2026-08-03~~ | 👤 | ~~İlk canlı çözümü doğrula~~ | **Ölçüldü 08-11:** `prediction_outcomes`=8 satır, zincir (kaydet→giriş→çözüm) canlıda tam döndü. `gram_carry_kazanc_pct` −4.87…+0.16 aralığında, makul. ⚠️ Ama `gram_etkisi` 8/8 **0.000** → yukarıdaki taban kararı | ✅ 08-11 |
-| **~2026-09-05** | 👤 | ⚠️ **Z TABANI + EŞİK KARARI** — kapıdan ~1 hafta önce, en kritik iş | (1) Taban: kayıt mı gün mü? **08-11 ölçümü: 17/17 provada iki taban aynı kararı verdi** → ilkeye göre seç; ADR #012-F gün tabanını öneriyor (kapı gün sayıyor · gün içi kayıtlar seri korelasyonlu, etkin N'i şişirir · kayıt tabanı Actions throttling'ine rehin). (2) ⚠️ **EŞİK:** provada `|z|>2` **%35** tetikledi (nominal %5), günlük tavan 6 → kapı açılışında z alarmları diğerlerini bastırabilir. `alerts.prim_z` prova dağılımına bakılarak yeniden ölçülmeli. DoD: ADR yazıldı, kod tek tabanı kullanıyor, eşik gerekçeli | ⏳ |
-| **~2026-09-12** | 🤖 | 🔔 **KAPI AÇILIŞI** (60 geçerli gün) | prim z + çeyrek z sinyalleri ve `z > 2` bildirimi kendiliğinden devreye girer. Kod hazır, **ek iş yok** | ⏳ |
-| **2026-09-12 → 09-19** | 👤 | Kapı sonrası ilk hafta izleme | Günlük tavan (6) doluyor mu? z alarmları diğerlerini bastırıyor mu? Gerekirse `alerts.prim_z` ayarlanır | ⏳ |
-| ~~~2026-10 (ÖNCE)~~ | 👤 | ~~GÖLGE KOL KARARI (ADR #008-B)~~ | **YAPILMAYACAK — ölçüme dayanan RET (ADR #012-B).** (a) Taktik gölge kol %100 `TUT` kaydederdi: `taktik_hukum` kapı açıkken bile `_URETICI_YOK` dalından TUT döner (14 aday tarandı, en iyi +1.4p vs +3.18p). Sıfır bilgi. (b) Çekirdek gölge kol gereksiz: kural deterministik ve `ozellikler_json` tam özellik vektörünü saklıyor → karşı-olgu `tahmin_backfill` ile TAM yeniden üretilebilir. Yeniden gözden geçir: taktik kola beklenen-kazanç ÜRETİCİSİ bağlanırsa | ✅ 08-11 |
+| **2026-10-02 ±3 gün** | 👤 | 🔴 **KAPI GÜNÜ CANLI DOĞRULAMA** — `prim_z` ilk kez ateşlenecek | Kapı açıldığı gün Telegram'a `prim_z` bildirimi GELDİ mi bakıldı. Metni `(|z|<1)` içeriyor; kaçış düzeltmesi (ADR #011) tam bu yolu koruyor ama canlıda hiç ateşlenmedi. Gelmezse `data/alert_state.json → saglik` ve Actions logu | ⏳ |
+| **~2026-09-25** | 👤 | ⚠️ **Z TABANI + EŞİK KARARI** — kapıdan ~1 hafta önce, en kritik iş | (1) Taban: kayıt mı gün mü? **08-11 ölçümü: 17/17 provada iki taban aynı kararı verdi** → ilkeye göre seç; ADR #012-F gün tabanını öneriyor (kapı gün sayıyor · gün içi kayıtlar seri korelasyonlu, etkin N'i şişirir · kayıt tabanı Actions throttling'ine rehin). (2) ⚠️ **EŞİK:** provada `|z|>2` **%35** tetikledi (nominal %5), günlük tavan 6 → kapı açılışında z alarmları diğerlerini bastırabilir. `alerts.prim_z` prova dağılımına bakılarak yeniden ölçülmeli. DoD: ADR yazıldı, kod tek tabanı kullanıyor, eşik gerekçeli | ⏳ |
+| **~2026-09-30** | 🤖 | 🔔 **KAPI AÇILIŞI** (60 geçerli gün) | prim z + çeyrek z sinyalleri ve `z > 2` bildirimi kendiliğinden devreye girer. Kod hazır, **ek iş yok** | ⏳ |
+| **2026-09-30 → 10-07** | 👤 | Kapı sonrası ilk hafta izleme | Günlük tavan (6) doluyor mu? z alarmları diğerlerini bastırıyor mu? Gerekirse `alerts.prim_z` ayarlanır | ⏳ |
 | **~2026-10** (≈30 çözülmüş tahmin) | 👤 | ⚠️ **TAKTİK KAPI KARARI** | ⚠️ ADR #012-B'den sonra şart matematiksel olarak SAĞLANAMAZ: kol hiç SAT üretmediği için gram etkisi ≡ 0 kalır. Dolayısıyla o gün verilecek karar "kalıcı kapalı" olacak ve **ölçüm değil KABUL** olarak yazılmalı. Gerçek şart şudur: **önce taktik kola beklenen-kazanç üreticisi bağlanmalı** (bugün yok, sebebi ölçüm — ADR #007-H). Üretici yoksa kapı tartışması açılmaz | ⏳ |
 | **~2026-10** (3 ay yeni veri) | 👤 | `python -m src.gram engel` tazele | `data/gram_engeli.json` yeni tarihli; taban ve eşikler değişti mi bakıldı | ⏳ |
 | **İlk uygun oturum** | 👤 | `ai/PROFILE.md` eksiklerini doldur | "öğrenmek istedikleri" ve "çalışma alışkanlıkları" alanları dolu (Usta sorup doldurur) | ⏳ |
 | **~2027-02** (~200 rapor) | 👤 | `reports/` yıl klasörlerine böl | `reports/2026/`, `reports/2027/`; README yolu güncel | ⏳ |
-| ~~2026-07-25 akşam~~ | 👤 | ~~Yeni adımları üretimde doğrula~~ | `zskor_prova.jsonl` oluştu, DXY `DX-Y.NYB`, `history` hatasız | ✅ 07-25 |
-| ~~Faz C biter bitmez~~ | 🤖 | ~~Tahmin karnesi saatini başlat~~ | Kod üretimde (`7aa3a18`); ilk `predictions` satırları 07-27 akşamı yazılacak | ✅ 07-27 |
-| ~~2026-07-27 akşamı~~ | 👤 | ~~İlk hafta içi koşumu doğrula~~ | 5/5 geçti: `history_daily` son 07-27 · hafta sonu barı yok · `predictions`=12 (2 koşum × 6) · HÜKÜM + karne satırı var · `ticks`=1799 | ✅ 07-29 |
-| ~~2026-07-27 akşamı~~ | 👤 | ~~Tick tekilliğini canlıda doğrula~~ | 1663 → **1799** (+136, gün başına ~70); sıçrama yok, kısıt tuttu. Dump 19 694 satır | ✅ 07-29 |
-| ~~~2026-07-28~~ | 👤 | ~~Retry etkisini ölç~~ | **Ölçüldü, İDDİA DÜŞTÜ:** tüm kayıt %6.93 → %6.67 (4/60). 20 geçersiz kaydın 20'sinde truncgil'in 8 alanı BİRDEN boş, yfinance hiç düşmedi → kesinti 3×4 sn retry'dan uzun. Yedek kaynak Backlog'a | ✅ 07-29 |
-| ~~Backlog'dan çıkınca~~ | 👤 | ~~`chart.validate`'i faz düzeltmesiyle yeniden koş~~ | Düzeltme koda taşındı + yeniden ölçüldü: "zayıf kanıt" 10 → 1 (ADR #010-A) | ✅ 07-29 |
 
-**Kapı tahmini nasıl hesaplandı (2026-08-11 tazelendi, üretim DB'sinden ölçüldü):**
-**30/60 geçerli gün**. 2026-07-07 → 08-10 = 35 takvim günü → hız **0.857 gün/gün**
-(07-29'daki 0.86 ölçümüyle birebir aynı — ritim stabil). Kalan 30 gün ÷ 0.857 ≈ 35
-takvim günü → **~2026-09-14** (tahmin değişmedi). Gerçek ilerleme günlük raporun
+**Kapı tahmini nasıl hesaplandı (2026-08-16, ADR #013 sonrası):**
+Geçerli gün **34 → 20** düştü: 07-29 → 08-16 arası 14 gün `kirli_kaynak` işaretli
+(vadeli kontrat roll'ü, z tabanına girmiyor). Hız 0.85 gün/gün → kalan 40 gün ÷ 0.85
+≈ 47 takvim günü → **~2026-10-02**. Gerçek ilerleme günlük raporun
 "Z-skor: arşiv birikiyor (N/60)" satırından okunur — **tahmin etme, rapordan oku.**
 
 ---
@@ -114,6 +106,20 @@ takvim günü → **~2026-09-14** (tahmin değişmedi). Gerçek ilerleme günlü
 
 - **2026-07-07 → 07-26:** inşa Faz 1-7 + çoklu-IDE Usta sistemi + backlog
   kapatma + karar motoru Faz A-H. Hepsi arşivde, tarih tarih.
+- **2026-08-16 — Ons kaynağı onarıldı: prim 17 gündür yanlış ölçülüyormuş**
+  (detay **ADR #013**, ders **L-019**). Mert: *"üretilen tahminler sağlam bir
+  şekilde mi üretiliyor?"* Bulunan: `yfinance GC=F` **canlı kotasyonu** 2026-07-29
+  vade roll'ünde Aralık kontratına (GCZ26, spot+%1.39) atlamış; `theoretical`
+  şişmiş, prim **−1.25 puan** sahte iskonto göstermiş. Dört bağımsız kanıt
+  (kırılma anı · kontrat merdiveni · Truncgil spot ons · seviye bandı ±0.15p).
+  Üretimdeki zarar: `|prim|>%1.5` alarmı 08-11…08-14'te **4 kez boşuna** gitti;
+  07-29 raporu hareketin −%1.41'ini haksız yere "Kapalıçarşı primi"ne yazdı.
+  **Hüküm/backtest/grafik ETKİLENMEDİ** — onlar günlük bar'ı (geri-düzeltmeli)
+  okuyor. Çözüm: ons → Truncgil spot (gram ile aynı kaynak+zaman damgası),
+  yfinance yalnız kur. Kirli 14 gün z tabanından düşüldü çünkü z **genişleyen
+  pencere**: bırakılsaydı tespit eşiği 0.25p yerine **1.22p** olurdu (5× sağır)
+  ve 2028'de bile düzelmezdi. Kapı ~09-16 → **~10-02**. Test 851 → **855**,
+  7/7 mutasyon.
 - **2026-08-11 — Derin denetim + bildirim hattı onarıldı** (detay **ADR #011**,
   ders **L-018**, rapor `ai/denetim-2026-08-11.md`). Mert: "uzun zamandır kendi
   çalışıyor, kaliteli sonuç üretebilmiş mi?" Ölçülenler: (a) uptime %99.7, 34/35
@@ -124,12 +130,7 @@ takvim günü → **~2026-09-14** (tahmin değişmedi). Gerçek ilerleme günlü
   kademenin gram bedeli **−%1.55** ölçüldü; (e) hafta sonu beklentisi **tabanı
   yeniyor** (MAE 0.52p vs 1.12p, sistematik −0.38p sapma); (f) kademe kanıtı
   satırı üretimde hiç basılmamış. Test 815 → **839**; 6 mutasyon, **6/6 yakalandı**.
-- **2026-07-29 — Grafik ölçümü faz artefaktından arındırıldı** — ADR **#010**,
-  ders L-016. "Zayıf kanıt" 10 → 1; grafiğin ölçülmüş yön kenarı YOK.
-- **2026-07-27 — Regresyon zırhı** — ADR **#009**, dersler L-013/L-014/L-015.
-  299 → 800+ test, ağırlık merkezi sözleşme; 20/20 mutasyon yakalandı.
-- **2026-07-27 — Uçtan uca denetim + ilk PUSH** (`7aa3a18`) — ADR **#008**,
-  dersler L-010/L-011.
+  Öncesi: `ai/archive/STATE-2026-08.md`.
 
 ## 🔨 Devam Edenler
 - _(yok)_
@@ -141,21 +142,22 @@ takvim günü → **~2026-09-14** (tahmin değişmedi). Gerçek ilerleme günlü
 
 ## 🎯 Sıradaki 3 İş
 
-> ⚠️ Üçü de **bekleme** — kodlanacak açık iş kalmadı. ADR #011 + #012 ile hem
-> sessiz arıza sınıfı hem 4 bekleyen karar kapandı.
+> ADR #013 ile ons kaynağı onarıldı. Sıradaki iş **doğrulama**, sonrası bekleme.
 
-1. **Z-skor kapısı (~2026-09-14) — 🤖 kendiliğinden.** 30/60 geçerli gün, hız
-   0.857. Kapı açılınca `prim_z` **canlıda ilk kez** ateşlenecek; metni `(|z|<1)`
-   içeriyor ve tam o yolu ADR #011'in kaçış düzeltmesi koruyor — ama canlıda hiç
-   sınanmadı. DoD: kapı günü Telegram'a `prim_z` bildirimi geldi (TAKVİM'de).
-2. **Z tabanı kararı (~2026-09-05) — 👤 Mert.** Kapıdan ~1 hafta önce
-   `data/zskor_prova.jsonl` okunacak: z **kayıt** tabanında mı **gün** tabanında mı?
-   DoD: ADR yazıldı, kod tek tabanı kullanıyor.
-3. **Aday taramasını tazele (~2026-10, 3 ay yeni veri) — 👤 Mert.** Bu, kademe
-   kapısının **açılma şartının** ölçüldüğü yer: `reel_mevduat > %10` kuralı
-   +1.99p'yi N≥30 **ve** |t|≥2 ile geçiyor mu? Bugün +1.34p / N=22 / t=1.03.
-   DoD: `data/aday_taramasi.json` yeni tarihli; şart sağlandıysa ADR #012-A
-   yeniden değerlendirilir, sağlanmadıysa kademe kapalı kalır.
+1. **🔴 Ons düzeltmesini üretimde doğrula (2026-08-17, ilk hafta içi koşum) — 👤 Mert.**
+   Tek gerçek açık iş. Pazartesi raporunda **prim ≈ −0.5%** görünmeli (−1.75 değil)
+   ve `|prim|>%1.5` alarmı **gelmemeli**. Gelirse düzeltme üretime inmemiştir:
+   `data/archive/2026-08.csv`'de yeni `ons_usd` değerlerine bak — 2 ondalıklıysa
+   (4376.71) Truncgil, float32 artığı varsa (4380.39990234375) hâlâ yfinance.
+   DoD: TAKVİM'deki iki satır ✅.
+2. **Z tabanı + eşik kararı (~2026-09-25) — 👤 Mert.** Artık **temiz** veri üstünde
+   verilecek. Prova dosyasının 07-29 → 08-16 arası satırları kirli seriden
+   üretildi, o aralık **okunmayacak**. ⚠️ Temiz seride bile `|z|>2` bandı dar
+   (`[−0.86, −0.37]`) → eşik kalibrasyonu ayrı iş, kirliliği temizlemek onu çözmedi.
+   DoD: ADR yazıldı, kod tek tabanı kullanıyor, eşik gerekçeli.
+3. **Z-skor kapısı (~2026-10-02) — 🤖 kendiliğinden.** 20/60 geçerli gün, hız 0.85.
+   Kapı açılınca `prim_z` canlıda ilk kez ateşlenebilir. DoD: kapı günü davranış
+   TAKVİM'deki satıra göre doğrulandı.
 
 ## 📦 Backlog (şimdi değil, unutma da)
 - **Truncgil'e yedek kaynak** (2026-07-29 ölçümü) — geçersiz kayıtların %100'ü

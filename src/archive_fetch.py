@@ -46,9 +46,10 @@ def fetch_row(cfg: dict) -> dict:
     backoff = float(sc.get("fetch_retry_backoff_s", 0))
     # truncgil boş dönerse (gram/çeyrek eksik → geçersiz kayıt) tekrar dene
     tc = _retry(lambda: truncgil.fetch(cfg), lambda s: s.ok, retries, backoff)
-    # yfinance: ons ve kur ikisi de gelmeli
+    # yfinance artık YALNIZ kur için (ons Truncgil'den — aşağıdaki nota bak),
+    # o yüzden tekrar deneme koşulu da yalnız kur'a bakar.
     yfs = _retry(lambda: yf.fetch(cfg),
-                 lambda s: s.ons_usd is not None and s.usdtry is not None,
+                 lambda s: s.usdtry is not None,
                  retries, backoff)
     def bs(sym):
         return tc.bs(sym) if tc.ok else (None, None)
@@ -56,9 +57,18 @@ def fetch_row(cfg: dict) -> dict:
     gh_b, gh_s = bs("gram_has_altin")
     cy_b, cy_s = bs("ceyrek")
     usd_b, usd_s = bs("usd")
+    ons_b, ons_s = bs("ons")
+    # ONS SPOT: Truncgil'den. yfinance `GC=F` YEDEK DEĞİLDİR ve bilerek
+    # kullanılmıyor — hafta içi VADELİ kontrat (2026-08: GCZ26 = spot+%1.39)
+    # döndürüyor; 2026-07-29 roll'ünden sonra prim'i 1.25 puan bozdu ve
+    # |prim|>%1.5 alarmını 4 gün üst üste yanlış ateşledi (08-11…08-14).
+    # Sessiz bir yedek burada hatayı geri getirirdi. Truncgil düşerse gram_has
+    # da düşer (ölçüldü 2026-07-29: geçersiz kayıtların 20/20'sinde 8 alan
+    # BİRDEN boş) → kayıt zaten geçersiz; ayrı bir ons yedeği hiçbir şey kurtarmaz.
+    ons = ons_s if ons_s is not None else ons_b
     return {
         "ts_utc": ts,
-        "ons_usd": yfs.ons_usd, "usdtry": yfs.usdtry,
+        "ons_usd": ons, "usdtry": yfs.usdtry,
         "gram_altin_buy": ga_b, "gram_altin_sell": ga_s,
         "gram_has_buy": gh_b, "gram_has_sell": gh_s,
         "ceyrek_buy": cy_b, "ceyrek_sell": cy_s,

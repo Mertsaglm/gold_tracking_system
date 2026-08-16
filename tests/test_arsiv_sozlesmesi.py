@@ -309,7 +309,125 @@ def test_tr_sayi_ayristirma_ozellikleri():
     assert util.parse_tr_number("46,8366") == pytest.approx(46.8366)
     assert util.parse_tr_number("%-0,34") == pytest.approx(-0.34)
     assert util.parse_tr_number("1.234.567,89") == pytest.approx(1234567.89)
+    # '$': Truncgil YALNIZ ons alanında para birimi işareti koyuyor. Bu düşmezse
+    # ons sessizce None olur ve prim'in teorik bacağı boş kalır (ADR: ons spot'a
+    # taşındı, 2026-08-15).
+    assert util.parse_tr_number("$4.376,71") == pytest.approx(4376.71)
     for bos in (None, "", "-", "N/A", "null", "None", "abc"):
         assert util.parse_tr_number(bos) is None
     assert util.parse_tr_number(42) == 42.0
     assert util.parse_tr_number(4.5) == 4.5
+
+
+def test_ons_truncgil_spottan_gelir_yfinance_vadeliden_degil(ornek_yanit, monkeypatch):
+    """KİLİT TEST — 2026-07-29 arızasının tekrarını engeller.
+
+    yfinance `GC=F` **sürekli seri değil, o anki vadeli kontrattır**. 2026-07-29'da
+    Ağustos kontratı vadesini doldurdu, canlı kotasyon Aralık'a (GCZ26) atladı ve
+    contango farkı (+%1.39) doğrudan `theoretical`'e girdi: prim 17 gün boyunca
+    1.25 puan sahte iskonto gösterdi, `|prim| > %1.5` alarmı 4 gün üst üste
+    (08-11…08-14) yanlış ateşledi ve Telegram'a gitti.
+
+    Hiçbir test bunu yakalamadı çünkü hepsi DÖNGÜSELDİ: `gram_teorik == ons×kur/troy`
+    aritmetiği doğrular, `ons`'un doğru enstrüman olduğunu DEĞİL.
+
+    Bu test o boşluğu kapatır: `fetch_row` ons'u Truncgil spot'tan almalı ve
+    yfinance ons'una — vadeli olduğu için — ASLA düşmemeli. Aksi hâlde arıza
+    sessizce geri gelir.
+    """
+    sahte_vadeli = 9999.0                                   # kasten uçuk: düşerse görülür
+    monkeypatch.setattr(yf, "fetch",
+                        lambda cfg: yf.YfSnapshot(ons_usd=sahte_vadeli, usdtry=46.8431))
+    row = archive_fetch.fetch_row(util.load_config())
+
+    assert row["ons_usd"] != pytest.approx(sahte_vadeli), (
+        "ons yfinance'ten (vadeli kontrat) alınmış — 2026-07-29 arızası geri geldi")
+    assert row["ons_usd"] == pytest.approx(4149.01), "ons Truncgil spot 'Selling' olmalı"
+    assert row["usdtry"] == pytest.approx(46.8431), "kur hâlâ yfinance'ten gelmeli"
+
+
+def test_ons_yoksa_yfinance_yedegine_dusulmez(ornek_yanit, monkeypatch):
+    """Sessiz yedek YASAK: yanlış bir ons, ons'suzluktan daha kötüdür.
+
+    ons boşsa kayıt `indicative` olur ve prim hesaplanmaz — dürüst sonuç budur.
+    Truncgil düşerse `gram_has` da düşer (ölçüldü 2026-07-29: geçersiz kayıtların
+    20/20'sinde 8 alan BİRDEN boştu), yani kayıt zaten geçersizdir; ayrı bir ons
+    yedeği hiçbir şey kurtarmaz, yalnız 1.25 puanlık hatayı geri getirir.
+    """
+    cfg = util.load_config()
+    cfg["sources"]["truncgil"]["keys"] = {
+        k: v for k, v in cfg["sources"]["truncgil"]["keys"].items() if k != "ons"}
+    monkeypatch.setattr(yf, "fetch",
+                        lambda c: yf.YfSnapshot(ons_usd=9999.0, usdtry=46.8431))
+    row = archive_fetch.fetch_row(cfg)
+    assert row["ons_usd"] is None, "ons yoksa None kalmalı, yfinance'e düşmemeli"
+
+
+# ------------------------------------------------- kirli kaynak penceresi (ADR #013)
+def test_kirli_pencere_saf_fonksiyon():
+    """Sınırlar: başlangıç DAHİL, bitiş HARİÇ (yarı açık aralık)."""
+    p = [{"ad": "x", "baslangic_utc": "2026-07-29T10:00:00+00:00",
+          "bitis_utc": "2026-08-17T00:00:00+00:00"}]
+    assert import_actions.kirli_pencere("2026-07-29T09:59:59+00:00", p) is None
+    assert import_actions.kirli_pencere("2026-07-29T10:00:00+00:00", p) == "x"
+    assert import_actions.kirli_pencere("2026-08-16T23:59:59+00:00", p) == "x"
+    assert import_actions.kirli_pencere("2026-08-17T00:00:00+00:00", p) is None
+    assert import_actions.kirli_pencere("2026-07-29T10:00:00+00:00", []) is None
+
+
+def test_kirli_pencere_kaydi_z_tabanindan_duser(tmp_path, monkeypatch):
+    """KİLİT TEST — kirli kayıt z-skor tabanına ve 60 günlük kapı sayacına GİRMEMELİ.
+
+    Bu kural KOD'da durmak zorunda, DB'de değil: `insert_prim` INSERT OR REPLACE ve
+    `import_all` her gün tüm arşivi baştan okuyor. Kayıtları elle işaretlemek bir
+    sonraki Actions koşumunda sessizce silinirdi (ölçüldü 2026-08-16).
+
+    Neden düşürüyoruz (ölçüldü, gerçek arşiv): kirli 14 gün bırakılsaydı z tabanı
+    std=0.609 → tespit eşiği 1.22 puan; düşürülünce std=0.123 → eşik 0.25 puan.
+    Yani kirlilik detektörü ~5 kat sağırlaştırıyordu ve genişleyen pencere olduğu
+    için ASLA kendiliğinden düzelmiyordu.
+    """
+    from src import db, util as u
+    kok = tmp_path
+    (kok / "data" / "archive").mkdir(parents=True)
+    (kok / "holidays_tr.yaml").write_text(
+        (KOK / "holidays_tr.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+
+    from src.archive_fetch import FIELDS
+    def satir(ts, ons=4000.0, kur=47.0):
+        teorik = ons / 31.1034768 * kur
+        return ",".join([ts, f"{ons}", f"{kur}",
+                         f"{teorik*1.006:.2f}", f"{teorik*1.0065:.2f}",
+                         f"{teorik*1.004:.2f}", f"{teorik*1.0045:.2f}",
+                         f"{teorik*1.804*0.916*1.02:.2f}",
+                         f"{teorik*1.804*0.916*1.025:.2f}",
+                         f"{kur-0.01}", f"{kur}"])
+    TEMIZ = "2026-07-28T12:00:00+00:00"      # Salı, pencere ÖNCESİ
+    KIRLI = "2026-07-30T12:00:00+00:00"      # Perşembe, pencere İÇİ
+    with open(kok / "data" / "archive" / "2026-07.csv", "w",
+              encoding="utf-8", newline="") as f:
+        f.write(",".join(FIELDS) + "\n")
+        f.write(satir(TEMIZ) + "\n")
+        f.write(satir(KIRLI) + "\n")
+
+    monkeypatch.setattr(u, "ROOT", kok)
+    cfg = util.load_config()
+    cfg["paths"]["db"] = str(kok / "t.sqlite")
+    cfg["paths"]["holidays_file"] = str(kok / "holidays_tr.yaml")
+    import_actions.import_all(cfg)
+
+    con = db.connect(cfg)
+    kayit = {r["ts_utc"]: r for r in con.execute(
+        "SELECT ts_utc, indicative, reason, prim_pct FROM prim_history")}
+
+    assert kayit[TEMIZ]["indicative"] == 0, "pencere dışı kayıt geçerli kalmalı"
+    assert kayit[KIRLI]["indicative"] == 1, (
+        "kirli pencere kaydı geçersiz işaretlenmedi — z tabanına sızıyor")
+    assert kayit[KIRLI]["reason"].startswith("kirli_kaynak:"), \
+        "sebep okunabilir olmalı, yoksa 6 ay sonra kimse neden bilmez"
+
+    # asıl sözleşme: iki okuyucu da dışlamalı
+    assert db.prim_series(con) == [pytest.approx(kayit[TEMIZ]["prim_pct"])], \
+        "z tabanı yalnız temiz kaydı içermeli"
+    assert db.count_valid_prim_days(con) == 1, "kapı sayacı kirli günü saymamalı"
+    con.close()

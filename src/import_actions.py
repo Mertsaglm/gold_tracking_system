@@ -11,6 +11,7 @@ import csv
 import glob
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 from . import calc, db, util
 from .market_calendar import MarketCalendar
@@ -25,6 +26,26 @@ def _f(v):
         return None
 
 
+def kirli_pencere(ts, pencereler) -> Optional[str]:
+    """Kayıt bir "kirli kaynak" penceresine düşüyorsa pencerenin adını döner.
+
+    NEDEN KOD, NEDEN DB DEĞİL: `insert_prim` INSERT OR REPLACE ve `import_all`
+    HER GÜN tüm arşivi baştan okuyor. Kayıtları DB'de elle işaretlemek işe
+    YARAMAZ — bir sonraki Actions koşumu CSV'den yeniden hesaplayıp üzerine
+    yazar ve işaret sessizce kaybolur. Kural import yolunda durmalı ki her
+    koşumda yeniden uygulansın.
+
+    NEDEN CSV'Yİ DÜZELTMİYORUZ: `data/archive/*.csv` HAM GÖZLEM kaydıdır. O
+    anki gerçek spot ons'u bilmiyoruz (yalnız günlük kapanış bar'ı var, o da
+    gün-içi bir gözlem değil). Ham veriyi tahminle yeniden yazmak ölçümü
+    uydurmaya çevirirdi; bilmediğimizi "bilmiyoruz" diye işaretlemek dürüst olan.
+    """
+    for p in pencereler or []:
+        if p["baslangic_utc"] <= ts < p["bitis_utc"]:
+            return p["ad"]
+    return None
+
+
 def import_all(cfg: dict) -> dict:
     from . import logging_setup
     logging_setup.setup("import_actions", cfg)
@@ -32,7 +53,8 @@ def import_all(cfg: dict) -> dict:
     con = db.connect(cfg)
     inst = cfg["instruments"]
     files = sorted(glob.glob(str(util.abspath("data/archive") / "*.csv")))
-    n_ticks = n_prim = n_weekend = n_rows = 0
+    kirli_pencereler = cfg["stats"].get("prim_kirli_pencereler", [])
+    n_ticks = n_prim = n_weekend = n_rows = n_kirli = 0
 
     for path in files:
         with open(path, encoding="utf-8") as f:
@@ -92,16 +114,25 @@ def import_all(cfg: dict) -> dict:
                     forex_closed = cal.is_weekend_closed_forex(ts) or cal.is_us_gold_holiday(ts)
                     weekend = cal.is_weekend_closed_forex(ts)
                     holiday = cal.is_us_gold_holiday(ts) or cal.is_tr_holiday(ts)
+                    # Kirli kaynak penceresi (ADR #013): kayıt teknik olarak
+                    # üretildi ama TEORİK BACAĞI yanlış enstrümandan geldi.
+                    # `indicative=1` işaretlenir → `prim_series` ve
+                    # `count_valid_prim_days` ikisi de dışlar, yani z-skor
+                    # tabanına ve 60 günlük kapı sayacına GİRMEZ.
+                    kirli = kirli_pencere(ts_iso, kirli_pencereler)
                     db.insert_prim(
                         con, ts_utc=ts_iso, ons_usd=ons, usdtry=usd,
                         theoretical=theo, market_has=gram_has, gram_retail=gram_retail,
                         prim_pct=prim, prim_pct_naive=prim_naive, spread_pct=spread,
                         quarter_prim_pct=qp,
-                        indicative=1 if forex_closed else 0,
+                        indicative=1 if (forex_closed or kirli) else 0,
                         weekend=1 if weekend else 0, holiday=1 if holiday else 0,
-                        reason="gh_actions_import" + ("_weekend" if forex_closed else ""),
+                        reason=(f"kirli_kaynak:{kirli}" if kirli else
+                                "gh_actions_import" + ("_weekend" if forex_closed else "")),
                     )
                     n_prim += 1
+                    if kirli:
+                        n_kirli += 1
                     if weekend:
                         db.insert_weekend_exp(con, ts_iso, gram_has, theo, prim)
                         n_weekend += 1
@@ -110,7 +141,8 @@ def import_all(cfg: dict) -> dict:
     valid = db.count_valid_prim(con)
     con.close()
     result = {"dosya": len(files), "satir": n_rows, "tick": n_ticks,
-              "prim": n_prim, "hafta_sonu": n_weekend, "gecerli_prim_toplam": valid}
+              "prim": n_prim, "hafta_sonu": n_weekend, "kirli_kaynak": n_kirli,
+              "gecerli_prim_toplam": valid}
     log.info("import: %s", result)
     return result
 

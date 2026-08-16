@@ -6,6 +6,115 @@
 
 ---
 
+## #013 — 2026-08-16 — Ons kaynağı SPOT'a taşındı; vadeli kontrat roll'ünün kirlettiği 14 gün z tabanından düşüldü
+
+**Tetikleyen:** Mert: *"üretilen tahminler sağlam bir şekilde mi üretiliyor…"* Derin
+denetimde prim serisinde **2026-07-29'da kalıcı −1.25 puanlık basamak** bulundu.
+AGENTS.md §5 kuralı uygulandı: *"metrik mi değişti, sistem mi?"* → **metrik değişti.**
+
+### Teşhis — kaynak sessizce enstrüman değiştirdi
+
+`yfinance` tek bir ticker (`GC=F`) için iki farklı seviye servis ediyor ve sistem
+ikisini birden kullanıyordu:
+
+| Yol | Ne döner | Kim kullanıyordu |
+|---|---|---|
+| `fast_info.last_price` | **o anki VADELİ kontrat** | `prim_history` → prim, z-skor, alarmlar |
+| `.history()` günlük bar | geri-düzeltmeli (≈spot) | `history_daily` → hüküm, backtest, grafik |
+
+2026-07-29'da Ağustos kontratı vadesini doldurdu, canlı kotasyon **Aralık'a
+(GCZ26)** atladı; contango farkı doğrudan `theoretical`'e girdi.
+
+**Kanıt (dördü bağımsız, 2026-08-15/16 ölçümü):**
+
+| Test | Sonuç |
+|---|---|
+| Kırılma anı | 07-29 07:20Z prim −0.43 → 10:09Z prim −1.91; ons **+%1.18**, Kapalıçarşı **−%0.32**, kur sabit |
+| Kontrat merdiveni | `GCQ26` 4380.40 · `GCV26` 4403.70 · **`GCZ26` 4437.30**; `GC=F` hafta içi = GCZ26 |
+| Truncgil spot ons | **$4,376.71** → GCZ26 bunun **%1.39** üstünde |
+| Seviye farkı bandı | 07-07…07-28: **+0.47…+0.78** (N=15) → 07-30…08-14: **+1.78…+1.93** (N=13) |
+
+Kırılma öncesi/sonrası bantların ikisi de ±0.15 puan genişlikte: fiziki altın bir
+sabah spota karşı %1.25 iskonto yapıp üç hafta orada durmaz — vadeli taşıma maliyeti
+tam olarak bunu yapar. **Günlük bar aynı anda hiç kırılmadı** → sorun `GC=F`'te değil,
+canlı uçtaki kontrat işaretçisinde.
+
+**Üretimdeki zararı:** `|prim| > %1.5` alarmı 08-11, 08-12, 08-13, 08-14'te ateşledi ve
+**dördü de Telegram'a gitti** (`telegram_outbox.jsonl` + chat export ile doğrulandı).
+Gerçek prim o günlerde −0.22…−0.62 idi. 07-29 raporu hareketin **−%1.41'ini
+"Kapalıçarşı primi"ne** yazdı — Kapalıçarşı hiçbir şey yapmamıştı.
+
+### A) Karar: ons **Truncgil spot**'tan alınır, yfinance ons'una YEDEK OLARAK BİLE düşülmez
+
+`config.yaml sources.truncgil.keys.ons: "ons"` + `archive_fetch` ons'u oradan okur;
+yfinance yalnız **kur** için kalır. `parse_tr_number` `$` işaretini düşürür (Truncgil
+ons'u `'$4.376,71'` biçiminde veriyor; TL alanlarında işaret yok).
+
+**Neden Truncgil:** ons ile gram **aynı kaynaktan ve aynı zaman damgasıyla** gelir →
+kaynaklar arası zaman kayması da biter. Yeni bağımlılık yok, ek HTTP çağrısı yok.
+
+**Neden sessiz yedek YOK:** yanlış bir ons, ons'suzluktan kötüdür — hatayı geri
+getirirdi. Truncgil düşerse `gram_has` da düşer (ölçüldü 2026-07-29: geçersiz
+kayıtların 20/20'sinde 8 alan birden boştu) → kayıt zaten geçersiz; ayrı bir ons
+yedeği hiçbir şey kurtarmaz.
+
+**Doğrulama:** canlı çekim → CSV → DB tam zinciri prim **−0.463%** üretti (kırılma
+öncesi rejim: −0.47…−0.77).
+
+### B) Karar: kirli pencere **z tabanından düşülür** (silinmez, düzeltilmez)
+
+`stats.prim_kirli_pencereler` — 2026-07-29T10:00Z → 2026-08-17T00:00Z arası kayıtlar
+`indicative=1` + `reason="kirli_kaynak:…"` işaretlenir; `prim_series` ve
+`count_valid_prim_days` ikisi de dışlar.
+
+**Neden zorunlu — z-skor GENİŞLEYEN pencere** (`calc.zscore` + `db.prim_series`), yani
+kirli günler asla dışarı çıkmaz. Gerçek arşiv üzerinde A/B ölçümü:
+
+| | geçerli gün | z tabanı std | **tespit eşiği** |
+|---|---:|---:|---:|
+| Kirli bırakılırsa | 34/60 | 0.609 | **1.22 puan** |
+| Kirli düşülürse | 20/60 | 0.123 | **0.25 puan** |
+
+Detektör **~5 kat sağırlaşıyordu**: gerçek 1 puanlık bir Kapalıçarşı kopuşu —
+kapının var oluş sebebi — z=−1.12 verip hiç ateşlemezdi. Bant ayrıca merkezden
+kaymıştı (`[−1.96%, +0.13%]`): alt taraf kör, üst taraf aşırı hassas.
+
+**"Beklesek seyrelir mi?" — hayır.** 760 geçerli günde (≈Aralık 2028) eşik hâlâ 0.39p,
+temiz referansın (0.22p) ~2 katı. Bekleme bir seçenek değil.
+
+**Neden CSV düzeltilmedi:** `data/archive/*.csv` HAM GÖZLEM kaydıdır. O anki gerçek
+spot ons'u bilmiyoruz (yalnız günlük kapanış bar'ı var, o da gün-içi gözlem değil).
+Ham veriyi tahminle yeniden yazmak ölçümü uydurmaya çevirirdi.
+
+**Neden kural KOD'da, DB'de değil:** `insert_prim` INSERT OR REPLACE ve `import_all`
+**her gün tüm arşivi baştan okuyor** — DB'de elle işaretlemek bir sonraki Actions
+koşumunda sessizce silinirdi (ölçüldü 2026-08-16).
+
+**Bedeli:** kapı **~2026-09-16 → ~2026-10-02** (≈16 gün). Kabul edildi: 16 gün
+gecikme, kalıcı sağır bir detektöre karşı ucuz.
+
+### Regresyon zırhı
+7 mutasyonun **7'si yakalandı** (ons'u yfinance'e geri al · `$` temizliğini kaldır ·
+config anahtarını sil · kirli işareti uygulama · sebebi yazma · pencere sınırını
+gevşet · pencere listesini boşalt). Test 851 → **855**.
+
+### Kapsam dışı bırakılanlar (bilerek)
+- `src/collector.py` hâlâ yfinance ons'u kullanıyor. **Hiçbir yerde koşmuyor**
+  (üretim Actions push-only); test edilemeyen ölü bir yolu değiştirmek tutarlı
+  bırakıp belgelemekten kötü. Oracle Cloud'a geçilirse **önce burası düzeltilecek.**
+- Uzlaşı paneli, hafta sonu beklentisi, kapsama metriği: ölçüldü, kusurlu, ama
+  aktif zarar üretmiyor → bu ADR'nin kapsamında değil (bkz. denetim notları).
+
+**Tekrar gözden geçir:**
+- Truncgil `ons` alanı kaybolur/şema değişirse (koruma testi düşer).
+- Bir sonraki COMEX roll'ü **~2026-11-25** (yılda 5: Oca-Mar-May-Tem-Kas). Truncgil
+  spot kullanıldığı sürece etkilenmemeliyiz — o tarihte prim serisinde basamak
+  OLMADIĞI doğrulanacak (TAKVİM'e işlendi).
+- Eşiğin kendi kalibrasyonu ayrı iştir: temiz seride bile `|z|>2` bandı dar
+  (`[−0.86, −0.37]`) → **~2026-09-25 EŞİK KARARI** maddesi geçerliliğini koruyor.
+
+---
+
 ## #012 — 2026-08-11 — Bekleyen 4 karar kapatıldı: kademe KAPALI, gölge kol YAPILMAYACAK, makas eşiği maddi, reel faiz tabanı şeffaf
 
 **Tetikleyen:** Mert: *"bunları gerekli görüyorsan uygula veya uygulama … profesyonel

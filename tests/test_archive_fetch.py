@@ -58,4 +58,10 @@ def test_fetch_row_wires_retry(monkeypatch):
     row = af.fetch_row(cfg)
     assert tcalls["n"] == 2                          # retry devreye girdi
     assert row["gram_has_sell"] == 6101.0
-    assert row["ons_usd"] == 4000.0
+    assert row["usdtry"] == 47.0                     # kur: yfinance
+    # ons: bu sahte Truncgil yanıtında 'ons' anahtarı YOK → None kalır.
+    # Eskiden burada `== 4000.0` yazıyordu, yani ons yfinance'ten alınıyordu;
+    # o kablolama 2026-07-29'da vadeli kontrat roll'üyle prim'i 1.25 puan bozdu
+    # (bkz. test_arsiv_sozlesmesi.test_ons_truncgil_spottan_gelir_...).
+    # Bu satır bir ölçümü değil, o günkü kablolamayı yansıtıyordu.
+    assert row["ons_usd"] is None

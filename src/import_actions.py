@@ -46,6 +46,54 @@ def kirli_pencere(ts, pencereler) -> Optional[str]:
     return None
 
 
+def turetilmis_gunler(cfg: dict, files, cal) -> dict:
+    """Gün → piyasa bacağı teorik bacaktan TÜRETİLMİŞ mi (bağımsızlık nöbetçisi).
+
+    İki bacak da AYNI satıcıdan alınır (Truncgil ons + Truncgil usd_mid); araya
+    yfinance kuru sokulursa onun gürültüsü kimliği maskeler. Yalnız forex AÇIK
+    kayıtlar sayılır: hafta sonu tüm alanlar donduğu için oran zaten sabittir ve
+    "türetilmiş" gibi görünür — o günler `weekend=1` ile zaten tabandan düşüyor.
+
+    Kayıt sayısı yetersiz günlerde (Actions ritmi düştüğünde) hüküm verilemez;
+    o günler EN SON hüküm verilebilmiş günün kararını taşır (carry-forward).
+    Sessizce "temiz" saymak, kimliğin kapı sayacına sızmasına izin verirdi.
+    """
+    sc = cfg["stats"]
+    if not sc.get("bagimsizlik_nobetcisi_aktif", False):
+        return {}
+    esik = float(sc["bagimsizlik_cv_esigi"])
+    min_kayit = int(sc["bagimsizlik_min_kayit"])
+    troy = cfg["instruments"]["troy_ounce_gram"]
+    gun_oranlari: dict = {}
+    for path in files:
+        with open(path, encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                ts_iso = row.get("ts_utc")
+                if not ts_iso:
+                    continue
+                ts = datetime.fromisoformat(ts_iso).astimezone(timezone.utc)
+                if cal.is_weekend_closed_forex(ts) or cal.is_us_gold_holiday(ts):
+                    continue
+                ons = _f(row.get("ons_usd"))
+                gram_has = _f(row.get("gram_has_sell"))
+                ub, us = _f(row.get("usd_buy")), _f(row.get("usd_sell"))
+                if not (ons and gram_has and ub and us):
+                    continue
+                theo = calc.theoretical_gram(ons, (ub + us) / 2.0, troy)
+                if theo:
+                    gun_oranlari.setdefault(ts_iso[:10], []).append(gram_has / theo)
+    out: dict = {}
+    son_hukum = None
+    for gun in sorted(gun_oranlari):
+        h = calc.turetilmis_mi(gun_oranlari[gun], esik, min_kayit)
+        if h is None:
+            h = son_hukum          # kayıt az → komşudan taşı
+        else:
+            son_hukum = h
+        out[gun] = bool(h)
+    return out
+
+
 def import_all(cfg: dict) -> dict:
     from . import logging_setup
     logging_setup.setup("import_actions", cfg)
@@ -54,7 +102,11 @@ def import_all(cfg: dict) -> dict:
     inst = cfg["instruments"]
     files = sorted(glob.glob(str(util.abspath("data/archive") / "*.csv")))
     kirli_pencereler = cfg["stats"].get("prim_kirli_pencereler", [])
-    n_ticks = n_prim = n_weekend = n_rows = n_kirli = 0
+    # Bağımsızlık nöbetçisi: ÖNCE tüm arşivi tarayıp hangi günlerde piyasa
+    # bacağının teorik bacaktan türetildiğini belirle (gün-içi ölçüm gerektiği
+    # için satır satır karar verilemez), sonra o günleri işaretle.
+    turetilmis = turetilmis_gunler(cfg, files, cal)
+    n_ticks = n_prim = n_weekend = n_rows = n_kirli = n_turetilmis = 0
 
     for path in files:
         with open(path, encoding="utf-8") as f:
@@ -120,19 +172,25 @@ def import_all(cfg: dict) -> dict:
                     # `count_valid_prim_days` ikisi de dışlar, yani z-skor
                     # tabanına ve 60 günlük kapı sayacına GİRMEZ.
                     kirli = kirli_pencere(ts_iso, kirli_pencereler)
+                    # Türetilmiş gün: kayıt teknik olarak üretildi ama iki bacak
+                    # bağımsız değil → prim ölçüm taşımıyor (bkz. nöbetçi).
+                    tur = turetilmis.get(ts_iso[:10], False) and not forex_closed
                     db.insert_prim(
                         con, ts_utc=ts_iso, ons_usd=ons, usdtry=usd,
                         theoretical=theo, market_has=gram_has, gram_retail=gram_retail,
                         prim_pct=prim, prim_pct_naive=prim_naive, spread_pct=spread,
                         quarter_prim_pct=qp,
-                        indicative=1 if (forex_closed or kirli) else 0,
+                        indicative=1 if (forex_closed or kirli or tur) else 0,
                         weekend=1 if weekend else 0, holiday=1 if holiday else 0,
                         reason=(f"kirli_kaynak:{kirli}" if kirli else
+                                "turetilmis" if tur else
                                 "gh_actions_import" + ("_weekend" if forex_closed else "")),
                     )
                     n_prim += 1
                     if kirli:
                         n_kirli += 1
+                    if tur:
+                        n_turetilmis += 1
                     if weekend:
                         db.insert_weekend_exp(con, ts_iso, gram_has, theo, prim)
                         n_weekend += 1
@@ -142,6 +200,8 @@ def import_all(cfg: dict) -> dict:
     con.close()
     result = {"dosya": len(files), "satir": n_rows, "tick": n_ticks,
               "prim": n_prim, "hafta_sonu": n_weekend, "kirli_kaynak": n_kirli,
+              "turetilmis": n_turetilmis,
+              "turetilmis_gun": sum(1 for v in turetilmis.values() if v),
               "gecerli_prim_toplam": valid}
     log.info("import: %s", result)
     return result

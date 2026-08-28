@@ -22,6 +22,55 @@ def prim_pct(market_price: float, theoretical: float) -> float:
     return (market_price / theoretical - 1.0) * 100.0
 
 
+def bagimsizlik_cv(oranlar: Sequence[float]) -> Optional[float]:
+    """Piyasa/teorik oranının değişim katsayısı (sd/ort) — BAĞIMSIZLIK ÖLÇÜSÜ.
+
+    Prim, tanım gereği İKİ BAĞIMSIZ fiyatın farkıdır. Eğer satıcı gram fiyatını
+    kendi ons ve kur alanlarından TÜRETİYORSA oran cebirsel bir sabite çöker ve
+    "prim" artık piyasayı değil satıcının kendi çarpanını ölçer.
+
+    Oran, iki bacağı da AYNI satıcıdan alarak hesaplanmalıdır; araya farklı bir
+    kur beslemesi girerse onun gürültüsü kimliği maskeler (ölçüldü 2026-08-28:
+    saf Truncgil tabanında gün-içi sd 1.7e-05, araya yfinance kuru girince
+    4.9e-04 — 29 kat).
+
+    Değişim katsayısı kullanılır ki saflık çarpanı (995/1000) sadeleşsin ve
+    eşik ölçek-bağımsız kalsın.
+    """
+    if len(oranlar) < 2:
+        return None
+    ort = mean(oranlar)
+    if ort == 0:
+        return None
+    return pstdev(oranlar) / abs(ort)
+
+
+def turetilmis_mi(oranlar: Sequence[float], esik: float,
+                  min_kayit: int) -> Optional[bool]:
+    """Piyasa bacağı teorik bacaktan türetilmiş mi? None = hüküm verilemez.
+
+    EŞİĞİN DAYANAĞI (ölçüldü 2026-08-28, 934 arşiv kaydı, iki rejim):
+      - gerçek ölçüm rejimi (07-07…08-16, hafta içi, N=29 gün): en düşük CV
+        2.97e-04, medyan 5.57e-04
+      - kimlik rejimi (08-17…08-28, N=8 gün): en yüksek CV 5.50e-05,
+        medyan 1.66e-05
+      İki küme ÖRTÜŞMÜYOR; aradaki boşluk 5.4 kat, geometrik ortası 1.28e-04.
+      Yuvarlama gürültüsü tabanı (2 ondalık gram + 4 ondalık kur) ~2.2e-06.
+    Yani 1e-04 eşiği tabanın ~45 katı, en küçük gerçek ölçümün ~3'te biri —
+    iki rejim arasındaki boşluğa oturuyor, veriye UYDURULMADI.
+
+    `min_kayit`: gün-içi sd az kayıtla anlamsızdır. Actions ritmi düştüğünde
+    (ölçüldü 2026-08-27/28: 2 kayıt/gün) hüküm verilemez → None döner ve
+    çağıran taraf komşu günün hükmünü taşır.
+    """
+    if len(oranlar) < min_kayit:
+        return None
+    cv = bagimsizlik_cv(oranlar)
+    if cv is None:
+        return None
+    return cv < esik
+
+
 def spread_pct(buying: float, selling: float) -> float:
     """Alış-satış makası, orta fiyata oran (%)."""
     mid = (buying + selling) / 2.0

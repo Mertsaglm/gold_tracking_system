@@ -254,11 +254,18 @@ def arsiv_csv_yaz(kok: Path, satir_sayisi: int = 5) -> Path:
         for i in range(satir_sayisi):
             ons, kur = 4000.0 + i, 47.0
             teorik = ons / 31.1034768 * kur
+            # Prim gün içinde OYNAMALI. Eskiden sabit çarpandı (teorik × 1.0045)
+            # ve bu, piyasa bacağının teorik bacaktan TÜRETİLDİĞİ bir seri
+            # üretiyordu — yani ölçülmesi imkânsız bir prim. Bağımsızlık
+            # nöbetçisi (denetim 2026-08-28) bunu haklı olarak yakaladı.
+            # Sentetik veri rejimsizse koruma testleri vacuous geçer
+            # (AGENTS.md §5): gerçek arşivde gün-içi CV 3e-04…6e-03.
+            p = 1.004 + 0.0005 * (i % 3)        # %0.40 … %0.50 arası salınım
             f.write(",".join([
                 f"{gun.isoformat()}T{10 + i:02d}:15:00+00:00",
                 f"{ons}", f"{kur}",
-                f"{teorik * 1.006:.2f}", f"{teorik * 1.0065:.2f}",
-                f"{teorik * 1.004:.2f}", f"{teorik * 1.0045:.2f}",
+                f"{teorik * (p + 0.002):.2f}", f"{teorik * (p + 0.0025):.2f}",
+                f"{teorik * p:.2f}", f"{teorik * (p + 0.0005):.2f}",
                 f"{teorik * 1.804 * 0.916 * 1.02:.2f}",
                 f"{teorik * 1.804 * 0.916 * 1.025:.2f}",
                 f"{kur - 0.01}", f"{kur}"]) + "\n")

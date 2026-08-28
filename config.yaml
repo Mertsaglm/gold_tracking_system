@@ -142,6 +142,20 @@ stats:
   # 1 puanlık Kapalıçarşı kopuşu (kapının var oluş sebebi) z=-1.12 verip HİÇ
   # ATEŞLEMEZDİ. Seyrelmesini beklemek çözüm değil: 760 geçerli günde (≈Aralık
   # 2028) bile eşik 0.39p, temiz referansın ~2 katı.
+  # ---- BAĞIMSIZLIK NÖBETÇİSİ (denetim 2026-08-28) ----
+  # Prim iki BAĞIMSIZ fiyatın farkıdır. ADR #013 ons'u gram ile aynı satıcıya
+  # (Truncgil) taşıyınca bağımsızlık kayboldu: gram_has ≡ ons × kur × 0.995
+  # cebirsel olarak, yani ons prim formülünde SADELEŞİYOR. Ölçüldü: 08-17
+  # sonrası prim'in %99.81'i yalnız iki USD beslemesinin oranı; ons'un katkısı
+  # sıfır. Düzeltme öncesi aynı vekil varyansın %18'ini açıklıyordu.
+  #
+  # Nöbetçi her gün gün-içi oranın değişim katsayısını ölçer; eşiğin altındaysa
+  # o günün kayıtları `indicative=1` + reason=`turetilmis` işaretlenir → z-skor
+  # tabanına ve 60 günlük kapı sayacına GİRMEZ. Kayıt SİLİNMEZ.
+  # Eşiğin gerekçesi: calc.turetilmis_mi docstring'i.
+  bagimsizlik_nobetcisi_aktif: true
+  bagimsizlik_cv_esigi: 1.0e-4
+  bagimsizlik_min_kayit: 5
   prim_kirli_pencereler:
     - ad: "ons_vadeli_kontrat_gcz26"
       baslangic_utc: "2026-07-29T10:00:00+00:00"

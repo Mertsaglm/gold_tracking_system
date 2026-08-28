@@ -116,9 +116,31 @@ def _current_regime(cfg, con):
     except Exception as e:
         log.warning("rejim hesabı hata: %s", e)
         return None, None
+    # DEJENERELİK KAPISI (denetim 2026-08-28, B-14): `regime_label` üç girdiden
+    # biri None ise "X" döner. FRED DFII10 ölü olduğu için `_fred_aligned`
+    # 2585/2585 güne None veriyor → sınıflandırıcı TEK SINIFLI oluyor ve
+    # "X rejimi" tüm veri, yani tabanın KENDİSİ hâline geliyor. Ölçüldü:
+    # X ve `_baseline` satırları birebir aynı (gun=2585, n=40, medyan +10.632,
+    # kazanma %82.5). Rapor bunu 48/48 gün "güven: orta" ile bir REJİM ÖLÇÜMÜ
+    # gibi bastı; bilgi değeri tam olarak sıfırdı.
+    #
+    # "Yapamam" ile "ölçtüm" arasındaki ayrım bu projenin kendi ilkesi
+    # (bkz. backtest.py: bilgi değeri FARKtır, mutlak medyan TL artefaktıdır).
+    # FRED geri gelirse sınıflandırıcı çok sınıflı olur ve sinyal kendiliğinden
+    # çalışır — burada bir şey açmak/kapatmak gerekmez.
+    if len(set(labels)) < 2:
+        log.warning("rejim sınıflandırıcı dejenere (tek sınıf: %s) → sinyal yok",
+                    labels[-1])
+        return None, None
     cur = labels[-1]
     stats = bt._regime_stats_table(hist, labels, cfg["backtest"]["horizons_days"]["3ay"])
-    return cur, stats.get(cur, {}).get("gram_tl")
+    satir = stats.get(cur, {})
+    gram = dict(satir.get("gram_tl") or {})
+    if gram:
+        # `gun` DIŞ sözlükte, `n` içeride: ikisi farklı büyüklük (gün vs
+        # örtüşmeyen pencere). Rapor ikisini de yazabilsin diye birleştiriyoruz.
+        gram["gun"] = satir.get("gun")
+    return cur, (gram or None)
 
 
 def build_signals(cfg: dict) -> dict:
@@ -172,11 +194,27 @@ def build_signals(cfg: dict) -> dict:
 
     # 3) Güncel rejim + backtest köprüsü -----------------------------------
     regime, rstat = _current_regime(cfg, con)
+    if not regime:
+        # Sessizce düşmek, "ölçtüm ama bir şey çıkmadı" ile "ölçemedim"i aynı
+        # şeye çevirir. Rapor NEDEN söyleyemediğini yazsın (denetim 2026-08-28).
+        out.append(_signal("rejim", YOK, ["trend", "birikimci"],
+                           ["Reel faiz serisi (FRED DFII10) alınamıyor → rejim "
+                            "sınıflandırıcı tek sınıfa çöküyor.",
+                            "Tek sınıflı etiket 'rejim' değil, tüm verinin "
+                            "kendisidir; tabandan farkı tanım gereği sıfır."],
+                           "yok",
+                           "FRED serisi dönerse sınıflandırma kendiliğinden açılır.",
+                           "1-3 ay", backtest="ölçülemiyor — rejim ayrımı yok"))
     if regime:
         bridge = "tarihsel doğrulaması yok"
         if rstat and rstat.get("n"):
             weak = " (istatistiksel olarak zayıf)" if rstat.get("weak") else ""
-            bridge = (f"Bu rejim 2016'dan beri {rstat['n']} gün; 3 ay sonra gram TL "
+            # `n` ÖRTÜŞMEYEN PENCERE sayısıdır, gün değil (denetim 2026-08-28,
+            # B-10): rapor 48/48 gün "40 gün" yazdı, gerçek gün sayısı 2585'ti.
+            # İki büyüklüğü aynı cümlede kullanmak bağımsız gözlem sayısını
+            # okuyucuya 60 kat küçük gösteriyordu.
+            bridge = (f"Bu rejim 2016'dan beri {rstat.get('gun', '?')} gün "
+                      f"({rstat['n']} örtüşmeyen 3-ay penceresi); 3 ay sonra gram TL "
                       f"medyan {rstat['medyan']:+.1f}%, kazanma %{rstat['kazanma_pct']:.0f}{weak}.")
         defs = {"A": "birikim penceresi", "B": "güçlü trend", "C": "zayıf rejim",
                 "D": "anomali/MB alım rejimi", "X": "karışık"}

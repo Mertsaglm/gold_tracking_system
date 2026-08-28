@@ -205,26 +205,43 @@ def dxy_signal(cfg: dict) -> Signal:
 
 
 def ons_gma_signal(cfg: dict) -> Signal:
-    ic = cfg["indicators"]
+    """Ons 50/200 GMA — fiyat da ortalamalar da AYNI seriden, DB'den.
+
+    ESKİDEN (denetim 2026-08-28, B-15): bu fonksiyon kendi ağ isteğini yapıp
+    `yf.Ticker("GC=F").history(...)` son satırını fiyat sayıyordu. O satır
+    KAPANMAMIŞ günün canlı barıydı ve ADR #013'ten sonra vadeli kontrat primi
+    taşıyordu. Sonuç: aynı raporun içinde iki ons —
+      Fiyat Özeti (Truncgil spot)  4.660 $
+      GMA paneli   (canlı GC=F)    4.702 $     → 12/12 raporda ort. +1.2 puan
+    ve `label_gma` KİRLİ fiyatı TEMİZ kapanış ortalamalarıyla karşılaştırıyordu,
+    yani "fiyat > 200GMA" testi sistematik olarak olumlu yönde yanlıydı.
+
+    Şimdi seri `ohlc_daily`'den okunuyor: kapanmamış bar ve hafta sonu barları
+    zaten `ohlc_hist` tarafından düşürülmüş durumda, grafik bölümü de aynı
+    seriyi kullanıyor → rapor-içi çelişki YAPISAL olarak imkânsız.
+    """
+    from . import db, ohlc_hist
+    sym = cfg["chart"]["ohlc"]["symbols"]["ons"]
     try:
-        import yfinance as yf
-        close = None
-        for tk in (ic["ons_ticker"], "XAUUSD=X", "GLD"):
-            h = yf.Ticker(tk).history(period="1y", interval="1d")
-            if not h.empty and h["Close"].dropna().shape[0] >= 200:
-                close = h["Close"].dropna()
-                break
-        if close is None:
-            return Signal("Ons 50/200 GMA", YOK, "yeterli tarih yok")
-        price = float(close.iloc[-1])
-        gma50 = float(close.tail(50).mean())
-        gma200 = float(close.tail(200).mean())
+        con = db.connect(cfg)
+        try:
+            bars = ohlc_hist.load_ohlc(con, sym)
+        finally:
+            con.close()
+        close = [b["c"] for b in bars if b["c"] is not None]
+        if len(close) < 200:
+            return Signal("Ons 50/200 GMA", YOK,
+                          f"yeterli tarih yok ({len(close)} bar)")
+        price = float(close[-1])
+        gma50 = float(sum(close[-50:]) / 50.0)
+        gma200 = float(sum(close[-200:]) / 200.0)
         lbl = label_gma(price, gma50, gma200)
         return Signal("Ons 50/200 GMA", lbl,
-                      f"fiyat {price:.0f} · 50G {gma50:.0f} · 200G {gma200:.0f}")
+                      f"fiyat {price:.0f} · 50G {gma50:.0f} · 200G {gma200:.0f} "
+                      f"(son kapanmış bar)")
     except Exception as e:
         log.warning("ons GMA hata: %s", e)
-        return Signal("Ons 50/200 GMA", YOK, "yfinance hatası")
+        return Signal("Ons 50/200 GMA", YOK, "OHLC okunamadı")
 
 
 OZ_PER_TONNE = 32150.7466
@@ -289,8 +306,30 @@ def real_deposit_signal(cfg: dict, reel_net_pct: Optional[float]) -> Signal:
     return Signal("TL reel net mevduat", lbl, f"{reel_net_pct:+.1f}% (altın fırsat maliyeti)")
 
 
+_PANEL_CACHE: dict = {}
+
+
 def build_panel(cfg: dict, reel_net_pct: Optional[float] = None) -> dict:
-    """Tüm göstergeleri toplar, uzlaşı skorunu döner."""
+    """Tüm göstergeleri toplar, uzlaşı skorunu döner. SÜREÇ İÇİNDE TEK KEZ.
+
+    NEDEN MEMO (denetim 2026-08-28, B-12): panel bir rapor akışında İKİ KEZ
+    çağrılıyordu (`report.py` tablosu + `signals.py` kadran sinyali) ve her
+    çağrı bağımsız ağ isteği yapıyordu. Bir gösterge iki çağrı arasında cevap
+    verip vermeyince payda değişiyordu — ölçüldü: 48 raporun 7'sinde iki payda
+    farklı (07-10, 07-16, 07-18, 07-21, 07-22, 08-13, 08-24), ikisinde ETİKET
+    de zıt (panel "🔴 olumsuz -1/3" · kadran "nötr -1/4"). Aynı rapor kendi
+    içinde çelişiyordu ve hangisinin doğru olduğu belirlenemiyordu.
+
+    `_FRED_CACHE` yalnız FRED'i koruyordu; çelişki DXY/Trends/GLD bacaklarından
+    da geliyor. Panelin tamamını memolamak rapor-içi tutarlılığı garanti eder.
+
+    NOT: bu, "payda günden güne oynuyor" sorununu ÇÖZMEZ — o bir metrik tanımı
+    sorusu (normalizasyon paydası sabit mi olmalı) ve ayrı karar gerektiriyor.
+    Burada kapatılan yalnız aynı raporun kendi kendisiyle çelişmesi.
+    """
+    anahtar = (id(cfg), reel_net_pct)
+    if anahtar in _PANEL_CACHE:
+        return _PANEL_CACHE[anahtar]
     signals = [
         real_rate_signal(cfg),
         dxy_signal(cfg),
@@ -316,4 +355,6 @@ def build_panel(cfg: dict, reel_net_pct: Optional[float] = None) -> dict:
                                                        c["uzlasi"]["n"])))
         except Exception as e:
             log.warning("grafik göstergesi hata: %s", e)
-    return {"signals": signals, "consensus": consensus(signals)}
+    panel = {"signals": signals, "consensus": consensus(signals)}
+    _PANEL_CACHE[anahtar] = panel
+    return panel

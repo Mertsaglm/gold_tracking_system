@@ -357,3 +357,61 @@ def test_uzlasi_yonu_gercekten_degisiyor():
     assert consensus([Signal("a", OLUMLU, "")] * 3)["yon"] == OLUMLU
     assert consensus([Signal("a", OLUMSUZ, "")] * 3)["yon"] == OLUMSUZ
     assert consensus([Signal("a", OLUMLU, ""), Signal("b", OLUMSUZ, "")])["yon"] == NOTR
+
+
+# ---------------------------------------------------------------------------
+# REJİM SİNYALİ — tek sınıfa çökmüş sınıflandırıcı "ölçüm" iddia edemez
+# (denetim 2026-08-28, B-14). Aynı ders L-010, farklı metrik: rapor 48/48 gün
+# "Bu rejim 2016'dan beri 40 gün; medyan +10.6%, kazanma %82" bastı ve bu satır
+# `_baseline` (tüm günler) satırıyla BİREBİR aynıydı — FRED DFII10 ölü olduğu
+# için `regime_label` 2585/2585 güne "X" veriyordu. Tabanın kopyasını rejim
+# ölçümü diye sunmak, farkı sıfır olan bir kenar iddiasıdır.
+# ---------------------------------------------------------------------------
+
+def test_tek_sinifli_rejim_olcum_iddia_etmiyor(izole_kok, ag_kapali, monkeypatch):
+    """FRED ölüyken sınıflandırıcı tek sınıfa çöker → sinyal 'ölçemedim' demeli."""
+    from src import backtest as bt
+
+    cfg, _ = izole_kok
+    con, _ = sentetik_db(cfg, gun=400)
+    monkeypatch.setattr(bt, "_fred_aligned",
+                        lambda c, dates: [None] * len(dates))
+    try:
+        # tetikleyicinin gerçekten kurulduğunu doğrula (yoksa test vacuous geçer)
+        hist = [dict(r) for r in signals._history(con)]
+        labels = bt._label_regimes(cfg, hist, [None] * len(hist))
+        assert len(set(labels)) == 1, "kurgu dejenere sınıflandırıcı üretmedi"
+
+        regime, rstat = signals._current_regime(cfg, con)
+        assert regime is None and rstat is None, (
+            "tek sınıflı sınıflandırıcı rejim ölçümü döndürdü — döndürülen "
+            "etiket tüm veriyi kapsıyor, yani tabanın kendisi")
+    finally:
+        con.close()
+
+
+def test_dejenere_rejimde_rejim_satiri_SEBEP_yaziyor():
+    """Satırı sessizce düşürmek 'ölçemedim' ile 'bir şey çıkmadı'yı aynı yapar.
+
+    Yapısal denetim: `_current_regime` None döndüğünde `build_signals` bir
+    rejim satırı üretmeli ve sebebi yazmalı. (Ağ bağımlı panel bacakları
+    yüzünden tüm sinyal hattını koşturmak yerine kaynak sözleşmesi denetlenir —
+    aynı kalıp `test_yapisal_korumalar.py`'de de kullanılıyor.)
+    """
+    kaynak = util.abspath("src/signals.py").read_text(encoding="utf-8")
+    i = kaynak.find("regime, rstat = _current_regime")
+    assert i > 0, "rejim sinyali kurulumu bulunamadı"
+    blok = kaynak[i:i + 900]
+    assert "if not regime:" in blok, (
+        "rejim None iken satır sessizce düşüyor — 'ölçemedim' basılmıyor")
+    assert "FRED" in blok, "sessiz düşüşün yerine geçen satır sebebi yazmıyor"
+
+
+def test_rejim_koprusu_gun_ile_pencereyi_KARISTIRMIYOR():
+    """`n` örtüşmeyen pencere sayısıdır; 'gün' diye basmak N'i 60× küçük gösterir."""
+    kaynak = util.abspath("src/signals.py").read_text(encoding="utf-8")
+    i = kaynak.find("Bu rejim 2016'dan beri")
+    assert i > 0, "rejim köprü cümlesi bulunamadı"
+    cumle = kaynak[i:i + 260]
+    assert "örtüşmeyen" in cumle, (
+        "rejim köprüsü pencere sayısını 'gün' diye sunuyor (B-10)")

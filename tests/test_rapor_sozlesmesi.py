@@ -330,3 +330,50 @@ def test_reel_faiz_tabani_tufe_yokken_cokmez():
     s = report.reel_faiz_tabani_satiri(ctx)
     assert len(s) == 1 and "BEKLENTİSİ" in s[0]
     assert report.reel_faiz_tabani_satiri({}) == []
+
+
+# ---------------------------------------------------------------------------
+# SESSİZ ARIZALAR RAPORDA (denetim 2026-08-28, B-19 / B-03)
+# ---------------------------------------------------------------------------
+
+def test_gunluk_adim_hatasi_raporda_gorunuyor(izole_kok):
+    """`daily_job`'un kritik olmayan 6 adımı patlarsa Actions YEŞİL kalıyor.
+
+    ADR #004'teki 17 gün fark edilmeyen `history_daily` donmasının aynı zemini:
+    hata `result["hatalar"]`'a yazılıyor, `logs/` gitignore'da, rapor hiç
+    bakmıyordu. Sessiz kalan arıza yaşayan arızadır.
+    """
+    from src import report
+
+    cfg, _ = izole_kok
+    assert report.gunluk_adim_satiri(cfg) == "", "temizken satır basılıyor"
+
+    util.write_json(cfg["alerts"]["state_file"],
+                    {"saglik": {"gunluk_adimlar": {
+                        "utc": "2026-08-28T15:35:00+00:00",
+                        "hatalar": {"history": "yfinance timeout",
+                                    "tahmin": "KeyError: asof"}}}})
+    s = report.gunluk_adim_satiri(cfg)
+    assert s, "adım patladı ama rapor satırı boş — sessiz arıza"
+    assert "history" in s and "tahmin" in s, f"patlayan adımlar yazılmıyor: {s}"
+
+
+def test_turetilmis_prim_raporun_EN_USTUNDE(izole_kok):
+    """Prim ölçüm taşımıyorsa bunu okumadan hiçbir sayıya bakılmamalı."""
+    from src import db, report
+
+    cfg, _ = izole_kok
+    con = db.connect(cfg)
+    try:
+        assert report.prim_turetilmis_satiri(con) == "", "temizken satır basılıyor"
+        db.insert_prim(con, ts_utc="2026-08-28T12:00:00+00:00", ons_usd=4600.0,
+                       usdtry=48.0, theoretical=7100.0, market_has=7064.5,
+                       gram_retail=7100.0, prim_pct=-0.50, prim_pct_naive=0.0,
+                       spread_pct=0.2, quarter_prim_pct=1.5, indicative=1,
+                       weekend=0, holiday=0, reason="turetilmis")
+        con.commit()
+        s = report.prim_turetilmis_satiri(con)
+        assert s and "TÜRETİLMİŞ" in s, (
+            f"prim kimliğe çökmüş ama rapor sessiz: {s!r}")
+    finally:
+        con.close()

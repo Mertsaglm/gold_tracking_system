@@ -148,6 +148,63 @@ def bildirim_hatti_satiri(cfg: dict) -> str:
         return ""
 
 
+def gunluk_adim_satiri(cfg: dict) -> str:
+    """Dün patlayan KRİTİK OLMAYAN adımlar (denetim 2026-08-28, B-19).
+
+    `daily_job` yalnız import+rapor'u kritik sayar; kalan 6 adım patlarsa
+    Actions yeşil kalır. Sessiz kalan bir arıza yaşayan bir arızadır — bildirim
+    hattı satırıyla (ADR #011) AYNI yerde görünür olsun.
+
+    Boş string = tüm adımlar geçti.
+    """
+    try:
+        st = util.read_json(cfg["alerts"]["state_file"], {}) or {}
+        blok = (st.get("saglik") or {}).get("gunluk_adimlar") or {}
+        hatalar = blok.get("hatalar") or {}
+    except Exception as e:                            # noqa: BLE001
+        log.warning("günlük adım defteri okunamadı: %s", e)
+        return ""
+    if not hatalar:
+        return ""
+    adlar = ", ".join(sorted(hatalar))
+    ilk = str(next(iter(hatalar.values())))[:160].replace("\n", " ")
+    return (f"> ⚠️ **GÜNLÜK İŞ EKSİK ÇALIŞTI:** şu adımlar patladı — **{adlar}**. "
+            f"Actions yeşil göründü çünkü bunlar kritik adım değil. "
+            f"İlk hata: `{ilk}`")
+
+
+def prim_turetilmis_satiri(con) -> str:
+    """Prim'in iki bacağı bağımsız değilse ekranın en üstüne kırmızı satır.
+
+    NEDEN RAPORDA (denetim 2026-08-28, B-03/B-21): ADR #013 ons'u gram ile aynı
+    satıcıya taşıyınca prim bir KİMLİĞE çöktü (`gram_has ≡ ons × kur × 0.995`,
+    ons sadeleşiyor). 8 gün boyunca 855 test yeşil kaldı, rapor her gün
+    "✅ Prim ±%3 makul bandında" bastı ve kapı sayacı ilerlemeye devam etti.
+    Sessiz kalan tek şey ölçümün kendisiydi. Bildirim hattı satırının (ADR #011)
+    kanıtlanmış kalıbı burada da geçerli: arıza görünür olmazsa yaşar.
+
+    Boş string = son gün bağımsız ölçüm taşıyor, rapor sessiz kalır.
+    """
+    row = con.execute(
+        "SELECT substr(ts_utc,1,10) g, COUNT(*) n FROM prim_history "
+        "WHERE reason = 'turetilmis' GROUP BY g ORDER BY g DESC LIMIT 1"
+    ).fetchone()
+    if not row:
+        return ""
+    son_gun = con.execute(
+        "SELECT substr(MAX(ts_utc),1,10) FROM prim_history").fetchone()[0]
+    if row[0] != son_gun:
+        return ""                                   # arıza geçmişte kalmış
+    toplam = con.execute(
+        "SELECT COUNT(DISTINCT substr(ts_utc,1,10)) FROM prim_history "
+        "WHERE reason = 'turetilmis'").fetchone()[0]
+    return (f"> 🔴 **PRİM ÖLÇÜM TAŞIMIYOR:** piyasa bacağı teorik bacaktan "
+            f"TÜRETİLMİŞ — ons prim formülünde sadeleşiyor, geriye satıcının "
+            f"kendi saflık çarpanı kalıyor. {toplam} gün kapı sayacının "
+            f"**dışında**. Prim, prim z-skoru ve hafta sonu beklentisi bugün "
+            f"karar taşımıyor.")
+
+
 def classify_gap(prim_gap_min: float, collection_gap_min, tol_min: float):
     """Boşluğun ARIZA mı yoksa KAYNAK KALİTESİ mi olduğunu ayırır (saf, testli).
 
@@ -401,6 +458,17 @@ def build_report(cfg: dict) -> str:
     _bh = bildirim_hatti_satiri(cfg)
     if _bh:
         lines.insert(3, _bh)
+    # Günlük işin sessizce yuttuğu adım hataları (denetim 2026-08-28, B-19)
+    _ga = gunluk_adim_satiri(cfg)
+    if _ga:
+        lines.insert(3, _ga)
+    # Bağımsızlık nöbetçisi — prim ölçüm mü, kimlik mi? (denetim 2026-08-28)
+    try:
+        _tr = prim_turetilmis_satiri(con)
+        if _tr:
+            lines.insert(3, _tr)
+    except Exception as e:                            # noqa: BLE001
+        log.warning("türetilmiş prim satırı okunamadı: %s", e)
     # Uyarı ÖNCELİKLE boşluk tabanlı: Actions'ta günlük çalışma sayısı 10-17 arası oynadığı
     # için sayım oranı tek başına güvenilir bir arıza göstergesi değil.
     _tol = effective_freq_minutes(cfg) * float(

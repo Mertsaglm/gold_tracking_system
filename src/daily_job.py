@@ -163,6 +163,31 @@ def run(cfg: dict) -> dict:
         except Exception as e:
             _hata(result, "grafik", e)
 
+    # ADIM HATALARINI GÖRÜNÜR YERE YAZ (denetim 2026-08-28, B-19).
+    # `KRITIK_ADIMLAR` yalnız import+rapor; diğer 6 adım (evds, ohlc, history,
+    # zskor_prova, tahmin, mutabakat, grafik) patlarsa Actions YEŞİL kalıyor,
+    # hata yalnız `result["hatalar"]` sözlüğüne yazılıp stdout'a basılıyor ve
+    # `logs/` gitignore'da. Yani `history` günlerce donsa Mert'in göreceği tek
+    # işaret raporun içindeki dolaylı bir sayı olurdu — ADR #004'teki 17 gün
+    # fark edilmeyen donmanın aynı zemini.
+    #
+    # Yeni altyapı kurulmuyor: bildirim hattı için kurulan ve İŞE YARADIĞI
+    # kanıtlanmış defter (ADR #011, `alert_state.json → saglik`) genişletiliyor.
+    try:
+        yol = cfg["alerts"]["state_file"]
+        st = util.read_json(yol, {}) or {}
+        sag = dict(st.get("saglik", {}))
+        sag["gunluk_adimlar"] = {
+            "utc": util.utcnow().isoformat(),
+            "hatalar": dict(result.get("hatalar", {})),
+        }
+        st["saglik"] = sag
+        util.write_json(yol, st)
+    except Exception as e:                            # noqa: BLE001 — rapor bloklanmasın
+        # Defterin kendisi de bir adımdır: sessizce log'a düşmesi, kapatmaya
+        # çalıştığımız sessiz-arıza sınıfının ta kendisi olurdu (ADR #008 K-6).
+        _hata(result, "saglik_defteri", e)
+
     log.info("daily_job: %s", {k: v for k, v in result.items() if k != "import"})
     return result
 

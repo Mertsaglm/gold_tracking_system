@@ -44,4 +44,11 @@ jobs:
       - name: pytest
         # Testler agi kullanmamali (tests/test_ag_izolasyonu.py bunu kilitler);
         # bu adim disari cikmadan yesil olmali.
-        run: python -m pytest -q
+        #
+        # `-rs` SART: `pytest -q` atlama SEBEBINI basmaz. Ilk CI kosumunda
+        # yerelde 7, CI'da 9 test atlandi ve hangileri oldugu logdan
+        # okunamadi. Sessizce atlanan bir test koruma saglamayan bir testtir --
+        # ornegin bagimsizlik nobetcisinin URETIM ARSIVINE karsi kostugu iki
+        # yonlu kilit, arsiv bulunamazsa `pytest.skip` ile sessizce kaybolurdu.
+        # Bu, ADR #011/#014'te kapatilan "sessiz ariza" sinifinin test tarafi.
+        run: python -m pytest -q -rs

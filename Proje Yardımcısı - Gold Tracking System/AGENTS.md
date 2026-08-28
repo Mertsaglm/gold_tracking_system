@@ -181,6 +181,16 @@ olması fark etmez) tahminle konuşma, şu sırayı izle:
 Ölçüm sonucu iddiayı çürütürse bu bir başarısızlık değil, sonuçtur — sayının
 küçülmesi dürüstlüğün büyümesidir.
 
+**İki kaynak çelişirse konsensüs ARAMA.** İki rapor/model/araç aynı olguyu zıt
+okuduğunda "ortak noktaları al, gerisini belirsiz bırak" yanlış cevap üretir:
+çelişkinin altında genellikle **ikisinin de sorgulamadığı ortak bir öncül**
+vardır ve asıl hata oradadır. Sıra: (a) ortak öncülü ara, (b) ayırt eden
+öngörüyü yaz — *"A doğruysa X görürüm, B doğruysa Y"*, (c) ölç, (d) hüküm ver.
+Ayırt edici öngörü yazılamıyorsa çelişki henüz ölçülebilir değildir; orada
+"karar veremedim" demek taraf tutmaktan iyidir.
+Bir bulgunun DOĞRU olması, o raporun önerdiği ÇÖZÜMÜN de doğru olduğunu
+göstermez — ikisini ayrı denetle; önerilen çözüm çoktan reddedilmiş olabilir.
+
 ### Koruma disiplini — testin DÜŞTÜĞÜNÜ kanıtla
 
 Bir kural, eşik ya da koruma eklediğinde iş orada bitmez; o korumayı **düşüren**

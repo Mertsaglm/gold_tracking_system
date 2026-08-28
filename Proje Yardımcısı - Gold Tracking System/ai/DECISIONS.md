@@ -6,6 +6,50 @@
 
 ---
 
+## #005 — 2026-08-28 — Çelişen denetim raporlarında konsensüs ARAMA; ayırt eden ölçümü koş
+
+**Bağlam:** Altın projesi için iki bağımsız denetim raporu üretildi (Claude + GPT,
+aynı gün, aynı commit). Aynı olguyu — bir metriğin varyansının çökmesini — **zıt**
+okudular: biri *"düzeltme çalıştı, bu seri korunmalı"*, öbürü *"metrik öldü"*.
+İkisi de kendi içinde tutarlı, gerekçeli ve ikna ediciydi.
+
+**Seçenekler:**
+- A) Ortak noktaları al, çelişenleri "belirsiz" diye bırak → *konsensüs*
+- B) Daha ayrıntılı/güvenilir görünen rapora ağırlık ver → *yazara güven*
+- C) İki raporun **öngörüsünü ayıran** bir ölçüm tasarla ve koş
+
+**Karar:** **C.** Çelişki bir oylama sorusu değil, bir ölçüm sorusudur.
+
+**Neden:** Bu vakada A ve B'nin ikisi de **yanlış cevabı** verirdi:
+- A (konsensüs): iki rapor da *"kaynak düzeltmesi yerindeydi"* öncülünü
+  **paylaşıyordu**. Ortak öncül doğrulanmamıştı ve asıl hata oradaydı. Konsensüs,
+  paylaşılan bir yanlışı görünmez kılar.
+- B (yazara güven): daha ayrıntılı olan rapor bu noktada haklıydı ama bunu
+  *ayrıntısı* değil ölçümü kanıtladı. Ayrıntı, doğruluğun vekili değildir.
+
+Ayırt eden ölçüm tek satırlık bir soruydu: *"metrik formülünde şu terim
+sadeleşiyor mu?"* — cebirle soruldu, 934 kayıtla doğrulandı, tek turda bitti.
+Vekil değişken düzeltme sonrası varyansın **%99.81'ini**, öncesinde **%18.2'sini**
+açıklıyordu. Çelişki kapandı.
+
+**Genel kural (Usta bunu uygular):** İki kaynak (rapor, model, araç, insan) aynı
+olguyu zıt okuduğunda:
+1. **Ortak öncülü ara.** Çelişkinin altında ikisinin de sorgulamadığı bir
+   varsayım genellikle vardır; asıl hata orada olur.
+2. **Ayırt eden öngörüyü yaz.** "A doğruysa X görürüm, B doğruysa Y" —
+   yazılamıyorsa çelişki henüz ölçülebilir hâle gelmemiştir.
+3. **Ölç, sonra hüküm ver.** "İkisinde de haklılık payı var" bir sonuç değil,
+   ölçümden kaçmaktır.
+
+**Ayrıca:** Bir raporun ÖNERDİĞİ çözüm, bulgusu doğru olsa bile bayat olabilir.
+Aynı turda bir rapor "gölge kol" önerdi; o çözüm 17 gün önce **ölçülüp
+reddedilmişti** (proje ADR #012-B). Bulgu ile çözüm ayrı ayrı denetlenir.
+
+**Tekrar gözden geçir:** Ayırt edici ölçümün tasarlanamadığı bir çelişki
+çıkarsa — o zaman "karar veremedim" yazmak, taraf tutmaktan iyidir.
+
+---
+
 ## #004 — 2026-07-27 — Usta'nın koruma disiplini: testin DÜŞTÜĞÜNÜ kanıtlama zorunluluğu
 
 **Bağlam:** Altın projesinde 491 koruma testi yazıldı ve hepsi ilk koşumda yeşil

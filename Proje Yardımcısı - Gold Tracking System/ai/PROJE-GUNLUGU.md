@@ -28,10 +28,10 @@ iddia yanlışlanabilir olur. "100 gramla başladın, 108 gram bitirdin → tutt
 
 | | |
 |---|---|
-| Dil / ortam | Python 3.12 · **7.915 satır** `src/` · **800+ test** (8.138 satır) |
+| Dil / ortam | Python 3.12 · `src/` · **872 test** (2026-08-28) |
 | Bağımlılık | requests, PyYAML, yfinance, pytrends, matplotlib (lazy) |
 | Depolama | SQLite **12 tablo** + diff'lenebilir `data/altin.sql` + aylık CSV arşiv |
-| Üretim | GitHub Actions — `archive.yml` (`*/15`), `daily.yml` (15:35 UTC) |
+| Üretim | GitHub Actions — `archive.yml` (`*/15`), `daily.yml` (15:35 UTC) · **`test.yml`** (push/PR merge kapısı, 2026-08-28) |
 | Bildirim | Telegram Bot API (saf `requests`) |
 | Repo | **public** → Actions dakikası sınırsız; `.env` ve `ai/PROFILE.md` gitignore'da |
 
@@ -39,10 +39,16 @@ iddia yanlışlanabilir olur. "100 gramla başladın, 108 gram bitirdin → tutt
 
 ## 2. Mimari — veri nasıl akıyor
 
-**İki workflow, iki ritim.** Actions cron'u kısıtlıyor: `*/15` yazar, gerçekte
-**~13 çalışma/gün** teslim eder. Bu platform kısıtı ücretsiz düzeltilemez;
-sağlık metrikleri **gözlemlenen** ritme kalibre edildi (`archive_observed_freq_minutes: 90`),
+**İki üretim workflow'u, iki ritim** (+ `test.yml` — üretime dokunmayan merge
+kapısı, 2026-08-28). Actions cron'u kısıtlıyor: `*/15` yazar, gerçekte çok daha
+azını teslim eder. Bu platform kısıtı ücretsiz düzeltilemez; sağlık metrikleri
+**gözlemlenen** ritme kalibre edildi (`archive_observed_freq_minutes: 90`),
 nominale değil — yoksa sağlıklı sistem her gün "arıza" derdi.
+
+⚠️ **Ritim çok oynak ve payda bayat:** ölçüldü 2026-08-28 — 08-25 ~30, 08-26 **24**,
+ama 08-27/28 **yalnız 2 çalışma/gün**. Koşumlar başarısız değil, hiç tetiklenmiyor
+(`gh run list` hepsini `success` gösterir). 90 dk'lık payda bu dalgalanmaya göre
+yeniden kalibre edilmedi → metrik gerilemeleri gizleyebilir (açık iş).
 
 ```
 archive.yml  (*/15)
@@ -264,6 +270,65 @@ Actions push-only, komutlar long-polling ister. README bunu yazıyordu,
 
 **Test:** 797 → **815**.
 
+### Kaynak denetimi — 2026-08-16 (ADR #013)
+
+Mert sordu: *"üretilen tahminler sağlam bir şekilde mi üretiliyor?"* Prim
+serisinde **2026-07-29'da kalıcı −1.25 puanlık basamak** bulundu. AGENTS.md §5
+kuralı işledi: *"metrik mi değişti, sistem mi?"* → **metrik değişti.**
+
+`yfinance` tek bir ticker (`GC=F`) için iki farklı seviye servis ediyordu:
+canlı kotasyon **vadeli** kontrat, günlük bar geri-düzeltmeli. Ağustos kontratı
+vadesini doldurunca canlı kotasyon **Aralık kontratına** (GCZ26, spot+%1.39)
+atladı ve doğrudan `theoretical`'e girdi. Prim 17 gün boyunca sahte iskonto
+gösterdi; `|prim|>%1.5` alarmı 08-11…08-14'te **4 kez boşuna** gitti.
+
+Hüküm/backtest/grafik **etkilenmedi** — onlar günlük barı okuyor. Çözüm: ons →
+Truncgil spot. Kirli 14 gün z tabanından düşüldü çünkü z **genişleyen pencere**:
+bırakılsaydı tespit eşiği 0.25p yerine 1.22p olurdu (5× sağır) ve 2028'de bile
+düzelmezdi. → Ders **L-019**. Test 851 → **855**.
+
+### İki-rapor denetimi — 2026-08-28 (ADR #014)
+
+25 Ağustos'ta iki bağımsız denetim raporu üretildi (Claude + GPT). Bu tur
+onların **iddialarını doğrulama** turuydu: raporlar kanıt değil hipotez sayıldı,
+her bulgu bugünkü kodda ve veride yeniden ölçüldü.
+
+**İki rapor aynı olguyu ZIT okudu.** 08-17 sonrası prim varyansının çökmesini
+GPT *"kaynak düzeltmesi çalışıyor, korunmalı"*, Claude *"metrik öldü"* diye
+yorumladı. Ayırt eden ölçüm: **ons prim formülünde sadeleşiyor mu?**
+
+```
+market_has  = 0.995 × (ons_trunc/31.1 × usd_trunc)
+theoretical =         ons_trunc/31.1 × usd_yfinance
+prim        = 0.995 × usd_trunc/usd_yfinance − 1     ← ONS YOK
+```
+
+934 kayıtta doğrulandı: `usd_trunc/usd_yf` vekili 08-17 sonrası prim varyansının
+**%99.81'ini** açıklıyor (düzeltme öncesi %18.2). Saf-Truncgil tabanında prim
+her gün tam **−0.5000%**; 08-22'de gün-içi varyans **tam sıfır**. **Claude
+haklı.** ADR #013 gerçek bir arızayı düzeltirken ölçümün **var olma şartını**
+(iki bacağın bağımsızlığı) yok etmişti. → Ders **L-020**.
+
+**Konsensüs aransaydı yanlış cevap çıkardı** — iki rapor da "düzeltme yerinde"
+öncülünü paylaşıyordu. Ölçüt her zaman kendi ölçümündür.
+
+Eklenen korumalar: **bağımsızlık nöbetçisi** (üretim verisinde her gün
+`piyasa/teorik` oranının gün-içi CV'si; eşik altındaysa `indicative=1` +
+`reason='turetilmis'`, kapı sayacı dışına), rejim **dejenerelik kapısı**, `notify`
+**takvim + bayatlık** kapısı, GMA panelinin DB'den beslenmesi, panelin tek kez
+hesaplanması, `daily_job` adım hatalarının rapora basılması ve **CI workflow'u**.
+
+**Ölçülen bedel dürüstçe yazıldı:** geçerli gün **30 → 19**; kapı, bağımsız ons
+kaynağı kararı verilene kadar ilerlemiyor. Sayaç ilerleseydi kapı bir **kimlik**
+üzerinden açılırdı.
+
+**Fixture de düzeltildi:** `gram_has_sell = teorik × 1.0045` üretiyordu — kimliğin
+ta kendisi. 855 test yeşilken 8 gün boyunca kimse fark etmedi; adı tam bu iş için
+konmuş `test_dejenere_metrik.py` bile sessizdi. Sentetik veri rejimsizse koruma
+testleri **vacuous** geçer.
+
+**Test:** 855 → **872**; 13 mutasyon, **13/13** yakalandı.
+
 ---
 
 ## 4. Ölçülmüş ve ÇÜRÜTÜLMÜŞ iddialar (projenin ahlakı)
@@ -297,6 +362,15 @@ saklanmaz**. Bugüne kadar düşenler:
 
 ## 5. Bugün bilinen sınırlar
 
+0. 🔴 **PRİM BUGÜN ÖLÇÜM TAŞIMIYOR** (ADR #014, 2026-08-28) — **listedeki en
+   pahalı sınır, çünkü aşağıdaki 3. maddeyi de geçersizleştiriyor.** Ons ile
+   gram aynı satıcıdan (Truncgil) gelince ons prim formülünde cebirsel olarak
+   sadeleşiyor; geriye satıcının kendi saflık çarpanı kalıyor. Ölçüldü: prim
+   varyansının **%99.81'i** yalnız iki USD beslemesinin oranı. Bağımsızlık
+   nöbetçisi bunu her gün tespit edip kayıtları kapı sayacı dışına alıyor ve
+   raporun en üstüne kırmızı satır basıyor. **Kalıcı çözüm bağımsız bir spot ons
+   kaynağı gerektiriyor — karar Mert'te** (`../../ai/STATE.md` → Sıradaki 3 İş → 1).
+   Ders **L-020**: bir arızayı düzeltirken ölçümün var olma şartını yok etme.
 1. **Karne ölçüm üretemiyor** — ve bu artık KABUL EDİLMİŞ bir sonuç (ADR #012-B,
    2026-08-11). Gölge kol **yapılmayacak**, gerekçe ölçüm: (a) taktik gölge kol
    %100 `TUT` kaydeder çünkü kapı açık olsa bile beklenen-kazanç üreticisi yok
@@ -305,14 +379,29 @@ saklanmaz**. Bugüne kadar düşenler:
    **Genel kural:** gölge kol, karşı-olgu yeniden ÜRETİLEMEDİĞİNDE gerekir.
 2. **Taktik kol SAT diyemez** — beklenen kazanç üreticisi yok ve ADR #007-H'ye
    göre dürüst bir aday da yok.
-3. **Prim + çeyrek z-skoru kapalı** — 60 **gün** kapısı ~2026-09-14'te açılacak
-   (19/60 @ 07-28, hız 0.86 gün/gün). Kapı gün sayar, kayıt değil (gün içi ~10
-   örnek birbirinin tekrarı).
+3. **Prim + çeyrek z-skoru kapalı — ve SAYAÇ DURDU** (2026-08-28). Kapı gün
+   sayar, kayıt değil (gün içi örnekler birbirinin tekrarı). ⚠️ Eski tarih
+   tahminleri (~09-14, sonra ~10-02) **GEÇERSİZ**: bağımsızlık nöbetçisi 08-17
+   sonrası günleri `turetilmis` işaretlediği için geçerli gün **30 → 19** düştü
+   ve ileriye dönük yeni geçerli gün üretilmiyor (bkz. madde 0). Kalan 19 günün
+   tamamı eski yfinance rejiminden ve o rejim yenisiyle **aynı dağılım değil**
+   (F=11.73, ortalama farkı −0.139p) → taban yeni kaynaktan **sıfırdan** kurulmalı.
+   ⚠️ Taban kararı **kanal başına** verilmeli: kuru provada prim kanalında iki
+   taban 0/34 uyuşmazlık, **çeyrek kanalında 6/34**. "17/17 iki taban aynı"
+   iddiası yalnız prim için doğruydu.
 4. **FRED ölü** (2026-07-07'den beri) → DXY yfinance `DX-Y.NYB` yedeğine düşüyor;
    reel faiz göstergesi **bilerek** kapalı (`^TNX` nominaldir, TIPS reel getirisi
    değil — nominali "reel" diye sunmak ölçümü sahtelemek olurdu).
    **Google Trends de 12/14 gün ölü** (pytrends 429) → panel fiilen **5/7**
    (ölçüldü 2026-07-29, son 14 rapor). Kör gösterge paydadan düşer, uydurulmaz.
+   ⚠️ **FRED'in ikinci, gizli bedeli (ADR #014):** rejim sınıflandırıcısı reel
+   faiz olmadan **tek sınıfa** çöküyordu (2585/2585 gün "X") ve "X rejimi" tüm
+   verinin, yani tabanın kendisi oluyordu. Rapor bunu 48/48 gün "güven: orta"
+   ile bir rejim ÖLÇÜMÜ gibi bastı; `_baseline` satırıyla birebir aynıydı.
+   Artık dejenerelik tespit ediliyor ve sinyal "ölçemedim" diyor.
+   ⚠️ Panel paydası hâlâ **cevap veren gösterge sayısı** → uzlaşı skoru günler
+   arası doğrudan kıyaslanamaz. Sabit paydaya geçmek etiket tanımını değiştirir,
+   ayrı karar.
 5. **TÜFE serisi bayat** (`TP.FE.OKTG01` son değer 2025-12-01) — `evds_job.context`
    sessizce `enf_bek_12ay`'a düşüyor. `ozellikler.feature_vector` bilerek DÜŞMEZ.
 6. **Çeyrek priminde sezon düzeltmesi yok** — yıllar süren arşiv ister; düz z

@@ -1,0 +1,47 @@
+name: Testler
+
+# NEDEN AYRI BIR WORKFLOW (denetim 2026-08-28, GPT raporu B-05):
+# 864 testlik regresyon zirhi vardi ama GitHub'da HICBIR yerde kosmuyordu.
+# `archive.yml` ve `daily.yml` uretim isleri; ikisinde de `pytest` yok. Yani
+# "son 200 Actions kosumu success" cumlesi testlerin gectigini DEGIL, veri
+# cekiminin patlamadigini gosteriyordu. Bir kod degisikligi ana dala test
+# edilmeden girebiliyordu ve regresyon ilk kez canli kosumda gorulurdu.
+#
+# Uretim workflow'una pytest EKLENMEDI bilerek: veri toplama isini test
+# altyapisina bagimli kilar ve 15 dk'lik kosuma gereksiz yuk bindirir.
+# Ayri, salt-okunur bir CI merge kapisi ayni korumayi o maliyet olmadan verir.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Bagimliliklar
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: pytest
+        # Testler agi kullanmamali (tests/test_ag_izolasyonu.py bunu kilitler);
+        # bu adim disari cikmadan yesil olmali.
+        run: python -m pytest -q

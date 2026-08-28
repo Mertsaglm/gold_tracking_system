@@ -67,8 +67,13 @@ ARSIV_ADIM = _adimlar(ARSIV, "archive")
 
 
 def test_workflow_dosyalari_yerinde():
-    """Yanlış yerdeki doğru dosya = yok hükmünde (L-004 aynı ders)."""
-    assert sorted(p.name for p in WF.glob("*.yml")) == ["archive.yml", "daily.yml"]
+    """Yanlış yerdeki doğru dosya = yok hükmünde (L-004 aynı ders).
+
+    `test.yml` 2026-08-28 denetiminde eklendi (GPT raporu B-05): 864 testlik
+    zırh GitHub'da hiçbir yerde koşmuyordu.
+    """
+    assert sorted(p.name for p in WF.glob("*.yml")) == [
+        "archive.yml", "daily.yml", "test.yml"]
 
 
 # ------------------------------------------------------------ daily.yml sırası
@@ -277,3 +282,31 @@ def test_calisan_modul_adlari_gercek():
             for modul in re.findall(r"python -m (src\.[\w.]+)", komut):
                 yol = KOK / pathlib.Path(modul.replace(".", "/") + ".py")
                 assert yol.exists(), f"{ad}: {modul} yok"
+
+
+# ---------------------------------------------------------------------------
+# CI KAPISI (denetim 2026-08-28, GPT raporu B-05)
+# 864 testlik zırh vardı ama GitHub'da hiç koşmuyordu: "son 200 koşum success"
+# cümlesi testlerin geçtiğini değil, veri çekiminin patlamadığını gösteriyordu.
+# ---------------------------------------------------------------------------
+
+def test_testleri_kosan_bir_workflow_VAR():
+    yol = WF / "test.yml"
+    assert yol.exists(), (
+        "testleri koşan CI workflow'u yok — ana dala test edilmemiş kod girebilir")
+    w = yol.read_text(encoding="utf-8")
+    assert "pytest" in w, "test.yml pytest çağırmıyor"
+    assert "push" in w and "pull_request" in w, (
+        "CI yalnız elle tetikleniyor — merge kapısı olmuyor")
+
+
+def test_uretim_workflowlari_pytest_KOSMUYOR():
+    """Karşı kontrol: CI'yı üretim işine gömmek veri toplamayı teste bağımlı kılar.
+
+    Bu test 'unuttuk' ile 'bilerek ayırdık' arasındaki farkı kilitler.
+    """
+    for ad in ("archive.yml", "daily.yml"):
+        w = (WF / ad).read_text(encoding="utf-8")
+        assert "pytest" not in w, (
+            f"{ad} pytest koşuyor — üretim veri toplama işi test altyapısına "
+            "bağlanmış olur (bkz. test.yml gerekçesi)")

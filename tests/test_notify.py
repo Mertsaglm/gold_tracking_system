@@ -482,3 +482,79 @@ def test_makas_tabani_YALNIZ_FRESH_kayitlardan_hesaplanir(izole_kok, ag_kapali,
         f"bayat satırlar tabana sızdı: medyan={ctx['spread_medyan']}")
     assert ctx["spread_p90"] == 0.010, (
         f"bayat satırlar p90'a sızdı: p90={ctx['spread_p90']}")
+
+
+# ---------------------------------------------------------------------------
+# BAYAT VERİ ≠ KAPALI PİYASA (denetim 2026-08-28, B-11)
+#
+# Ölçülen zarar (Telegram dışa aktarımı, 3/3 dakika hassasiyetinde eşleşme):
+#   2026-08-03 11:28 UTC (Pzt) · 2026-08-17 02:44 (Pzt) · 2026-08-24 10:12 (Pzt)
+# üçü de "🔔 Hafta sonu — pazartesi beklentisi / Forex kapalı" dedi. Üçü de
+# geçersiz bir arşiv satırından 1-2 dakika sonraydı: taze CSV okunamayınca
+# `all_fresh` commit'li dump'ın SON satırının (hafta sonu kaydı) bayrağından
+# geliyordu. Asıl zarar yanlış mesaj değil, TÜM eşiklerin 24 saate kadar eski
+# fiyatlarla değerlendirilmesiydi — sessiz kaçırma dâhil.
+# ---------------------------------------------------------------------------
+
+def test_hafta_ici_bayat_kayit_HAFTA_SONU_sanilmiyor(izole_kok, ag_kapali,
+                                                     monkeypatch):
+    """Piyasa açıkken bayat veri 'forex kapalı' iddiasına dönüşmemeli."""
+    from datetime import datetime, timedelta, timezone
+    from src import db, notify
+
+    cfg, kok = izole_kok
+    # Salı 12:00 UTC — piyasa kesin açık
+    salı = datetime(2026, 8, 25, 12, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(notify.util, "utcnow", lambda: salı)
+    # Taze CSV yok (geçersiz satır senaryosu) + DB'de yalnız bayat HAFTA SONU kaydı
+    monkeypatch.setattr(notify, "_latest_csv_row", lambda cfg: None)
+    bayat_ts = (salı - timedelta(hours=20)).isoformat()
+
+    con = db.connect(cfg)
+    db.insert_prim(con, ts_utc=bayat_ts, ons_usd=4600.0, usdtry=48.0,
+                   theoretical=7100.0, market_has=7065.0, gram_retail=7100.0,
+                   prim_pct=-0.49, prim_pct_naive=0.0, spread_pct=0.2,
+                   quarter_prim_pct=1.5, indicative=1, weekend=1, holiday=0,
+                   reason="gh_actions_import_weekend")
+    con.commit()
+    con.close()
+
+    ctx = notify.build_context(cfg)
+    # tetikleyicinin gerçekten kurulduğunu doğrula (yoksa test vacuous geçer)
+    assert ctx.get("veri_yasi_dk") and ctx["veri_yasi_dk"] > 60, (
+        "kurgu bayat veri üretmedi")
+    assert ctx.get("piyasa_acik") is True, (
+        "SALI günü piyasa 'kapalı' sayıldı — takvim yerine bayat kaydın "
+        "indicative bayrağı okunuyor (B-11)")
+    assert ctx.get("veri_bayat") is True, "bayatlık görünmüyor"
+
+
+def test_bayat_veriyle_hicbir_esik_degerlendirilmiyor(izole_kok, ag_kapali,
+                                                      monkeypatch):
+    """Bayat fiyatla eşik değerlendirmesi hem yanlış ateşler hem sessiz kaçırır."""
+    from datetime import datetime, timezone
+    from src import db, notify
+
+    cfg, _ = izole_kok
+    salı = datetime(2026, 8, 25, 12, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(notify.util, "utcnow", lambda: salı)
+    monkeypatch.setattr(notify, "_latest_csv_row", lambda cfg: None)
+    # Eşiği KESİN aşan bir prim (|prim| > %1.5) ama 20 saat eski
+    con = db.connect(cfg)
+    db.insert_prim(con, ts_utc=datetime(2026, 8, 24, 16, 0,
+                                        tzinfo=timezone.utc).isoformat(),
+                   ons_usd=4600.0, usdtry=48.0, theoretical=7100.0,
+                   market_has=6900.0, gram_retail=7100.0,
+                   prim_pct=-2.82, prim_pct_naive=0.0, spread_pct=0.2,
+                   quarter_prim_pct=1.5, indicative=0, weekend=0, holiday=0,
+                   reason="gh_actions_import")
+    con.commit()
+    con.close()
+
+    ctx = notify.build_context(cfg)
+    assert ctx["prim"] is not None and abs(ctx["prim"]) > 1.5, (
+        "kurgu eşik aşan prim üretmedi — test vacuous")
+    assert ctx["veri_bayat"] is True, "kurgu bayat veri üretmedi"
+    assert ctx["all_fresh"] is False, (
+        "bayat veri 'taze' sayıldı → eşikler 20 saatlik eski fiyata karşı "
+        "değerlendirilecekti")

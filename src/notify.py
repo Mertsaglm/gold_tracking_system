@@ -246,6 +246,16 @@ def _ctx_from_csv(cfg, con, row) -> dict:
             "all_fresh": all_fresh, "ts": ts}
 
 
+def _ts_of(row):
+    """Bir DB satırının zaman damgası (UTC) — okunamazsa None."""
+    if row is None:
+        return None
+    try:
+        return datetime.fromisoformat(row["ts_utc"]).astimezone(timezone.utc)
+    except Exception:                                 # noqa: BLE001
+        return None
+
+
 def build_context(cfg: dict) -> dict:
     """Güncel değerler taze CSV'den (varsa), tarihsel bağlam commit'li DB'den."""
     con = db.connect(cfg)
@@ -259,7 +269,26 @@ def build_context(cfg: dict) -> dict:
     cur_prim = fresh["prim"] if fresh else latest["prim_pct"]
     cur_spread = fresh["spread"] if fresh else latest["spread_pct"]
     cur_theo = fresh["theoretical"] if fresh else latest["theoretical"]
-    all_fresh = fresh["all_fresh"] if fresh else (not bool(latest["indicative"]))
+    # "PİYASA AÇIK MI" BİR TAKVİM SORUSUDUR, VERİ SORUSU DEĞİL (denetim
+    # 2026-08-28, B-11). Eskiden taze CSV satırı okunamayınca `all_fresh`
+    # commit'li dump'ın SON satırının `indicative` bayrağından geliyordu; o
+    # satır 24 saate kadar eski olabildiği için hafta sonu kaydına düşünce
+    # sistem PAZARTESİ "forex kapalı" sanıyordu.
+    #
+    # Ölçüldü — Telegram dışa aktarımı, 3/3 eşleşme (dakika hassasiyetinde):
+    #   2026-08-03 11:28 UTC (Pzt) · 2026-08-17 02:44 (Pzt) · 2026-08-24 10:12 (Pzt)
+    # üçü de "Forex kapalı" dedi ve üçü de geçersiz bir CSV satırından 1-2 dk
+    # sonraydı. Bu yol her koşumda ~%5 olasılıkla açılıyor (geçersiz kayıt oranı).
+    from .market_calendar import MarketCalendar
+    _simdi = util.utcnow()
+    _cal = MarketCalendar(cfg)
+    all_fresh = not (_cal.is_weekend_closed_forex(_simdi)
+                     or _cal.is_us_gold_holiday(_simdi))
+    # Verinin YAŞI ayrı bir sorudur: takvim "açık" dese bile elimizdeki fiyat
+    # bayat olabilir. Yaş görünür olsun ki bayat değerlendirme sessiz kalmasın.
+    _kaynak_ts = fresh["ts"] if fresh else _ts_of(latest)
+    veri_yasi_dk = ((_simdi - _kaynak_ts).total_seconds() / 60.0
+                    if _kaynak_ts else None)
     zmin = cfg["stats"]["zscore_min_samples"]
     n_days = db.count_valid_prim_days(con)
     prim_z = None
@@ -303,8 +332,27 @@ def build_context(cfg: dict) -> dict:
         if qseries:
             quarter_z = calc.zscore(qseries, cur_quarter, zmin).value
     con.close()
+    # BAYAT VERİYLE EŞİK DEĞERLENDİRMESİ YAPILMAZ (B-11'in asıl zararı).
+    # Taze CSV satırı okunamayınca `cur_prim/cur_spread/cur_theo` 24 saate kadar
+    # eski dump satırından geliyordu ve tüm kurallar o fiyatlara karşı
+    # değerlendiriliyordu — hem yanlış ateşleme hem SESSİZ KAÇIRMA üretir.
+    #
+    # Eşik olarak YENİ bir sabit uydurmuyoruz: raporun arşiv boşluğu için zaten
+    # kalibre ettiği tolerans (`gözlemlenen ritim × tolerans katsayısı`)
+    # kullanılıyor. Tek bir "çok uzun boşluk" tanımı olsun ki iki katman
+    # ayrışmasın (aynı ilke: makas eşiğinin tek kaynaktan gelmesi).
+    from .report import effective_freq_minutes
+    tol_dk = effective_freq_minutes(cfg) * float(
+        cfg["alerts"].get("archive_gap_tolerance_factor", 3.0))
+    bayat = veri_yasi_dk is not None and veri_yasi_dk > tol_dk
+    if bayat:
+        log.warning("veri yaşı %.0f dk > %.0f dk tolerans → anomali kuralları "
+                    "bastırıldı (bayat fiyatla eşik değerlendirilmez)",
+                    veri_yasi_dk, tol_dk)
     return {
-        "all_fresh": all_fresh,
+        "all_fresh": all_fresh and not bayat,
+        "piyasa_acik": all_fresh,
+        "veri_yasi_dk": veri_yasi_dk, "veri_bayat": bayat,
         "prim": cur_prim, "prim_z": prim_z,
         "spread": cur_spread, "spread_p90": spread_p90,
         "spread_medyan": spread_medyan,
@@ -373,8 +421,20 @@ def run(cfg: dict, test_mode: bool = False) -> dict:
     state = _load_state(cfg)
     a = cfg["alerts"]
 
+    # BAYAT VERİ ≠ KAPALI PİYASA (denetim 2026-08-28, B-11). Bu iki durum aynı
+    # bayrağa bağlıydı ve bayat veri hafta içi "Forex kapalı" mesajı ürettiyordu
+    # (3 kez ölçüldü). Bayatlıkta doğru davranış SUSMAKtır: elimizdeki fiyat
+    # eskiyse ne anomali ateşlenebilir ne "piyasa kapalı" iddia edilebilir.
+    if ctx.get("veri_bayat"):
+        log.warning("veri bayat (%.0f dk) → bu turda hiçbir kural "
+                    "değerlendirilmedi", ctx.get("veri_yasi_dk") or -1)
+        new_state = saglik_guncelle(dict(state), now_iso, 0, [])
+        _save_state(cfg, new_state)
+        return {"bayat": True, "veri_yasi_dk": ctx.get("veri_yasi_dk"),
+                "gonderildi": 0, "hatalar": []}
+
     # Hafta sonu/tatil: anomali bastırılır; yalnız "pazartesi beklentisi" (günde 1)
-    if not ctx.get("all_fresh", True):
+    if not ctx.get("piyasa_acik", ctx.get("all_fresh", True)):
         weekend_alert = []
         if ctx.get("prim") is not None:
             weekend_alert = [{

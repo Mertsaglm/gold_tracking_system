@@ -9,7 +9,7 @@
 >
 > Burada yalnızca **devir paketinin kendi durumu** ve tarihli bir özet durur.
 
-**Son güncelleme:** 2026-07-29
+**Son güncelleme:** 2026-08-28
 
 ---
 
@@ -22,7 +22,7 @@
 | Ne inşa edildi, ne ölçüldü, hangi iddia çürüdü, sınırlar ne? | **`PROJE-GUNLUGU.md`** (burada) |
 | Proje nedir, kapsamı/kısıtları ne? | `PROJECT.md` (burada) veya `../../ai/PROJECT.md` |
 | Bu karar neden böyle alındı? | `../../ai/DECISIONS.md` (proje) · `DECISIONS.md` (yardımcı sistemi) |
-| Hangi tuzağa bir daha düşmeyelim? | `LESSONS.md` (L-001…L-017) — numara uzayı kökle ORTAK, bkz. `DECISIONS.md` #003 |
+| Hangi tuzağa bir daha düşmeyelim? | `LESSONS.md` (L-001…**L-020**) — numara uzayı kökle ORTAK, bkz. `DECISIONS.md` #003 |
 | İnşa döneminde ne ölçüldü, hangi iddia çürütüldü? | `../../docs/TESLIMAT-ARSIV.md` |
 | Haftalık 5 dakikalık kontrol nasıl yapılır? | `../../İZLEME.md` |
 

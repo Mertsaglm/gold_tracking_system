@@ -6,6 +6,76 @@
 
 ---
 
+## #014 — 2026-08-28 — ADR #013 primi bir KİMLİĞE çevirmiş: bağımsızlık nöbetçisi eklendi, kapı ertelendi
+
+**Tetikleyen:** 2026-08-25'te iki bağımsız denetim raporu (Claude + GPT). Bu tur
+onların **iddialarını doğrulama** turuydu; raporlar kanıt değil hipotez sayıldı.
+İki rapor aynı olguyu — 08-17'den sonra prim varyansının çökmesini — **zıt**
+okudu: GPT *"kaynak düzeltmesi çalışıyor, korunmalı"*, Claude *"metrik öldü"*.
+
+### Ölçüm — hangisi doğru?
+
+Prim tanım gereği **iki BAĞIMSIZ fiyatın** farkıdır. ADR #013 ons'u gram ile
+aynı satıcıya (Truncgil) taşıyınca bu şart çöktü:
+
+```
+market_has = 0.995 × gram_altin = 0.995 × (ons_trunc/31.1 × usd_trunc)
+theoretical =                              ons_trunc/31.1 × usd_yfinance
+prim        = 0.995 × usd_trunc/usd_yfinance − 1        ← ONS SADELEŞİYOR
+```
+
+Cebir veriyle doğrulandı (934 arşiv kaydı, `usd_trunc/usd_yf` vekiline karşı):
+
+| Dönem | ons kaynağı | vekilin açıkladığı varyans | prim gün-içi sd |
+|---|---|---:|---:|
+| 07-07…07-28 | yfinance GC=F | **%18.2** | 2.1e-04 … 1.4e-03 |
+| 08-17…08-28 | Truncgil | **%99.81** | 0.0e+00 … 5.5e-05 |
+
+Saf-Truncgil tabanında prim **her gün tam −0.5000%** — yani 995/1000 saflık
+çarpanının kendisi. 2026-08-22'de gün-içi varyans **tam sıfır** (39 kayıt).
+
+**Hüküm: Claude haklı, GPT'nin okuması yanlış.** GPT prim'in −0.49% çıkmasını
+"düzeltme tuttu" diye okudu ve o seriyi z-skor kalibrasyonuna taban önerdi;
+hiçbir noktada "iki bacak bağımsız mı?" sorusunu sormadı.
+
+**Seçenekler:**
+- A) Truncgil ons'unda kal, prim'i "sabit" kabul et → prim, prim z-skoru ve
+  60 günlük kapının tamamı silinmeli. Ölçüm yokken metrik tutmak L-010.
+- B) yfinance `GC=F` canlıya dön → ADR #013'ün düzelttiği roll hatasını geri getirir.
+- C) **Bağımsız spot ons kaynağı** + kur bacağını Truncgil `usd_mid`'e taşı
+  (ons bağımsız, kur gram ile senkron) → prim'i ölçüm hâline geri getirir.
+- D) Şimdilik yalnız **nöbetçi**: kimliği tespit et, o günleri `indicative=1`
+  işaretle, kapıyı erteleyip kaynak kararını Mert'e bırak.
+
+**Karar:** **D şimdi, C Mert'in onayıyla.** Kaynak değiştirmek prim'in NE
+ölçtüğünü değiştirir — bu bir metrik tanımı kararıdır ve tek başıma alınmaz.
+Nöbetçi ise ölçüm dışına alma işidir ve zaten kurulu ilke: *geçersiz kaydı sil
+değil, işaretle.*
+
+**Nöbetçi:** `calc.turetilmis_mi` — gün-içi `market/teorik` oranının değişim
+katsayısı (iki bacak da AYNI satıcıdan) eşiğin altındaysa o gün `indicative=1`
++ `reason='turetilmis'`. Eşik **1e-4**: ölçülen iki rejim örtüşmüyor (gerçek
+min 2.97e-04, kimlik max 5.50e-05), boşluk 5.4×, geometrik ortası 1.28e-04,
+yuvarlama gürültüsü tabanının ~45 katı. **Veriye uydurulmadı, boşluğa oturdu.**
+
+**Ölçülen bedel:** geçerli gün **30 → 19**. Kalan 19 günün tamamı eski
+yfinance rejiminden; yani bugün **ileriye dönük sıfır** geçerli prim ölçümü var.
+Kapı, C uygulanana kadar ilerlemez. Bu bedel dürüstlüğün fiyatı: sayaç
+ilerlemeye devam etseydi kapı 10-02'de **kimlik üzerinden** açılırdı ve ilk
+canlı prim alarmı iki USD beslemesi arasındaki farkı "Kapalıçarşı anomalisi"
+diye bildirirdi.
+
+**Neden belirti değil sınıf kapatıldı:** tuzağa iki kez düşüldü
+(yfinance roll → Truncgil türetme). Nöbetçi üretim verisi üzerinde her gün
+koşuyor ve kaynak üçüncü kez değişirse kendiliğinden yeniden çalışır. Sentetik
+test bunu **yakalayamaz** — test fixture'ında iki seri bağımsız kurulduğu için
+kimlik hiç oluşmuyordu (fixture da bu turda düzeltildi).
+
+**Tekrar gözden geçir:** C uygulandığında — yeni kaynakla 10 gün toplandıktan
+sonra nöbetçi ATEŞLEMEMELİ; ateşliyorsa yeni kaynak da bağımlıdır.
+
+---
+
 ## #013 — 2026-08-16 — Ons kaynağı SPOT'a taşındı; vadeli kontrat roll'ünün kirlettiği 14 gün z tabanından düşüldü
 
 **Tetikleyen:** Mert: *"üretilen tahminler sağlam bir şekilde mi üretiliyor…"* Derin

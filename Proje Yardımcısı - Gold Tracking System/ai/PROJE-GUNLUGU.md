@@ -286,6 +286,12 @@ saklanmaz**. Bugüne kadar düşenler:
 | "Kaynak-retry geçersiz kayıt oranını düşürür" | **Düştü** — %6.93 → %6.67 (2026-07-29). Geçersiz kayıtların **20/20'sinde** truncgil'in 8 alanı BİRDEN boş: kesinti 3×4 sn retry'dan uzun |
 | "Grafikte 10 'zayıf kanıt' bulgusu var" | **9'u faz artefaktıydı** — taban tüm fazlardan ölçülünce 10 → 1 (ADR #010-A). Faz yayılımı 3ay'da 4.1p, eşik 1.0p'ydi |
 | "Aday taraması eşikleri denetliyor" | **Yalnız KAPALI kolu denetliyordu** — açık kolun (çekirdek) eşiği hiç raporlanmıyordu; ölçülünce kolun kendi kuralı eşiğin ALTINDA çıktı (ADR #010-B, L-017) |
+| "Ons'u gram ile aynı kaynağa taşımak prim'i onardı" (ADR #013) | **Onarmadı, ÖLDÜRDÜ** — ons prim formülünde cebirsel olarak sadeleşiyor; 08-17 sonrası prim'in **%99.81'i** yalnız iki USD beslemesinin oranı (öncesi %18.2). Prim ölçüm değil kimlik oldu (ADR #014, L-020) |
+| "Rejim satırı 3 aylık getiri kenarı ölçüyor" | **Tabanın birebir kopyasıymış** — FRED ölü olduğu için sınıflandırıcı 2585/2585 güne aynı etiketi veriyor; `X` ≡ `_baseline`. 48/48 raporda "güven: orta" ile basılmış, bilgi değeri **tam sıfır** (ADR #014) |
+| "17/17 provada iki z tabanı aynı kararı verdi" | **Yalnız PRİM kanalı için doğru** — çeyrek kanalında **6/34 uyuşmazlık** (ölçüldü 2026-08-28). Tek bir "taban" kararı iki farklı istatistiksel rejime dayatılıyordu |
+| "853 test regresyon zırhı" | **GitHub'da hiç koşmuyormuş** — iki üretim workflow'unda da `pytest` yok; "son 200 koşum success" veri çekiminin patlamadığını gösteriyordu, testlerin geçtiğini değil (2026-08-28, `test.yml` eklendi) |
+| "Panel fiyatı ile özet ons aynı şey" | **12/12 raporda ort. +1.2 puan farklıymış** — GMA paneli kendi ağ isteğiyle **kapanmamış** GC=F barını okuyordu, kirli fiyatı temiz kapanış ortalamalarıyla karşılaştırıyordu (ADR #014) |
+| "Hafta sonu bildirimi yalnız hafta sonu gider" | **3 kez PAZARTESİ gitmiş** — bayat CSV satırında `all_fresh` takvimden değil dump'ın son satırının bayrağından okunuyordu; Telegram arşivinde 3/3 dakika hassasiyetinde eşleşti (ADR #014) |
 
 ---
 
@@ -361,9 +367,9 @@ O tabloda `Kim=👤` olan satırlar **yalnız Mert'in yapabileceği** işlerdir
 4. Yerelde DB'ye dokunacaksan **önce** `python -m src.restore_db`. Yerelde
    `python -m src.dbdump` **çalıştırma** — bayat sqlite'tan dump almak 1.5 günlük
    üretim verisini siler (L-009).
-5. Kararların gerekçesi `../../ai/DECISIONS.md` (#001…#010). Tuzaklar
-   `LESSONS.md` (L-001…L-017) — numara uzayı kökle **ortak**, bkz. `DECISIONS.md` #003.
-6. Testler: `.venv/bin/python -m pytest -q` → tamamı geçmeli (~5 sn, ağa
+5. Kararların gerekçesi `../../ai/DECISIONS.md` (#001…**#014**). Tuzaklar
+   `LESSONS.md` (**L-001…L-020**) — numara uzayı kökle **ortak**, bkz. `DECISIONS.md` #003.
+6. Testler: `.venv/bin/python -m pytest -q` → **872 test**, tamamı geçmeli (~10 sn, ağa
    çıkmaz, gerçek DB'ye dokunmaz). Kırmızı bir test neredeyse daima haklıdır:
    çoğu bir ADR'yi ya da dersi kilitliyor ve gerekçesi docstring'inde yazılı.
    Testi susturmak, korumayı sessizce kaldırmakla aynı şeydir.

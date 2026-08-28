@@ -19,6 +19,14 @@
 >
 > Buradaki fiyat/prim/vergi formülleri hâlâ geçerlidir; eskiyen şey kapsamdır,
 > içerik değil.
+>
+> ⚠️ **Bir istisna — ONS KAYNAĞI DEĞİŞTİ.** Aşağıdaki kaynak tablosu ons'u
+> yfinance (`GC=F`) altında anlatır; bu **artık canlı yol değildir**:
+> **ADR #013** (2026-08-16) ons'u Truncgil spot'a taşıdı (vadeli kontrat roll'ü
+> prim'i 17 gün bozmuştu), **ADR #014** (2026-08-28) ise bu düzeltmenin prim'i
+> bir **kimliğe** çevirdiğini ölçtü (ons formülde sadeleşiyor). `GC=F` bugün
+> yalnız **tarihsel OHLC** için kullanılıyor. Canlı durum: `README.md` →
+> "Ne yapar?" ve `ai/DECISIONS.md` #013 · #014.
 
 ---
 

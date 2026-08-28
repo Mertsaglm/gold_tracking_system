@@ -20,6 +20,8 @@
 | 7 | **Tahmin kaydı birikiyor mu?** | `grep -c "INTO predictions(" data/altin.sql` | Her gün **+6** (3 ufuk × 2 kol) | Sayı durduysa `daily_job` adım 3d patlıyordur — Actions log'unda `tahmin hata` ara |
 | 8 | **HÜKÜM raporun başında mı?** | Telegram günlük raporu | İlk ekranda "🎯 HÜKÜM" bloğu | Yoksa `karar.enabled` kapalı ya da blok hata almış (`hukum blogu hata`) |
 | 9 | **Dump şişmiyor mu?** | `wc -l data/altin.sql` | Günde ~**+15-20 satır** (yeni gözlemler) | Günde binlerce satır artıyorsa tick tekilliği kopmuş — `grep -c "INTO ticks(" data/altin.sql` ile karşılaştır (ADR #009-C) |
+| 10 | 🔴 **"PRİM ÖLÇÜM TAŞIMIYOR" satırı var mı?** | Raporun **en üstü** | Satır **YOK** | Varsa prim bir kimliğe çökmüş: teorik bacak ile piyasa bacağı bağımsız değil. **Prim, prim z-skoru ve hafta sonu beklentisi o gün karar taşımaz.** Bkz. ADR #014 |
+| 11 | ⚠️ **"GÜNLÜK İŞ EKSİK ÇALIŞTI" satırı var mı?** | Raporun en üstü | Satır **YOK** | Varsa kritik olmayan bir adım (evds/ohlc/history/tahmin/grafik…) patlamış ve Actions **yeşil kalmış**. Satır hangi adım olduğunu yazar; Actions log'una bak |
 
 > **Not:** dump `INSERT OR IGNORE` yazar; eski `grep -c "INSERT INTO ..."`
 > komutları **0 döner**. Yukarıdaki `"INTO tablo("` biçimini kullan.
@@ -43,6 +45,15 @@ Sağlık metrikleri bu gözlemlenen ritme göre kalibre edilmiştir
 (`config.yaml alerts.archive_observed_freq_minutes: 90`), yani kapsama %60-100 normal banttır ve
 uyarı ancak boşluk 270 dk'yı aşınca çıkar. Cron sıklığını artırmak sonucu değiştirmez —
 kısıtlama GitHub tarafındadır.
+
+⚠️ **Ritim çok oynak — 2026-08-28 ölçümü:** 08-25 ~30, 08-26 **24**, ama 08-27 ve
+08-28 **yalnız 2 çalışma/gün**. Koşumlar başarısız değil, **hiç tetiklenmiyor**;
+`gh run list` hepsini `success` gösterir. Rapor bu durumu "N ardışık çalışma
+başarısız" diye yazıyor — **kelime yanlış**, koşmadılar. Gün sayacı etkilenmez
+(günde 2 kayıt da o günü sayar) ama gün-içi ölçüm gücü düşer: bağımsızlık
+nöbetçisi 5 kayıttan az günde hüküm veremez ve komşu günün hükmünü taşır.
+`archive_observed_freq_minutes: 90` bu dalgalanmaya göre yeniden kalibre
+edilmedi — payda bayat, metrik gerilemeleri gizleyebilir (açık iş).
 
 ### İki boşluk türü karıştırılmamalı
 
@@ -74,17 +85,32 @@ kayıtlar hariç).
 | Eşik | 60 geçerli gün (`config.yaml stats.zscore_min_samples`) |
 | Kapı açıldığında | Prim z-skor sinyali ve `z > 2` bildirimi **kendiliğinden** devreye girer |
 
-Senin yapman gereken bir şey yok — kod hazır, yalnız arşivin dolmasını bekliyor. İlerlemeyi
-haftalık pazar raporundaki "Arşiv İlerlemesi" satırından takip et.
+İlerlemeyi haftalık pazar raporundaki "Arşiv İlerlemesi" satırından takip et.
 
-### Kapı ne zaman açılır? (2026-07-25 hesabı)
+### 🔴 Kapı ne zaman açılır? — SAYAÇ ŞU AN DURDU (2026-08-28, ADR #014)
 
-16 geçerli gün / 18 takvim günü = **0.89 gün/gün** hız. Kalan 44 gün ÷ 0.89 ≈ 49 takvim
-günü → **~12 Eylül 2026**. Bu bir tahmindir; **gerçek ilerlemeyi rapordan oku.**
+**Eski tahmin (~12 Eylül, sonra ~2 Ekim) GEÇERSİZ.** Bağımsızlık nöbetçisi
+2026-08-17 sonrası günleri `turetilmis` işaretlediği için geçerli gün
+**30 → 19** düştü ve ileriye dönük **yeni geçerli gün üretilmiyor**.
 
-**Kapı açılmadan ~1 hafta önce (≈5 Eylül) yapılacak kritik iş var:** `data/zskor_prova.jsonl`
-okunup z'nin hangi tabanda hesaplanacağına karar verilmeli (aşağıya bak). Tam liste
-`ai/STATE.md` → **TAKVİM** bölümünde.
+Sebebi: ons ile gramın ikisi de Truncgil'den gelince ons prim formülünde
+sadeleşiyor; prim artık piyasayı değil satıcının saflık çarpanını ölçüyor
+(ölçüldü: varyansın **%99.81'i** iki USD beslemesinin oranı). Sayaç ilerleseydi
+kapı bir **kimlik** üzerinden açılırdı.
+
+**Bu bir arıza değil, nöbetçinin doğru çalışması.** Sayaç ancak bağımsız bir
+spot ons kaynağı devreye girince yeniden ilerler — o karar `ai/STATE.md` →
+**Sıradaki 3 İş** → 1 numaralı satırda, sende.
+
+⚠️ Kapı yeniden açılmaya başladığında taban **sıfırdan** kurulmalı: kalan 19 gün
+eski yfinance rejiminden ve o rejim yenisiyle aynı dağılım değil (F=11.73,
+ortalama farkı −0.139p).
+
+**Kapı açılmadan ~1 hafta önce yapılacak kritik iş:** `data/zskor_prova.jsonl`
+okunup z'nin hangi tabanda hesaplanacağına karar verilmeli (aşağıya bak).
+⚠️ Karar **kanal başına** verilmeli — ölçüldü 2026-08-28: prim kanalında iki
+taban **0/34** uyuşmazlık, **çeyrek kanalında 6/34**. "İki taban aynı kararı
+veriyor" iddiası yalnız prim için doğru. Tam liste `ai/STATE.md` → **TAKVİM**.
 
 ### Kuru prova (dry-run) nedir, neden var?
 
@@ -136,9 +162,10 @@ Bu hiçbir veriyi silmez — yalnız otomatik çalışmayı durdurur.
 |---|---|
 | Canlı arşiv (ham) | `data/archive/YYYY-MM.csv` — her Actions çalışması bir satır ekler |
 | Ana veritabanı | `data/altin.sql` (metin dump, commit'lenir) → `src/restore_db.py` ile SQLite'a açılır |
-| Bildirim durumu | `data/alert_state.json` (soğuma + günlük tavan sayacı) |
+| Bildirim durumu | `data/alert_state.json` — soğuma + günlük tavan sayacı + **sağlık defteri**: `saglik.ardisik_hata` (bildirim hattı, ADR #011) ve `saglik.gunluk_adimlar` (günlük işin patlayan adımları, ADR #014). Raporun en üstündeki kırmızı satırlar buradan okunur |
 | Giden Telegram mesajları | `data/telegram_outbox.jsonl` — bota gönderilen her rapor/alarm (denetim için; Telegram export'una gerek yok) |
 | Z-skor kuru provası | `data/zskor_prova.jsonl` — günde 1 satır; kapı açılmadan "z ne olurdu" kaydı (bildirim göndermez) |
+| Türetilmiş prim işareti | `prim_history.reason = 'turetilmis'` (DB) — bağımsızlık nöbetçisinin kapı dışına aldığı kayıtlar. Kayıt **silinmez**, yalnız `indicative=1` olur (ADR #014) |
 | Raporlar | `reports/rapor_YYYY-MM-DD.md` |
 
 SQLite binary'si repoya girmez; dump sayesinde repo şişmez ve geçmiş diff'lenebilir kalır.

@@ -20,12 +20,17 @@ artefaktı kendiliğinden ölür ve her iddia yanlışlanabilir olur: 100 gramla
 başladın, 108 gram bitirdin → tuttu.
 
 ## Kapsam (Ne VAR)
-- **Veri toplama:** Truncgil (gram/çeyrek/kur) + yfinance (ons XAU, GC=F OHLC) +
-  TCMB EVDS (faiz/TÜFE) + FRED (reel faiz/DXY)
+- **Veri toplama:** Truncgil (gram/çeyrek/kur **+ ons spot**) + yfinance
+  (**yalnız USD/TRY canlı** + GC=F tarihsel OHLC) + TCMB EVDS (faiz/TÜFE) +
+  FRED (reel faiz/DXY)
+  🔴 **Prim bugün ölçüm taşımıyor (ADR #014):** ons ile gram aynı satıcıdan
+  gelince ons prim formülünde sadeleşiyor. Bağımsızlık nöbetçisi bunu tespit
+  edip kapı sayacının dışına alıyor; kalıcı çözüm bağımsız ons kaynağı — karar
+  bekliyor.
 - **Depolama:** 15 dk CSV arşivi (`data/archive/`) + SQLite (diff'lenebilir
   dump `data/altin.sql`)
 - **Hesap:** teorik has gram, prim %, makas %, prim z-skoru (60 gün kapısı),
-  ATR, çeyrek primi
+  ATR, çeyrek primi, **bağımsızlık nöbetçisi** (prim'in iki bacağı bağımsız mı)
 - **Bildirim:** eşik-tabanlı anomali (24s soğuma + günlük tavan), hafta sonu
   beklentisi; üç bacak FRESH değilse anomali bastırılır
 - **Rapor:** günlük (18:35 TR) + pazar haftalık; grafik yorumu (destek/direnç +
@@ -66,7 +71,7 @@ başladın, 108 gram bitirdin → tuttu.
 | Dil | Python 3.12 (harici bağımlılık minimal: requests, PyYAML, yfinance) |
 | Veri | SQLite + aylık CSV arşiv |
 | Kaynaklar | Truncgil · yfinance · TCMB EVDS · FRED |
-| Çalışma | GitHub Actions — `archive.yml` (*/15 dk), `daily.yml` (15:35 UTC) |
+| Çalışma | GitHub Actions — `archive.yml` (*/15 dk), `daily.yml` (15:35 UTC), `test.yml` (push/PR — merge kapısı) |
 | Bildirim | Telegram Bot API (saf `requests`) |
 
 ## Başarı Kriteri

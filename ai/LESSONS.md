@@ -14,6 +14,49 @@
 
 ---
 
+## L-020 — 2026-08-28 — Bir arızayı düzeltirken ölçümün VAR OLMA ŞARTINI yok etme
+
+**Olay:** ADR #013, prim'i bozan gerçek bir arızayı (vadeli kontrat roll'ü)
+doğru teşhis etti ve "ons ile gram AYNI kaynaktan, AYNI zaman damgasıyla
+gelsin" diyerek düzeltti. Düzeltme çalıştı: prim −1.75%'ten −0.49%'a döndü,
+yanlış alarmlar durdu, sd çöktü. **Herkes bunu başarı sandı** — STATE.md dâhil.
+
+Oysa prim **tanım gereği iki BAĞIMSIZ fiyatın farkıdır**. İki bacağı aynı
+satıcıya taşımak, ölçülen şeyi ortadan kaldırdı: `gram_has ≡ ons × kur × 0.995`
+olduğu için ons formülde sadeleşti ve geriye satıcının kendi saflık çarpanı
+kaldı. 8 gün boyunca prim **her gün tam −0.5000%** çıktı; bir gün gün-içi
+varyans **tam sıfırdı**.
+
+**Anti-pattern:** *"Sayı düzeldi → düzeltme çalıştı."* Varyansın çökmesi iki
+şeyin işareti olabilir: gürültü gitti **ya da** ölçüm gitti. Bu ikisini ayırt
+eden soru "sayı makul mü?" değil, **"bu sayının farklı çıkabilmesi için ne
+olması gerekir?"**dir (L-010'un aynı sorusu, farklı metrik).
+
+**Doğru refleks:** Bir veri kaynağını değiştirirken şunu sor:
+> **"Bu metriğin var olabilmesi için hangi iki şeyin bağımsız olması
+> gerekiyor? Değişiklikten sonra hâlâ bağımsızlar mı?"**
+
+**Kalıcı koruma:** Bağımsızlık **üretim verisi üzerinde** her gün ölçülür
+(`calc.turetilmis_mi` + `import_actions.turetilmis_gunler`), kimliğe düşen
+günler kapı sayacının dışına alınır ve rapor en üstte kırmızı satır basar.
+
+**İkinci ders — sentetik test bu sınıfı YAKALAYAMAZ.** 855 test yeşildi ve
+adı tam bu iş için konmuş `test_dejenere_metrik.py` bile sessizdi. Sebep:
+fixture `gram_has_sell = teorik × 1.0045` üretiyordu — **sabit çarpan, yani
+kimliğin ta kendisi**; ama testler onu hiç sorgulamıyordu. Sentetik veride iki
+seri bağımsız kurulursa kimlik hiç oluşmaz ve koruma testi *vacuous* geçer
+(AGENTS.md §5). Bu turda fixture rejimli hâle getirildi ve nöbetçi ayrıca
+**üretim arşivine karşı iki yönlü** test edildi: 08-17 sonrası ateşlemeli,
+07-07…07-28 arası ateşlememeli.
+
+**Üçüncü ders — iki denetçi aynı olguyu zıt okuyabilir.** GPT raporu prim'in
+−0.49% olmasını "düzeltme çalıştı, korunmalı" diye yazdı ve o seriyi z-skor
+kalibrasyonuna taban önerdi. Konsensüs aramak yanlış cevabı verirdi; ayıran şey
+**ikisinin öngörüsünü ayırt eden bir ölçüm koşmak** oldu (ons'un sadeleşip
+sadeleşmediği). Rapor ne derse desin ölçüt kendi ölçümündür.
+
+---
+
 ## L-019 — 2026-08-16 — Döngüsel test, kaynağın enstrüman değiştirmesini göremez
 
 **Olay:** 2026-07-29'da `yfinance GC=F` canlı kotasyonu, Ağustos kontratı vadesini

@@ -23,7 +23,8 @@ tutar**; GitHub Actions üstünde kendi kendine çalışır.
 artefaktı kendiliğinden ölür ve her iddia yanlışlanabilir olur (ADR #007-A).
 
 ## Kapsam (Ne VAR)
-- **Veri toplama:** Truncgil (gram/çeyrek/kur) + yfinance (ons XAU, GC=F OHLC) +
+- **Veri toplama:** Truncgil (gram/çeyrek/kur **+ ons spot**) + yfinance
+  (yalnız USD/TRY canlı; GC=F tarihsel OHLC) +
   TCMB EVDS (faiz/TÜFE) + FRED (reel faiz/DXY — *şu an ölü, aşağıya bak*)
 - **Depolama:** ~90 dk'da bir CSV arşivi (`data/archive/`) + SQLite
   (diff'lenebilir metin dump `data/altin.sql`)
@@ -72,7 +73,7 @@ artefaktı kendiliğinden ölür ve her iddia yanlışlanabilir olur (ADR #007-A
 | Dil | Python 3.12 (bağımlılık minimal: requests, PyYAML, yfinance) |
 | Veri | SQLite + aylık CSV arşiv; binary yerine metin dump commit'lenir |
 | Kaynaklar | Truncgil · yfinance · TCMB EVDS · FRED |
-| Çalışma | GitHub Actions — `archive.yml` (`*/15`), `daily.yml` (15:35 UTC) |
+| Çalışma | GitHub Actions — `archive.yml` (`*/15`), `daily.yml` (15:35 UTC), `test.yml` (push/PR merge kapısı) |
 | Bildirim | Telegram Bot API (saf `requests`, harici kütüphane yok) |
 | Test | pytest — **800+ test** (2026-07-27); sözleşme kilidi, bkz. kök `ai/DECISIONS.md` #009 |
 

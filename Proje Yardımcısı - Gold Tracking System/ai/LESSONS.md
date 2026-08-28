@@ -11,6 +11,44 @@
 
 ---
 
+## L-020 — Bir arızayı düzeltirken ölçümün VAR OLMA ŞARTINI yok etme
+
+**Olay:** Bir fark metriği (piyasa fiyatı ile teorik fiyat arasındaki sapma)
+bozulmuştu, çünkü teorik bacak yanlış enstrümandan besleniyordu. Düzeltme
+"iki bacak da AYNI kaynaktan, AYNI zaman damgasıyla gelsin" oldu ve tüm
+belirtiler geçti: değer makul aralığa döndü, yanlış alarmlar durdu, oynaklık
+çöktü. Herkes bunu başarı saydı.
+
+Oysa o metrik **tanım gereği iki BAĞIMSIZ fiyatın farkıydı.** Sağlayıcı zaten
+piyasa fiyatını kendi diğer alanlarından türetiyordu; iki bacağı aynı yere
+bağlamak, paylarındaki ortak terimi cebirsel olarak **sadeleştirdi**. Metrik
+artık piyasayı değil sağlayıcının kendi sabit çarpanını ölçüyordu — günlerce
+aynı değeri verdi, bir gün varyansı **tam sıfır** çıktı.
+
+**Anti-pattern:** *"Sayı düzeldi → düzeltme çalıştı."* Varyansın çökmesi iki
+şeyin işareti olabilir: **gürültü gitti** ya da **ölçüm gitti**. Bunları ayıran
+soru "sayı makul mü?" değildir.
+
+**Doğru refleks — bir veri kaynağını değiştirmeden önce sor:**
+> **"Bu metriğin var olabilmesi için hangi iki şeyin bağımsız olması gerekiyor?
+> Değişiklikten sonra hâlâ bağımsızlar mı?"**
+
+**Kalıcı koruma:** Bağımsızlık varsayımını **üretim verisi üzerinde** ölçen bir
+nöbetçi kur (iki serinin oranı bir sabite çöküyor mu?), kimliğe düşen kayıtları
+silme — **işaretle ve ölçüm dışına al**, ve durumu kullanıcının her gün gördüğü
+yere bas.
+
+**İkinci ders:** Bu sınıfı **sentetik test yakalayamaz.** Test fixture'larında
+iki seri bağımsız kurulduğu için kimlik hiç oluşmaz; koruma testi *vacuous*
+geçer. Fixture'ı rejimli kur ve nöbetçiyi ayrıca **gerçek üretim verisine karşı
+iki yönlü** doğrula: bozuk dönemde ateşlemeli, sağlam dönemde ateşlememeli.
+
+**Üçüncü ders:** İki bağımsız denetçi aynı olguyu **zıt** okuyabilir (biri
+"düzeltme çalıştı", öbürü "metrik öldü"). Konsensüs aramak yanlış cevabı
+verebilir; ayıran şey ikisinin öngörüsünü **ayırt eden bir ölçüm koşmaktır**.
+
+---
+
 ## L-019 — Döngüsel test, kaynağın altındaki enstrümanın değişmesini göremez
 
 **Olay:** Sistemin çekirdek metriği, bir fiyat sağlayıcısından gelen "sürekli"

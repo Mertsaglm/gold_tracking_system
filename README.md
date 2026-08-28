@@ -11,9 +11,19 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
 
 ## Ne yapar?
 
-- **Kaynaklar:** Truncgil (serbest piyasa gram/çeyrek + USD; tam/Cumhuriyet çekilir ama
-  arşive yazılmaz — `archive_fetch.FIELDS`), yfinance (ons XAU/USD +
-  USD/TRY), TCMB EVDS (günlük; kur/faiz/TÜFE/altın/enflasyon beklentisi).
+- **Kaynaklar:** Truncgil (serbest piyasa gram/çeyrek + USD **+ ons spot**;
+  tam/Cumhuriyet çekilir ama arşive yazılmaz — `archive_fetch.FIELDS`),
+  yfinance (**yalnız USD/TRY** — ons için bilerek kullanılmıyor, ADR #013),
+  TCMB EVDS (günlük; kur/faiz/TÜFE/altın/enflasyon beklentisi).
+
+  🔴 **AÇIK SORUN — prim bugün ölçüm taşımıyor (ADR #014).** Ons ile gramın
+  ikisi de Truncgil'den gelince ons prim formülünde **cebirsel olarak
+  sadeleşiyor**; geriye satıcının kendi saflık çarpanı kalıyor. Ölçüldü
+  (2026-08-28, 934 kayıt): 08-17 sonrası prim'in **%99.81'i** yalnız iki USD
+  beslemesinin oranı (düzeltme öncesi %18.2). Sistem bunu **bağımsızlık
+  nöbetçisi** ile her gün tespit ediyor, o günleri kapı sayacının dışına alıyor
+  ve raporun en üstüne kırmızı satır basıyor. Kalıcı çözüm bağımsız bir spot ons
+  kaynağı gerektiriyor — karar bekliyor.
 - **Arşiv:** ham tick + 1 dk OHLC → SQLite; EVDS tarihsel seriler `evds_daily`; günlük gerçek OHLC
   `ohlc_daily` (2016+).
 - **Hesaplar:** teorik has gram, **prim** (saflık düzeltmeli), makas, çeyrek primi, **log-getiri
@@ -21,13 +31,32 @@ hiçbir şey çalıştırması gerekmez. Yerel kurulum yalnızca geliştirme ve 
 - **Durum makinesi:** her bacak `FRESH / STALE / CLOSED_WEEKEND / CLOSED_HOLIDAY`. Prim yalnız üç
   bacak FRESH iken **geçerli**; forex kapalıyken `indicative` (z-skor/backtest'ten dışlanır).
   Hafta sonu beklenti serisi + pazartesi mutabakatı.
+- **Bağımsızlık nöbetçisi (ADR #014):** prim iki **bağımsız** fiyatın farkıdır.
+  Her gün gün-içi `piyasa/teorik` oranının değişim katsayısı ölçülür (iki bacak da
+  aynı satıcıdan); eşiğin (`stats.bagimsizlik_cv_esigi: 1e-4`) altındaysa o günün
+  kayıtları `indicative=1` + `reason='turetilmis'` işaretlenir → **kapı sayacına
+  girmez**. Kayıt silinmez. Eşik iki ölçülmüş rejim arasındaki boşluğa oturur
+  (gerçek min 2.97e-04 · kimlik max 5.50e-05), veriye uydurulmadı.
 - **Makro bağlam (EVDS):** politika faizi, net mevduat faizi, TÜFE, 12 ay enflasyon beklentisi,
   **reel net mevduat faizi**.
 - **Gösterge uzlaşı paneli:** ABD 10Y reel faiz (FRED), DXY (FRED → yedek yfinance
-  `DX-Y.NYB`), ons 50/200 GMA (yfinance), TL reel net mevduat (EVDS), SPDR GLD tonaj,
+  `DX-Y.NYB`), ons 50/200 GMA (**`ohlc_daily`'den — canlı/kapanmamış bar DEĞİL**,
+  ADR #014), TL reel net mevduat (EVDS), SPDR GLD tonaj,
   Google Trends — her biri olumlu/nötr/olumsuz + toplam uzlaşı skoru. Verisi gelmeyen
   gösterge **paydadan düşer** (uydurma yapılmaz); reel faiz için bilerek yedek
   konulmadı — `^TNX` nominal getiridir, TIPS reel getirisi değil.
+  Panel bir rapor akışında **tek kez** hesaplanır (`_PANEL_CACHE`): eskiden iki
+  tüketici ayrı ayrı çekiyordu ve 48 raporun 7'sinde iki payda farklı çıkmıştı,
+  ikisinde etiket bile zıttı (ADR #014).
+  ⚠️ Payda hâlâ **cevap veren gösterge sayısı** — bu yüzden uzlaşı skoru
+  günler arası doğrudan kıyaslanamaz. Sabit paydaya geçmek etiket tanımını
+  değiştirir; karar bekliyor.
+- **Rejim sinyali — dejenerelik kapısı (ADR #014):** rejim = ons 200GMA × reel
+  faiz trendi × kur oynaklığı. FRED DFII10 ölü olduğu için sınıflandırıcı
+  **2585/2585 güne aynı etiketi** veriyordu; yani "rejim" tüm verinin, tabanın
+  kendisiydi ve rapor bunu 48/48 gün bir ölçüm gibi basıyordu (`_baseline` ile
+  birebir aynı satır). Artık sınıflandırıcı tek sınıfa çökerse sinyal
+  **"ölçemedim"** der ve sebebini yazar. FRED dönerse kendiliğinden açılır.
 - **Grafik yorumu:** gerçek günlük OHLC üzerinde fraktal swing pivot → ATR ölçekli kümeleme ile
   **destek/direnç bantları**, dönemsel zirve/dip, RSI/Bollinger/trend yapısı ile **çapraz teyit
   çetelesi**. Seviyeler ons USD'de hesaplanır, TL'ye **bugünkü kurla izdüşüm** olarak çevrilir.
@@ -148,15 +177,16 @@ sabitti). Amaç, proje daha zayıf bir model ya da başka bir araçla sürdüğ�
 | `test_uctan_uca.py` | Zincirin tamamı: izole kökte `daily_job.run()`, ağ kapalı, sentetik veri |
 | `test_sozlesme_config.py` | Her `cfg[...]` çözülüyor mu · ölü anahtar · **önceden kayıtlı eşikler gevşetilemez** |
 | `test_sozlesme_sema.py` | Şema ↔ dump ↔ Actions stateless döngüsü · değiştirilemezliğin kolon kolon kapsamı |
-| `test_sozlesme_workflow.py` | Üretim = 2 YAML: `restore→iş→dump→commit` sırası, `continue-on-error` yokluğu |
+| `test_sozlesme_workflow.py` | Üretim = 2 YAML: `restore→iş→dump→commit` sırası, `continue-on-error` yokluğu · **CI kapısının varlığı** |
 | `test_sozlesme_gizlilik.py` | `.gitignore` iki yönlü doğrulama (L-005) · sır sızıntısı taraması |
 | `test_yapisal_korumalar.py` | Tek asof/eşik/maliyet/teorik-gram kaynağı (AST ile) |
 | `test_ag_izolasyonu.py` | Karar yolu **soket kapalıyken** çalışmalı; ağ hangi modüllerde olabilir |
-| `test_dejenere_metrik.py` | L-010 avı: metrik senaryolara göre değişebiliyor mu · eşik config'ten mi |
+| `test_dejenere_metrik.py` | L-010 avı: metrik senaryolara göre değişebiliyor mu · eşik config'ten mi · **rejim tek sınıfa çökmüş mü** |
 | `test_veri_butunlugu.py` | `data/altin.sql` denetimi: satır tabanı kilit dişlisi (L-009), hayalet bar yok |
 | `test_dokuman_tutarliligi.py` | Devir paketi: köprüler, `ai/` yapısı, L/ADR numara uzayı |
 | `test_saf_cekirdek_ozellikleri.py` | Formül değişmezleri (ölçek/kaydırma bağımsızlığı, tek eşik) |
 | `test_modul_saglik.py` | Import sağlığı · **imza kilidi** · `__main__` blokları · bağımlılık beyanı |
+| `test_bagimsizlik_nobetcisi.py` | L-020 avı: prim'in iki bacağı bağımsız mı — **üretim arşivine karşı iki yönlü** |
 
 **Bir test kırmızıysa önce onun haklı olduğunu varsay.** Çoğu bir ADR'yi ya da
 dersi kilitliyor ve gerekçesi docstring'inde yazılı. Testi susturmak, korumayı
@@ -174,12 +204,14 @@ sessizce kaldırmakla aynı şeydir (`AGENTS.md` §5 → "Koruma disiplini").
 
 ## Otonom sistem (üretim)
 
-İki GitHub Actions workflow'u her şeyi yürütür; **Telegram'a kendiliğinden mesaj düşer.**
+İki GitHub Actions workflow'u üretimi yürütür; **Telegram'a kendiliğinden mesaj düşer.**
+Üçüncüsü (`test.yml`) üretime dokunmaz, yalnız **merge kapısıdır**.
 
 | Workflow | Sıklık | Ne yapar |
 |---|---|---|
 | `archive.yml` | 15 dk cron | Fiyat çeker → CSV → **bildirim eşiklerini değerlendirir** → tetikte Telegram → commit |
 | `daily.yml` | Her gün 15:35 UTC (18:35 TR) | import → EVDS → OHLC → rapor → Telegram → commit (pazartesi mutabakat, pazar haftalık) |
+| `test.yml` | Her push + PR | `pytest -q` (872 test). **Üretim işlerine pytest bilerek eklenmedi** — veri toplamayı test altyapısına bağımlı kılar (ADR #014). |
 
 **Secrets (repo Settings → Secrets → Actions):** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`,
 `EVDS_API_KEY`.
@@ -240,6 +272,18 @@ dağılımı hiçbir yerde satılmıyor, bu yüzden arşiv 7 Temmuz 2026'da sıf
 | Kapı açılana kadar | Sinyal `veri_bekliyor`, rapor `⏳ arşiv birikiyor (N/60 gün)` yazar |
 | Kapı açıldığında | Prim z-skor sinyali, çeyrek primi z'si ve `z > 2` bildirimi kendiliğinden devreye girer — kod hazır, ek iş yok |
 
+🔴 **SAYAÇ ŞU AN DURDU (ADR #014).** Bağımsızlık nöbetçisi 2026-08-17 sonrası
+günleri `turetilmis` işaretlediği için geçerli gün **30 → 19** düştü ve ileriye
+dönük yeni geçerli gün üretilmiyor. Bu bir arıza değil, nöbetçinin doğru
+çalışması: sayaç ilerleseydi kapı bir **kimlik** üzerinden açılırdı ve ilk canlı
+prim alarmı iki USD beslemesi arasındaki farkı "Kapalıçarşı anomalisi" diye
+bildirirdi. Sayaç, bağımsız ons kaynağı devreye girince yeniden ilerler.
+
+⚠️ Kalan 19 günün tamamı **eski yfinance rejiminden** ve o rejim yenisiyle aynı
+dağılım değil (F=11.73, ortalama farkı −0.139p). Taban yeni kaynaktan **sıfırdan**
+kurulmalı. Ayrıca taban kararı **kanal başına** verilmeli: kuru provada prim
+kanalında 0/34, **çeyrek kanalında 6/34 uyuşmazlık** var.
+
 **Kuru prova (dry-run):** Kapı açılmadan `z ne olurdu` her gün ölçülüp
 `data/zskor_prova.jsonl`'a yazılır (bildirim gönderilmez). Amaç, eşiğin kapı
 açıldığında makul sıklıkta tetiklenip tetiklenmediğini önceden bilmek. Prova iki
@@ -258,7 +302,7 @@ python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env      # doldur
 
-.venv/bin/python -m pytest -q                 # 815 test (~9 sn, ağa çıkmaz)
+.venv/bin/python -m pytest -q                 # 872 test (~10 sn, ağa çıkmaz)
 .venv/bin/python -m src.restore_db            # data/altin.sql → SQLite (tüm geçmiş arşiv)
 .venv/bin/python -m src.evds_job backfill     # EVDS tarihsel (tek sefer)
 .venv/bin/python -m src.history build         # tarihsel günlük ons×kur (2016+)

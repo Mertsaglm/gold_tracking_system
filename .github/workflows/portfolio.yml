@@ -1,0 +1,72 @@
+name: Sanal portfoy V2
+
+on:
+  schedule:
+    - cron: '17 7-14 * * 1-5' # 10:17–17:17 TR; GitHub zamanlaması gecikebilir.
+  workflow_run:
+    workflows: ['Gunluk otonom rapor']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+# V2 defterinin tek yazarı bu workflow; V1 veri/rapor arşivi ayrı kalır.
+concurrency:
+  group: advisor-portfolio
+  cancel-in-progress: false
+
+jobs:
+  portfolio:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Bagimliliklar
+        run: pip install --quiet -r requirements.txt
+      - name: Fiyat, karar ve sanal defter
+        id: cycle
+        run: python -m advisor cycle
+      - name: Arşivi koru
+        if: always()
+        run: |
+          if [ -d data/advisor ]; then cp -R data/advisor /tmp/advisor-delivery; fi
+      - name: Sonucu kaydet
+        if: always()
+        id: persist
+        run: |
+          git config user.name 'birikim-advisor'
+          git config user.email 'actions@github.com'
+          git add data/advisor/
+          if ! git diff --cached --quiet; then
+            git commit -m "advisor: sanal portfoy $(date -u +%Y-%m-%dT%H:%MZ)"
+            bash ops/push_retry.sh
+          fi
+      - name: Kisa Telegram ozeti
+        if: always() && steps.persist.outcome == 'success'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m advisor notify
+      - name: Bildirim makbuzunu kaydet
+        if: always() && steps.persist.outcome == 'success'
+        run: |
+          git add data/advisor/
+          if ! git diff --cached --quiet; then
+            git commit -m "advisor: bildirim makbuzu"
+            bash ops/push_retry.sh
+          fi
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: advisor-recovery-${{ github.run_id }}
+          path: /tmp/advisor-delivery/
+          retention-days: 14

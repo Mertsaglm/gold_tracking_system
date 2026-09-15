@@ -63,10 +63,7 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "archive: $(date -u +%Y-%m-%dT%H:%MZ)"
             # 5 deneme + artan bekleme (gunluk rapor artik ayri concurrency grubunda).
-            for i in 1 2 3 4 5; do
-              git pull --rebase origin main && git push && break
-              echo "push retry $i"; sleep $((i * 5))
-            done
+            bash ops/push_retry.sh
           else
             echo "degisiklik yok"
           fi

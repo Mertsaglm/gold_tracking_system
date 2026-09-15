@@ -64,3 +64,13 @@ Proje Yardımcısı - Gold Tracking System/ai/PROFILE.md
 
 # Telegram sohbet export (denetim girdisi; uretim verisi degil, 374KB)
 telegram_chat.json
+
+# V2 çalışma kilidi ve geçici atomik dosyalar
+data/advisor/.lock
+data/advisor/**/*.tmp
+.vercel/
+.env.local
+node_modules/
+
+# Local revision experiments; never publish as paper results.
+.local-revision/

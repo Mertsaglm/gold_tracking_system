@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><meta name="description" content="BIST ve altın kararları, sanal portföyler ve ölçülen sonuçlar.">
+  <title>Birikim — BIST & Altın</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css"><script src="/app.js" type="module"></script>
+</head>
+<body>
+<a class="skip" href="#main">İçeriğe geç</a>
+<aside class="sidebar">
+  <a href="#overview" class="brand"><img src="/favicon.svg" alt="" width="38" height="38"><span>Birikim<small>YATIRIM MASASI</small></span></a>
+  <p class="nav-caption">ÇALIŞMA ALANIN</p>
+  <nav aria-label="Ana gezinme">
+    <a href="#overview" data-view="overview"><span>◫</span> Genel bakış</a>
+    <a href="#decisions" data-view="decisions"><span>↗</span> Kararlar</a>
+    <a href="#portfolio" data-view="portfolio"><span>▤</span> Sanal portföy</a>
+    <a href="#learning" data-view="learning"><span>⌁</span> Gelişim karnesi</a>
+    <a href="#legacy" data-view="legacy"><span>◷</span> Geçmiş raporlar</a>
+  </nav>
+  <div class="sidebar-note"><span class="live-dot"></span> SANAL İŞLEM MODU<p>Her karar kayıtlı.<br>Her sonuç ölçülebilir.</p><small>Banka hesabına bağlı değildir.</small></div>
+  <div class="profile"><span>M</span><div>Mert'in masası<small>BIST + Gram altın</small></div></div>
+</aside>
+<div class="workspace">
+  <header class="topbar"><span class="breadcrumb">Çalışma alanı <span>/</span> <strong id="crumb">Genel bakış</strong></span><div class="top-actions"><span id="updated">Veriler yükleniyor</span><button id="refresh" class="icon-button" aria-label="Verileri yenile">↻</button></div></header>
+  <main id="main" tabindex="-1">
+    <section class="page-heading"><div><p class="eyebrow">BIST & ALTIN</p><h1 id="page-title">Birikiminin büyük resmi.</h1><p id="page-description">Kararları, paranın nerede olduğunu ve sistemin ne öğrendiğini birlikte gör.</p></div><span class="outline-pill"><span class="live-dot"></span> İki ayrı sanal hesap</span></section>
+    <div id="global-alert" role="status" aria-live="polite"></div>
+    <section id="account-cards" class="account-cards" aria-label="Sanal hesap seçimi"></section>
+    <div class="section-top"><div class="market-switch" role="group" aria-label="Piyasa seçimi"><button data-market="bist" aria-pressed="true">BIST</button><button data-market="gold" aria-pressed="false">Gram altın</button></div><span id="analysis-date" class="muted"></span></div>
+    <div id="content"><div class="loading">Portföy arşivi okunuyor…</div></div>
+    <footer><span>Birikim · Karar önce, sonuç sonra.</span><span>İşlem fiyatının kaynağı ve zamanı her kayıtta saklanır.</span></footer>
+  </main>
+</div>
+<dialog id="login"><form id="login-form"><p class="eyebrow">SANA ÖZEL ÇALIŞMA ALANI</p><h2>Yatırım masana gir.</h2><label for="password">Panel parolası</label><input id="password" type="password" autocomplete="current-password" required><p id="login-error" role="alert"></p><button class="primary">Panele gir →</button><small>Parolan bu tarayıcı oturumunun belleğinde tutulur.</small></form></dialog>
+</body>
+</html>

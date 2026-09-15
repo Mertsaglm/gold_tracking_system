@@ -345,7 +345,7 @@ def karar_ver(ozellikler: dict, cfg: dict, engel: Optional[dict],
 
 # ================= IO + biçimleme =================
 
-def build_karar(cfg: dict) -> dict:
+def build_karar(cfg: dict, bugun: str | None = None) -> dict:
     """Canlı hüküm: özellik vektörü + önbelleklenmiş engel ölçümü + canlı karne.
 
     Özellikler `ozellikler.feature_vector` üzerinden gelir — tahmin kaydıyla
@@ -357,7 +357,10 @@ def build_karar(cfg: dict) -> dict:
     try:
         con = db.connect(cfg)
         try:
-            asof = oz.son_kapali_gun(con)
+            # `bugun` = koşunun SLOT günü; verilmezse duvar saati. Gecikmiş
+            # bir koşuda ikisi ayrışır ve rapor, aynı koşuda yazılan tahminden
+            # BAŞKA bir kesim günü gösterirdi.
+            asof = oz.son_kapali_gun(con, bugun=bugun)
             if asof:
                 ozellikler = oz.feature_vector(cfg, con, asof)
             k_karne = tahmin.karne(cfg, con)

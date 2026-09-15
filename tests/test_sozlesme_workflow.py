@@ -73,7 +73,7 @@ def test_workflow_dosyalari_yerinde():
     zırh GitHub'da hiçbir yerde koşmuyordu.
     """
     assert sorted(p.name for p in WF.glob("*.yml")) == [
-        "archive.yml", "daily.yml", "test.yml"]
+        "archive.yml", "daily.yml", "portfolio.yml", "test.yml"]
 
 
 # ------------------------------------------------------------ daily.yml sırası
@@ -234,11 +234,11 @@ def test_push_yarisi_rebase_denemesiyle_karsilaniyor(wf, ad):
     kalıcıysa retry de kalıcı olmalı, yoksa takas eksik kalır.
     """
     adimlar = _adimlar(wf, list(wf["jobs"])[0])
-    push = [a for a in adimlar if "git push" in str(a.get("run", ""))]
+    push = [a for a in adimlar if "bash ops/push_retry.sh" in str(a.get("run", ""))]
     assert push, f"{ad}: push adımı yok"
-    kod = push[0]["run"]
+    kod = (KOK / 'ops/push_retry.sh').read_text()
     assert "git pull --rebase" in kod, f"{ad}: rebase'siz push yarışı kaybeder"
-    denemeler = re.search(r"for i in ([\d ]+); do", kod)
+    denemeler = re.search(r"for attempt in ([\d ]+); do", kod)
     assert denemeler and len(denemeler.group(1).split()) >= 5, (
         f"{ad}: push retry sayısı 5'in altına düşmüş")
 
@@ -310,3 +310,27 @@ def test_uretim_workflowlari_pytest_KOSMUYOR():
         assert "pytest" not in w, (
             f"{ad} pytest koşuyor — üretim veri toplama işi test altyapısına "
             "bağlanmış olur (bkz. test.yml gerekçesi)")
+
+
+def test_daily_cron_config_ile_AYNI():
+    """⚠ İKİZ DEĞER KİLİDİ — `config.schedule.daily_cron_utc` ↔ `daily.yml` cron.
+
+    `util.slot_gunu` "bu koşu hangi gün için?" sorusunu SLOT saatinden çözer ve
+    o saati config'ten okur. Cron YAML'da değişip config unutulursa slot yanlış
+    yerden hesaplanır: rapor dosyası, haftanın günü ve `asof` hep birlikte bir
+    gün kayar — ve bunların hiçbiri hata fırlatmaz (L-021'de tam olarak bu
+    yaşandı, üç arıza da sessizdi).
+
+    İki değer teknik olarak ikizdir; bu test onları tek gerçek kaynak yapar.
+    """
+    from src import util as _util
+
+    wf = _yukle("daily.yml")
+    cronlar = [c["cron"] for c in _tetik(wf)["schedule"]]
+    assert len(cronlar) == 1, f"daily.yml'de tek cron beklenir: {cronlar}"
+    dk, sa = cronlar[0].split()[:2]
+
+    cfg_slot = _util.load_config()["schedule"]["daily_cron_utc"]
+    assert cfg_slot == f"{int(sa):02d}:{int(dk):02d}", (
+        f"config.schedule.daily_cron_utc ({cfg_slot}) ile daily.yml cron'u "
+        f"({cronlar[0]}) ayrıştı — `util.slot_gunu` yanlış slottan hesaplar")

@@ -1,5 +1,26 @@
 # Altın Takip
 
+## Birikim V2 — 2026-09-15 revizyonu
+
+Yeni karar ve sanal portföy hattı `advisor/`, iki piyasayı birlikte gösteren web paneli
+`dashboard/` içindedir. Her hesap 5.000 TL başlangıç ve aylık 5.000 TL katkıyla izlenir.
+Gerçek emir gönderilmez. Alım/satım kararı, miktarı, masrafı ve fiyat kaynağı deftere yazılır.
+
+- [Kullanım, mimari ve Vercel kurulumu](docs/V2-REHBER.md)
+- [İnceleme, değişiklikler ve doğrulama raporu](reports/REVIZYON-2026-09-15.md)
+- Güncel durum: `ai/STATE.md`. Yerel revizyon hazır; yayın durumu burada tutulur.
+- Kısa karar: `.venv/bin/python -m advisor status`
+- Panel: `cd dashboard` ardından `npm run dev`.
+
+Geçmiş kayıtlar korunur. V1 veri toplama ve ayrıntılı rapor üretimi sürer; V2 aktif
+workflow'larda kısa Telegram özetinin sahibi olur. Önceki modelin ölçülmüş başarısızlıkları,
+yeni hesapta kâr gibi gösterilmez. Yeni model de kendi karnesini oluşturur.
+
+## V1 referansı ve geçmiş ölçümler
+
+Aşağıdaki bölüm önceki hattın ayrıntılarıdır. V2 bütçesi, fiyatları, öğrenme ve bildirim
+kuralları için yukarıdaki rehber geçerlidir.
+
 Türkiye altın piyasası veri toplayıcı + **piyasa durum makinesi** + günlük markdown/Telegram raporu.
 Kişisel araç; ücretsiz kaynaklar.
 

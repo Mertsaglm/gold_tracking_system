@@ -33,6 +33,41 @@ def iso(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat()
 
 
+def slot_gunu(cron_utc: str, offset_hours: int = 3,
+              simdi: Optional[datetime] = None) -> str:
+    """GECMIS en son zamanlanmis cron slot'unun YEREL takvim gunu (ISO).
+
+    ⚠ NEDEN VAR — "bu kosu HANGI GUN icin?" sorusunun tek dogru cevabi.
+
+    `local_today()` isin BASLADIGI ani okur. GitHub cron GECIKIR (bu repoda
+    olculdu: nominal */15 gercekte 1-3,5 saatlik ritim; gunluk iste 8,5 saatlik
+    gecikme gorulda). Gecikme TR gece yarisini asinca is "ertesi gunun isi"
+    gibi davranir ve UC ayri sessiz ariza uretir — hepsi 2026-08/09'da yasandi:
+
+      * `rapor_<gun>.md` ertesi gunun adiyla yazilir. 2026-08-31 slotu
+        09-01T00:02 TR'de kosup `rapor_2026-09-01.md`yi yazdi; ayni gun
+        21:47'de gercek 09-01 kosusu onu EZDI. 08-31 raporu KAYIP,
+        `rapor_2026-08-27.md` ise hic olusmadi.
+      * `weekday` kayar: 08-31 (Pazartesi) slotu Sali'ye tasindi ve
+        Pazartesi MUTABAKATI o hafta hic kosmadi.
+      * `son_kapali_gun` bir gun ileri kayar; atlanan gun icin tahmin HIC
+        yazilmaz. Olculdu: `predictions`ta asof=2026-08-26 YOK.
+
+    Slot saatinden turetilen cevap gecikmeden BAGIMSIZDIR: is 8 saat de
+    gecikse, gece yarisini da assa "hangi slot icin kostum" degismez.
+
+    `cron_utc` "HH:MM" (UTC) — kaynagi `config.schedule`, ve o deger
+    `.github/workflows/daily.yml` cron'una TESTLE baglidir
+    (`test_sozlesme_workflow.py`), yani ikinci bir gercek kaynak olusamaz.
+    """
+    now = simdi or utcnow()
+    sa, dk = (int(x) for x in cron_utc.split(":"))
+    slot = now.replace(hour=sa, minute=dk, second=0, microsecond=0)
+    if now < slot:
+        slot -= timedelta(days=1)
+    return to_local(slot, offset_hours).strftime("%Y-%m-%d")
+
+
 def local_today(offset_hours: int = 3) -> str:
     """Yerel (TR) takvim günü, ISO. `asof` kapanmışlık kapısının referansı.
 

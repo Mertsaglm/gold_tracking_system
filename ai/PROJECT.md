@@ -1,5 +1,26 @@
 # PROJECT.md — Projenin Kimliği
 
+## Güncel kapsam — 2026-09-15
+
+Mert'in yeni talebi: BIST ve İş Bankası gram altını için iki ayrı otomatik analiz ve
+sanal portföy, ortak web paneli, kısa ve net Türkçe Telegram kararları. Amaç masrafları
+hesaba katarak birikimin değerini, hisse/gram miktarlarını artıracak fırsatları izlemek.
+Gerçek emir iletimi yok. Bütçe varsayımı her hesapta 5.000 TL başlangıç + aylık 5.000 TL.
+Kullanıcının gerçek varlıkları bilinmediğinden yeni sanal hesaplara aktarılmadı.
+
+`advisor/` güncel karar/defter hattıdır; `src/` eski veri toplama ve araştırma hattıdır.
+Mevcut API anahtarları korunur. Sayısal karar bankaya özgü referans fiyat, masraf, trend,
+risk ve zaman sıralı ölçüme dayanır. Kesin ifade eylemi belirtir; fiyat tahminine kesinlik
+atfetmez. Yeni sonuçlar olgunlaşınca sınırlı hata düzeltmesi uygulanır.
+
+Başarı tanımı: para korunumu ve tekrar çalıştırma testleri geçer; fiyat eksikliği görünür;
+her işlem fiyatı ve masrafıyla izlenir; katkılar hariç getiri aynı bütçeli al-tut ile
+karşılaştırılır. Ayrıntı: `docs/V2-REHBER.md` ve `reports/REVIZYON-2026-09-15.md`.
+
+## Önceki kapsamın kaydı
+
+Aşağıdaki V1 kararları tarihsel bağlamdır; çelişen bütçe/rapor/karar kurallarında V2 geçerlidir.
+
 > Bir kez yazılır, nadiren değişir. Derin teknik detay için kök dizindeki
 > **README.md** ve **config.yaml**'a bak. **PROJE-REHBERI.md** yalnız inşa
 > dönemini (Faz 1-7) kapsar — karar motoru orada YOKTUR, onun için

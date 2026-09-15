@@ -8,6 +8,18 @@ timezone_offset_hours: 3          # Türkiye UTC+3 (sabit, DST yok)
 #   collector : 7/24 canlı toplayıcı. truncgil poll_seconds geçerli olur.
 runtime_mode: "actions"
 
+# ----------------- Zamanlama -----------------
+# ⚠ TEK GERÇEK KAYNAK DEĞİL, İKİZ: bu değer `.github/workflows/daily.yml`
+# cron'uyla AYNI olmak ZORUNDA ve `test_sozlesme_workflow.py` ikisini
+# karşılaştırır. Cron değişip burası unutulursa test kırılır.
+#
+# Ne işe yarar: "bu koşu hangi gün için?" sorusunun cevabı işin BAŞLADIĞI
+# saatten değil, kaçırılmamış son SLOT'tan okunur (`util.slot_gunu`). GitHub
+# cron'u gecikir; gecikme TR gece yarısını aşınca iş kendini ertesi günün işi
+# sanıyordu ve rapor dosyası, haftanın günü ve `asof` birlikte kayıyordu.
+schedule:
+  daily_cron_utc: "15:35"          # daily.yml → on.schedule.cron "35 15 * * *"
+
 paths:
   db: "data/altin.sqlite"
   db_dump: "data/altin.sql"             # diff'lenebilir dump (binary DB yerine commit'lenir)

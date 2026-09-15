@@ -155,7 +155,7 @@ def _fiyat_serisi(con) -> tuple[list[str], list[float]]:
 
 
 def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
-           kaynak: str = "canli") -> list[int]:
+           kaynak: str = "canli", bugun: Optional[str] = None) -> list[int]:
     """asof için TÜM ufuk × kol kombinasyonlarında hüküm üretip yazar.
 
     Aynı (model, kaynak, asof, ufuk, kol) için ikinci kez çağrılmak zararsızdır:
@@ -167,7 +167,11 @@ def kaydet(cfg: dict, con, asof_date: Optional[str] = None,
     # asof'un TEK kaynağı `ozellikler.son_kapali_gun` — burada ikinci bir
     # "MAX(date)" kopyası vardı ve o kopyada bugünü dışlayan filtre YOKTU.
     # İki asof yolu = iki farklı kesim tarihi ihtimali; tek kaynağa bağlandı.
-    asof = asof_date or oz.son_kapali_gun(con)
+    # `bugun` = koşunun SLOT günü (`util.slot_gunu`), duvar saati DEĞİL.
+    # Gecikmiş koşu duvar saatiyle bir gün ileri kayıyor ve ATLANAN günün
+    # tahmini HİÇ yazılmıyordu — ölçüldü: `predictions`ta asof=2026-08-26 yok
+    # (08-27 slotu 08-28T03:34 TR'de koştu ve doğrudan 08-27'yi yazdı).
+    asof = asof_date or oz.son_kapali_gun(con, bugun=bugun)
     if not asof:
         log.warning("history_daily bos — tahmin kaydedilemedi")
         return []

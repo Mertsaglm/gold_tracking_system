@@ -146,7 +146,7 @@ IMZALAR = {
     "src.gram:roundtrip_cost_pct": ["cfg", "enstruman"],
     "src.tahmin:gram_etkisi": ["hukum", "gram_carry_kazanc_pct", "roundtrip_pct"],
     "src.tahmin:karne_ozeti": ["satirlar", "zayif_n"],
-    "src.tahmin:kaydet": ["cfg", "con", "asof_date", "kaynak"],
+    "src.tahmin:kaydet": ["cfg", "con", "asof_date", "kaynak", "bugun"],
     "src.tahmin:karne": ["cfg", "con", "kol", "kaynak", "model_version"],
     "src.notify:evaluate_thresholds": ["ctx", "cfg"],
     "src.notify:apply_cooldown": ["alerts", "state", "now_iso", "cooldown_hours",

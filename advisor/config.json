@@ -1,0 +1,52 @@
+{
+  "market": "gold",
+  "start_date": "2026-09-15",
+  "initial_try": 5000,
+  "monthly_try": 5000,
+  "horizon_sessions": 20,
+  "max_positions": 1,
+  "max_position_pct": 80,
+  "risk_per_trade_pct": 2,
+  "minimum_cash_pct": 20,
+  "max_spread_pct": 3.0,
+  "max_quote_age_minutes": 25,
+  "max_analysis_age_days": 5,
+  "min_expected_net_pct": 1.0,
+  "min_net_reward_risk": 1.5,
+  "commission_rate": 0.002,
+  "commission_min_try": 1.0,
+  "commission_bsmv_rate": 0.05,
+  "exchange_fee_rate": 3e-05,
+  "gold_buy_tax_rate": 0.002,
+  "slippage_bps": 5,
+  "learning": {
+    "ridge_penalty": 20.0,
+    "min_training_dates": 504,
+    "test_block_sessions": 126,
+    "min_validation_periods": 24,
+    "min_live_roundtrips": 10,
+    "max_live_drawdown_pct": 12,
+    "trial_position_multiplier": 0.5,
+    "min_calibration_periods": 10,
+    "max_bias_adjustment_pct": 2
+  },
+  "sources": {
+    "stocks": "https://www.isyatirim.com.tr/tr-tr/analiz/hisse/Sayfalar/default.aspx",
+    "gold": "https://altin.doviz.com/isbankasi/gram-altin",
+    "commission_reference": "https://www.isbank.com.tr/komisyon-oranlari",
+    "terms_reference": "https://www.isbank.com.tr/vadesiz-altin-hesabi",
+    "verified_on": "2026-09-15"
+  },
+  "dashboard_url": "",
+  "telegram": {
+    "enabled": true,
+    "max_characters": 1000
+  },
+  "max_positions_per_sector": 2,
+  "dividend_tax_rate": 0.15,
+  "cost_notes": [
+    "İş Bankası gram altın alış/satış referansı Döviz.com üzerinden izlenir; İşCep kişisel fiyatıyla farklı olabilir.",
+    "Alımda banka satış fiyatı ve %0,20 KMV; satımda banka alış fiyatı kullanılır.",
+    "Miktar 0,01 gram adımıyla yuvarlanır. Geçmiş testte banka makası mevcut olmadığından maliyet varsayımı kullanılır."
+  ]
+}

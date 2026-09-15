@@ -14,6 +14,80 @@
 
 ---
 
+## L-022 — 2026-09-15 — Karar, muhasebe ve teslim aynı doğruluk sınırını paylaşır
+
+**Olay.** Revizyonda tek başına doğru görünen parçaların birleşiminde sorunlar çıktı:
+BIST ölçüm evreni filtresi canlı izlenen iki hisseyi düşürüyordu; analizden sonra yükselen
+fiyat eski hedefe göre yeniden kazanç gibi sayılabiliyordu; alış masrafı küçük tutarda risk
+bütçesini aşabiliyordu. Push retry döngüsünün son komutu başarılıysa kayıt teslim edilmeden
+workflow yeşil kalabiliyordu. Mobilde tablo genişliği bütün sayfayı taşırıyordu.
+
+**Ders.** Test, gerçek para akışını ve teslim sırasını kurmalı: al → aynı koşuyu tekrarla →
+yeniden aç → sat → aylık katkı. Sadece karar etiketini kontrol etmek yeterli değil.
+Katkıları kâr sayma; al-tut getirisini de aynı şekilde hesapla. Ekran geçmişi kırpıldı diye
+getiri hesabı yeniden başlamamalı. Kaynak kapsamı, modelin eğitim uygunluğundan ayrıdır.
+
+**Kilit.** `tests/test_advisor_flow.py` al/sat zincirini, fiyat hareketini iki kez saymamayı,
+katkıyı ve başarısız push çıkışını sınar. `tests/test_advisor_v2.py` muhasebe, makas, kalite,
+öğrenme ve bildirim sınırlarını sınar. Mobil 390 px görünümde sayfa genişliği de ölçüldü.
+Üretim SQL'ini salt okunur açan ayrı deney, yerel eski binary DB'ye güvenilmesini engelledi.
+
+---
+
+## L-021 — 2026-09-02 — Zamanlanmış bir işin GÜNÜ, başladığı an değildir
+
+**Olay — arşivde iki gün eksik ve kimse fark etmedi.** `reports/` klasöründe
+`rapor_2026-08-27.md` HİÇ yoktu; `rapor_2026-08-31.md` de yoktu ve içeriği
+`rapor_2026-09-01.md`ye yazılıp aynı gün gerçek 09-01 koşusu tarafından
+ÜZERİNE YAZILMIŞTI. 2026-08-31 raporu kalıcı olarak kayıp. Actions'ta her
+koşu YEŞİL, hiçbir hata fırlamadı.
+
+**Sebep.** `save_report` dosya adını `to_local(utcnow())`ten, yani işin
+BAŞLADIĞI TR gününden üretiyordu. GitHub cron gecikir (bu repoda ölçüldü:
+nominal 15 dk'lık arşiv işi gerçekte 1-3,5 saatlik ritim veriyor). Gecikme
+TR gece yarısını aşınca iki farklı slot AYNI dosya adını üretti:
+
+```
+08-31 slotu → 21:02Z = 09-01 00:02 TR  →  rapor_2026-09-01.md
+09-01 slotu → 18:46Z = 09-01 21:46 TR  →  rapor_2026-09-01.md   (EZDİ)
+```
+
+**Aynı kayma iki şeyi daha bozdu — ikisi de sessiz:**
+
+* **Pazartesi mutabakatı bir hafta hiç koşmadı.** `daily_job` mutabakatı
+  `weekday == 0` ile seçiyor; 08-31 (Pazartesi) slotu duvar saatiyle Salı
+  göründü (`weekday == 1`).
+* **Bir günün tahmini hiç yazılmadı.** `son_kapali_gun` referansı `local_today()`
+  olduğu için 08-27 slotu doğrudan asof=08-27'yi yazdı; **asof=2026-08-26
+  satırı `predictions`ta YOK.** Karne o günü hiç görmedi.
+
+**Neden hiçbir test görmedi.** `test_zaman_referansi.py` bu riski BİLİYORDU —
+docstring'i *"cron gece yarısına taşınırsa test düşer"* diyor. Cron taşınmadı;
+**GECİKME işi taşıdı** ve bu ihtimal hiçbir yerde yazılı değildi. Testler
+"cron saati doğru mu?" diye soruyordu; sorulması gereken *"iş cron saatinde
+mi koştu?"* idi ve onun cevabı bizde değil.
+
+**Ders.** Zamanlanmış bir iş için "bugün" diye bir şey yoktur; **slot**
+vardır. `local_today()` işin ne zaman BAŞLADIĞINI doğru söyler — hangi iş
+olduğunu değil. İkisi üretim saatinde çakışır, gecikmede ayrışır ve tam o
+anda hiçbir alarm çalmaz.
+
+**Kural.** Zamanlanmış işlerde gün `util.slot_gunu(config.schedule.…)` ile
+okunur: kaçırılmamış son slot. Slot saati config'te ve `daily.yml` cron'una
+`test_sozlesme_workflow.test_daily_cron_config_ile_AYNI` ile bağlı — ikiz
+değer sessizce ayrışamaz.
+
+**Kilitler.** `TestSlotGunu` (dört gerçek olayın saatiyle) ve
+`TestRaporDosyaAdiCakismaz`. İkincisi doğrudan kayıp raporun senaryosunu
+kurar: iki ardışık slot AYNI dosyaya yazarsa test kırılır.
+
+**Kardeş ders:** aynı kök sebep `BIST tahmin`de de vardı ve orada nöbetçiyi
+tam ters çalıştırdı — yanlış alarmda mail atıp gerçek arızada sustu
+(BIST L-026 / ADR #021). İki proje aynı çukura ayrı ayrı düştü; ders
+projeler arası taşınır.
+
+---
+
 ## L-020 — 2026-08-28 — Bir arızayı düzeltirken ölçümün VAR OLMA ŞARTINI yok etme
 
 **Olay:** ADR #013, prim'i bozan gerçek bir arızayı (vadeli kontrat roll'ü)

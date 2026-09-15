@@ -11,6 +11,45 @@
 
 ---
 
+## L-022 — Karar, muhasebe ve teslimi uçtan uca sına
+
+Bir kararın doğru olması, miktarın bütçeye sığdığını veya kaydın kullanıcıya teslim
+edildiğini göstermez. Al → tekrar → yeniden başlat → sat → katkı zincirini davranışla
+sına. Katkıyı getiri sayma. Ekrandaki kırpılmış veriyle performansı yeniden başlatma.
+Retry döngüsünün son denemesi başarısızsa süreç mutlaka hata vermeli.
+
+---
+
+## L-021 — Zamanlanmış bir işin GÜNÜ, başladığı an değildir
+
+**Olay.** Rapor arşivinde iki gün eksikti ve hiçbir hata fırlamamıştı: bir
+günün raporu hiç oluşmadı, bir diğerininki ertesi günün adıyla yazılıp o günün
+gerçek koşusu tarafından ÜZERİNE YAZILDI (kalıcı kayıp). Aynı kaymadan
+Pazartesiye bağlı bir iş bir hafta hiç koşmadı ve bir günün kaydı hiç yazılmadı.
+
+**Sebep.** "Bu koşu hangi gün için?" sorusunun cevabı işin BAŞLADIĞI andan
+okunuyordu. Zamanlayıcılar gecikir (GitHub Actions cron'unda ölçüldü: nominal
+15 dakikalık iş gerçekte 1-3,5 saatlik ritim, günlük işte 8,5 saate varan
+gecikme). Gecikme yerel gece yarısını aştığında iş kendini **ertesi günün
+işi** sanır ve gün etiketine bağlı ne varsa (dosya adı, haftanın günü, veri
+kesim günü) hep birlikte kayar.
+
+**Neden testler görmedi.** Testler "zamanlama saati doğru mu?" diye soruyordu.
+Sorulması gereken *"iş o saatte mi koştu?"* idi — ve onun cevabı bizde değil.
+
+**Kural.** Zamanlanmış bir iş için "bugün" diye bir şey yoktur; **slot**
+vardır. Gün, kaçırılmamış son slottan hesaplanır; slot saati config'te durur ve
+workflow'daki cron'a **testle** bağlanır ki ikiz değer sessizce ayrışmasın.
+`date.today()` / `local_today()` işin ne zaman başladığını doğru söyler —
+hangi iş olduğunu değil. İkisi nominal saatte çakışır, gecikmede ayrışır ve
+tam o anda hiçbir alarm çalmaz.
+
+**Bonus kural.** Geriye dönük "boşluğu doldurma" cazip gelir; ölçüm üreten bir
+sisteme geç yazılan kaydı "canlı" diye işaretlemek karnenin ölçtüğü şeyi bozar.
+Boşluk bırakılıp açık iş olarak yazılmalı.
+
+---
+
 ## L-020 — Bir arızayı düzeltirken ölçümün VAR OLMA ŞARTINI yok etme
 
 **Olay:** Bir fark metriği (piyasa fiyatı ile teorik fiyat arasındaki sapma)

@@ -40,6 +40,7 @@ jobs:
 
       - name: Gunluk is (import + evds + rapor + Telegram)
         env:
+          ADVISOR_V2: '1'
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           EVDS_API_KEY: ${{ secrets.EVDS_API_KEY }}
@@ -60,10 +61,7 @@ jobs:
             # 5 deneme + artan bekleme: gunluk rapor arsivleyiciyle AYRI concurrency
             # grubunda oldugu icin (iptal edilmesin diye) push yarisi mumkun.
             # Yaris ucuz ve nadirdir; iptal edilen kosu ise gunun TAMAMINI kaybettirir.
-            for i in 1 2 3 4 5; do
-              git pull --rebase origin main && git push && break
-              echo "push retry $i"; sleep $((i * 5))
-            done
+            bash ops/push_retry.sh
           else
             echo "degisiklik yok"
           fi

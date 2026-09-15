@@ -10,6 +10,8 @@ bağlı olmadığı için bir dönem donuk kalmıştı (bkz. ai/DECISIONS.md #00
 from __future__ import annotations
 
 import logging
+import os
+from datetime import date
 
 from . import util
 
@@ -71,9 +73,21 @@ def run(cfg: dict) -> dict:
     from . import logging_setup
     logging_setup.setup("daily_job", cfg)
     off = cfg.get("timezone_offset_hours", 3)
-    local = util.to_local(util.utcnow(), off)
-    weekday = local.weekday()          # Mon=0 ... Sun=6
-    result = {"tarih": local.date().isoformat(), "gun": weekday}
+    # ⚠⚠ KOŞUNUN GÜNÜ = KAÇIRILMAMIŞ SON SLOT, işin başladığı an DEĞİL.
+    #
+    # Eskiden `to_local(utcnow())` idi. GitHub cron gecikip TR gece yarısını
+    # aşınca iş kendini ertesi günün işi sanıyor ve ÜÇ şey birden kayıyordu:
+    #   * rapor dosyası ertesi günün adıyla yazılıp bir sonraki koşuda EZİLDİ
+    #     (2026-08-31 raporu kayıp; rapor_2026-08-27.md hiç oluşmadı),
+    #   * `weekday` kaydı — 08-31 Pazartesi slotu Salı'ya taşındı ve o hafta
+    #     Pazartesi MUTABAKATI hiç koşmadı,
+    #   * `asof` bir gün ileri atladı; atlanan günün tahmini yazılmadı
+    #     (`predictions`ta asof=2026-08-26 YOK).
+    # Üçü de sessizdi: hata fırlamadı, Actions yeşil kaldı.
+    kosu_gunu = util.slot_gunu(cfg["schedule"]["daily_cron_utc"], off)
+    weekday = date.fromisoformat(kosu_gunu).weekday()   # Mon=0 ... Sun=6
+    result = {"tarih": kosu_gunu, "gun": weekday,
+              "baslangic_tr": util.to_local(util.utcnow(), off).isoformat()}
 
     # 1) Actions CSV arşivini DB'ye işle
     try:
@@ -119,7 +133,8 @@ def run(cfg: dict) -> dict:
         from . import db as _db, tahmin
         _con = _db.connect(cfg)
         try:
-            result["tahmin_kaydedilen"] = len(tahmin.kaydet(cfg, _con))
+            result["tahmin_kaydedilen"] = len(
+                tahmin.kaydet(cfg, _con, bugun=kosu_gunu))
             result["tahmin_giris"] = tahmin.girisleri_doldur(cfg, _con)
             result["tahmin_cozulen"] = tahmin.cozumle(cfg, _con)
         finally:
@@ -138,10 +153,11 @@ def run(cfg: dict) -> dict:
     # 5) Rapor (pazar → haftalık derin) + Telegram
     from .report import build_report, build_weekly_report, save_report
     try:
-        text = build_weekly_report(cfg) if weekday == 6 else build_report(cfg)
-        path = save_report(cfg, text)
+        text = (build_weekly_report(cfg, bugun=kosu_gunu) if weekday == 6
+                else build_report(cfg, bugun=kosu_gunu))
+        path = save_report(cfg, text, gun=kosu_gunu)
         result["rapor"] = path
-        if cfg["telegram"]["enabled"]:
+        if cfg["telegram"]["enabled"] and os.environ.get('ADVISOR_V2') != '1':
             from .telegram_bot import send_message
             send_message(cfg, text)
             result["telegram"] = "gonderildi"
@@ -157,7 +173,7 @@ def run(cfg: dict) -> dict:
             from . import grafik_ciz
             p = grafik_ciz.ciz(cfg)
             result["grafik"] = p
-            if p and cfg["telegram"]["enabled"]:
+            if p and cfg["telegram"]["enabled"] and os.environ.get('ADVISOR_V2') != '1':
                 from .telegram_bot import send_photo
                 send_photo(cfg, p, caption="Altın Takip — günlük grafik")
         except Exception as e:

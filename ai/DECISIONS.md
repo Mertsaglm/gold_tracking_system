@@ -6,6 +6,88 @@
 
 ---
 
+## #016 — 2026-09-15 — Ayrı sanal defter, ortak panel ve ölçülen öğrenme
+
+**Bağlam.** Kullanıcı iki projeyi revize etmeyi, her birine aylık 5.000 TL sanal bütçe,
+İş Bankası referansı, anlaşılır kararlar ve web/Telegram takibi eklemeyi istedi.
+Eski BIST karnesi seçilmiş planlardan türetiliyordu; altında iki yönlü sanal defter yoktu.
+
+**Seçenekler.** A) Veri toplayıcıları dahil sıfırdan yazmak: mevcut arşiv ve operasyonu
+koparma riski. B) Mevcut veri/ayrıntılı rapor hattını koruyup sürümlü karar ve muhasebe
+hattı eklemek: geçiş geri alınabilir, yeni performans eski sonuçlara karışmaz.
+
+**Karar.** B seçildi. İki depoda bağımsız `advisor/` çalışır, `dashboard/` ortak görünüm
+sunar. JSONL olay defteri hash zinciri, dosya kilidi, atomik kayıt ve idempotent anahtarlarla
+korunur. SQL arşivi geçici DB'ye açılır; eski DB'ye migration veya geçmiş karar değişikliği yok.
+Ayrı `portfolio.yml` V2'nin tek yazarıdır. Telegram, GitHub'a kalıcı kayıt sonrası gönderilir;
+push denemeleri tükenince iş hata verir. Eski anahtarlar ve veri kaynakları korunur.
+
+**Finansal davranış.** Başlangıç/aylık katkı her hesapta 5.000 TL varsayıldı; açılmış hesabın
+bütçe geçmişi sessizce değiştirilemez. Banka alış/satış yönü, komisyon/vergi/kayma, nakit ve
+risk sınırları uygulanır. Eksik/tarihi belirsiz fiyatla yeni işlem yok. Koruyucu satışlar
+makas büyüdü diye engellenmez. Resmî Fed takviminde yakın karar varsa yeni risk yarılanır.
+
+**Öğrenme.** Sabit özellikli ridge modeli yalnız geçmişte olgunlaşmış etiketlerle eğitilir.
+Örtüşmeyen dönemler, sabit tahmin referansı ve maliyet stresiyle sınanır. Üstünlük bugün
+kanıtlanmadı; küçük sanal deneme ve olgunlaşmış sonuçlarla en fazla 2 puan yanlılık düzeltmesi
+kullanılır. Eski LLM anlatımı tek başına sayısal alım/satım yaptıramaz.
+
+**Sınırlar.** Doğrudan kişisel İşCep kotasyonu yok. BIST gecikmeli son fiyat, altında bankaya
+özgü ikincil kaynak var. Tarihsel banka makası ve temettü ödeme tarihi doğrulanamıyor;
+alacak nakit sayılmaz. Bunlar panelde ve rehberde yazılıdır.
+
+**Yayın.** Bu ADR yerel uygulama kararını kaydeder; commit/push/deploy onayı değildir.
+
+**Tekrar gözden geçir:** doğrudan banka API'si sağlanırsa, kişisel tarife değişirse veya
+bağımsız sanal sonuçlar modelin al-tut karşısındaki başarısını değiştirdiğinde.
+
+---
+
+## #015 — 2026-09-02 — Koşunun günü SLOT'tan okunur; `local_today()` "hangi iş?" sorusunun cevabı değildir
+
+**Bağlam.** Üç sessiz arıza tek kökten çıktı (L-021): kayıp `rapor_2026-08-31.md`,
+hiç oluşmayan `rapor_2026-08-27.md`, koşmayan Pazartesi mutabakatı ve
+`predictions`ta eksik asof=2026-08-26. Hepsinin sebebi, koşunun gününün işin
+BAŞLAMA anından okunması ve GitHub cron gecikmesinin TR gece yarısını aşması.
+
+**Karar.** `daily_job` koşu gününü BİR KEZ hesaplar (`util.slot_gunu`) ve
+"bu koşu hangi gün için?" sorusuna bağlı HER tüketici o değeri kullanır:
+
+    kosu_gunu = util.slot_gunu(cfg["schedule"]["daily_cron_utc"], off)
+      ├── weekday          → Pazartesi mutabakatı / Pazar haftalık raporu
+      ├── save_report(gun=) → rapor dosya adı ve `reports.date`
+      ├── build_report(bugun=) → `build_karar` → `son_kapali_gun(bugun=)`
+      └── tahmin.kaydet(bugun=) → `son_kapali_gun(bugun=)`
+
+Rapor metnindeki saat damgası duvar saati OLARAK KALIR — o, raporun ne zaman
+üretildiğini söyler ve doğrudur. Değişen yalnız "hangi günün işi" sorusu.
+
+**Slot saati neden config'te.** Kod içine gömülemez (proje kuralı) ve
+takvimden türetilemez: BIST'in aksine burada "kapanmış son seans" gibi dış
+bir olgu bu soruyu cevaplamıyor — iş 7/24 koşuyor. Kaçınılmaz ikiz değer
+`config.schedule.daily_cron_utc` ↔ `daily.yml` cron'u TESTLE bağlandı
+(`test_daily_cron_config_ile_AYNI`); cron değişip config unutulursa suite
+kırılır.
+
+**Reddedilen alternatifler.**
+* *"Dosya adını `asof`tan üret"* → geçmiş 40+ rapor koşu günüyle adlandırılmış;
+  şema değişikliği arşivi ikiye böler ve `reports.date` tüketicilerini kırar.
+  Kazanç yok: slot günü zaten çakışmayı bitiriyor.
+* *"`local_today()`i global olarak slot-farkındalı yap"* → `notify` (günlük
+  bildirim tavanı) ve `history` de onu kullanıyor ve onlar için doğru referans
+  GERÇEKTEN duvar saati. Tek fonksiyonu iki soruya birden cevap verdirmek
+  L-021'in ta kendisiydi.
+* *"Atlanan günleri geriye dönük doldur"* → **bilerek YAPILMADI.** Geç yazılan
+  bir tahmini `kaynak="canli"` diye kaydetmek karnenin ölçtüğü şeyi
+  bozardı (ADR #014'ün bağımsızlık ilkesi). Eksik asof=2026-08-26 satırı
+  BOŞ BIRAKILDI ve `ai/STATE.md`de açık iş olarak duruyor.
+
+**Tekrar gözden geçir:** gecikme 24 saati aşarsa slot bir tam gün kayar. Bugüne
+kadar ölçülen en büyük gecikme ~8,5 saat. 24 saati aşan bir gecikme gözlenirse
+slot yerine "en son yazılmamış slot" mantığına geçilmeli.
+
+---
+
 ## #014 — 2026-08-28 — ADR #013 primi bir KİMLİĞE çevirmiş: bağımsızlık nöbetçisi eklendi, kapı ertelendi
 
 **Tetikleyen:** 2026-08-25'te iki bağımsız denetim raporu (Claude + GPT). Bu tur

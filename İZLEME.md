@@ -22,6 +22,7 @@
 | 9 | **Dump şişmiyor mu?** | `wc -l data/altin.sql` | Günde ~**+15-20 satır** (yeni gözlemler) | Günde binlerce satır artıyorsa tick tekilliği kopmuş — `grep -c "INTO ticks(" data/altin.sql` ile karşılaştır (ADR #009-C) |
 | 10 | 🔴 **"PRİM ÖLÇÜM TAŞIMIYOR" satırı var mı?** | Raporun **en üstü** | Satır **YOK** | Varsa prim bir kimliğe çökmüş: teorik bacak ile piyasa bacağı bağımsız değil. **Prim, prim z-skoru ve hafta sonu beklentisi o gün karar taşımaz.** Bkz. ADR #014 |
 | 11 | ⚠️ **"GÜNLÜK İŞ EKSİK ÇALIŞTI" satırı var mı?** | Raporun en üstü | Satır **YOK** | Varsa kritik olmayan bir adım (evds/ohlc/history/tahmin/grafik…) patlamış ve Actions **yeşil kalmış**. Satır hangi adım olduğunu yazar; Actions log'una bak |
+| 12 | 📄 **Rapor arşivinde gün atlanmış mı?** | `ls reports/ \| tail -10` | Ardışık günler, boşluk yok | Boşluk varsa L-021'in nüksü: iki slot aynı dosyaya yazmış olabilir. `git log --oneline -- reports/` ile aynı dosyanın iki kez yazılıp yazılmadığına bak |
 
 > **Not:** dump `INSERT OR IGNORE` yazar; eski `grep -c "INSERT INTO ..."`
 > komutları **0 döner**. Yukarıdaki `"INTO tablo("` biçimini kullan.
@@ -54,6 +55,26 @@ başarısız" diye yazıyor — **kelime yanlış**, koşmadılar. Gün sayacı 
 nöbetçisi 5 kayıttan az günde hüküm veremez ve komşu günün hükmünü taşır.
 `archive_observed_freq_minutes: 90` bu dalgalanmaya göre yeniden kalibre
 edilmedi — payda bayat, metrik gerilemeleri gizleyebilir (açık iş).
+
+### ⚠️ Cron gecikmesi GÜN ETİKETİNİ kaydırıyordu — 2026-09-02'de kapatıldı
+
+Gecikme yalnız "veri seyrekleşir" demek değildi. TR gece yarısını aştığında iş
+kendini **ertesi günün işi** sanıyor ve üç şey birden sessizce kayıyordu:
+
+| Ne kayıyordu | Ölçülen hasar |
+|---|---|
+| `rapor_<gün>.md` dosya adı | `rapor_2026-08-31.md` **kayıp** (09-01 koşusu ezdi) · `rapor_2026-08-27.md` hiç oluşmadı |
+| `weekday` | 08-31 Pazartesi slotu Salı göründü → **Pazartesi mutabakatı o hafta koşmadı** |
+| `asof` | `predictions`ta **asof=2026-08-26 satırı yok** — karne o günü hiç görmedi |
+
+Üçü de Actions'ta YEŞİL göründü. Çözüm (ADR #015): koşunun günü artık işin
+başladığı andan değil **kaçırılmamış son slottan** okunuyor
+(`util.slot_gunu`, `config.schedule.daily_cron_utc`). Slot saati `daily.yml`
+cron'una testle bağlı.
+
+> Eksik asof=2026-08-26 **geriye dönük doldurulmadı** ve bu bilinçli: geç
+> yazılan bir tahmini "canlı" diye kaydetmek karnenin ölçtüğü şeyi bozar
+> (ADR #014). Karnede o gün eksik kalacak.
 
 ### İki boşluk türü karıştırılmamalı
 

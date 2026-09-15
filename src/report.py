@@ -270,7 +270,10 @@ def _prim_at_or_before(con, ts_iso: str):
     ).fetchone()
 
 
-def build_report(cfg: dict) -> str:
+def build_report(cfg: dict, bugun: str | None = None) -> str:
+    # `bugun` = koşunun SLOT günü (bkz. `save_report`). Hükmün `asof`u
+    # onunla hesaplanır ki rapor metni ile aynı koşuda yazılan tahmin
+    # AYNI kesim gününü göstersin; gecikmede ikisi ayrışıyordu.
     con = db.connect(cfg)
     off = cfg.get("timezone_offset_hours", 3)
     now = util.utcnow()
@@ -297,7 +300,8 @@ def build_report(cfg: dict) -> str:
     if cfg.get("karar", {}).get("enabled", False):
         try:
             from . import karar
-            lines.append(karar.format_karar_md(karar.build_karar(cfg)))
+            lines.append(karar.format_karar_md(
+                karar.build_karar(cfg, bugun=bugun)))
         except Exception as e:
             log.warning("hukum blogu hata: %s", e)
 
@@ -507,7 +511,7 @@ def build_report(cfg: dict) -> str:
     return "\n".join(lines)
 
 
-def build_weekly_report(cfg: dict) -> str:
+def build_weekly_report(cfg: dict, bugun: str | None = None) -> str:
     """Pazar akşamı haftalık derin rapor: hafta dekompozisyonu + arşiv/z-skor ilerlemesi."""
     con = db.connect(cfg)
     off = cfg.get("timezone_offset_hours", 3)
@@ -543,20 +547,38 @@ def build_weekly_report(cfg: dict) -> str:
     con.close()
     # normal günlük içeriği de ekle (kadran, makro, sinyaller)
     L.append("---\n")
-    L.append(build_report(cfg))
+    L.append(build_report(cfg, bugun=bugun))
     return "\n".join(L)
 
 
-def save_report(cfg: dict, text: str) -> str:
+def save_report(cfg: dict, text: str, gun: str | None = None) -> str:
+    """Raporu diske yazar. `gun` verilmezse KOŞUNUN SLOT GÜNÜ kullanılır.
+
+    ⚠ DOSYA ADI DUVAR SAATİNDEN OKUNMAZ (ADR #015 / L-021).
+
+    Eskiden `to_local(utcnow())` idi, yani "iş hangi TR gününde BAŞLADI".
+    GitHub cron gecikip gece yarısını aşınca iki gün AYNI dosyaya yazdı:
+
+        2026-08-31 slotu → 09-01T00:02 TR'de koştu → rapor_2026-09-01.md
+        2026-09-01 slotu → 09-01T21:47 TR'de koştu → rapor_2026-09-01.md  (EZDİ)
+
+    Sonuç: 08-31 raporu KAYIP, rapor_2026-08-27.md hiç oluşmadı. Hiçbir hata
+    fırlamadı, Actions yeşil kaldı — arşivde iki gün eksik olduğunu ancak
+    dosya listesini gözle sayan biri görebilirdi.
+
+    Slot günü gecikmeden bağımsızdır: aynı slot iki kez koşarsa aynı dosyayı
+    üzerine yazar (istenen davranış — idempotent), FARKLI slotlar asla
+    çakışmaz.
+    """
     off = cfg.get("timezone_offset_hours", 3)
-    local = util.to_local(util.utcnow(), off)
-    fname = f"rapor_{local.strftime('%Y-%m-%d')}.md"
+    gun = gun or util.slot_gunu(cfg["schedule"]["daily_cron_utc"], off)
+    fname = f"rapor_{gun}.md"
     path = util.abspath(cfg["paths"]["reports_dir"]) / fname
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(util.mask_pii(text), encoding="utf-8")  # commit'e chat_id kaçmasın
     con = db.connect(cfg)
     con.execute("INSERT OR REPLACE INTO reports(date,path,created_utc) VALUES(?,?,?)",
-                (local.strftime('%Y-%m-%d'), str(path), util.iso(util.utcnow())))
+                (gun, str(path), util.iso(util.utcnow())))
     con.commit()
     con.close()
     log.info("rapor yazıldı: %s", path)

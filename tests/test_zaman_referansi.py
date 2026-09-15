@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+import pathlib
+
 import pytest
 import yaml
 
@@ -186,3 +188,86 @@ def test_zaman_damgasi_cekim_aninda_aliniyor():
     ts_satiri = kaynak.index("ts = datetime.now")
     truncgil_satiri = kaynak.index("truncgil.fetch")
     assert ts_satiri < truncgil_satiri
+
+
+# ==================================================================== slot günü
+class TestSlotGunu:
+    """⚠ L-021 / 2026-09-02 — "bu koşu hangi gün için?" sorusunun kilidi.
+
+    Yukarıdaki testler `local_today()`in doğru olduğunu ölçüyor ve DOĞRU:
+    işin BAŞLADIĞI TR günü tam olarak odur. Kaçırılan şey soruydu — zamanlanmış
+    bir işin günü, başladığı an değil KAÇIRILMAMIŞ SON SLOT'tur.
+
+    Bu dosyanın kendi docstring'i *"cron gece yarısına taşınırsa test düşer"*
+    diyor. Cron taşınmadı; GECİKME işi taşıdı ve hiçbir test düşmedi. Üç sessiz
+    arıza (kayıp rapor, kaçan Pazartesi mutabakatı, atlanan `asof`) buradan
+    çıktı. Aşağısı o üçünün ortak kökünü kilitler.
+    """
+
+    SLOT = "15:35"          # config.schedule.daily_cron_utc
+
+    def test_zamaninda_kosan_is_KENDI_gununu_gorur(self):
+        # 15:36 UTC = 18:36 TR — nominal üretim anı.
+        assert util.slot_gunu(self.SLOT, 3, _an(2026, 9, 1, 15, 36)) == "2026-09-01"
+
+    def test_GECE_YARISINI_ASAN_kosu_hala_KENDI_slotunu_gorur(self):
+        """⚠ GERÇEK OLAY — 2026-08-31 slotu 09-01T00:02 TR'de koştu.
+
+        `local_today()` "2026-09-01" der ve DOĞRU söyler: iş o gün başladı.
+        Ama iş 08-31'in işidir. Eski kod farkı göremediği için raporu
+        `rapor_2026-09-01.md` adıyla yazdı ve aynı gün gerçek 09-01 koşusu
+        onu ezdi — 08-31 raporu kalıcı olarak KAYIP.
+        """
+        an = _an(2026, 8, 31, 21, 2)                 # = 2026-09-01 00:02 TR
+        assert util.local_today.__doc__          # (referans: aşağıdaki fark)
+        assert util.to_local(an, 3).strftime("%Y-%m-%d") == "2026-09-01"
+        assert util.slot_gunu(self.SLOT, 3, an) == "2026-08-31"
+
+    def test_ERTESI_SABAHA_tasan_kosu_ONCEKI_gunun_isidir(self):
+        """⚠ GERÇEK OLAY — 2026-08-27 slotu 08-28T03:34 TR'de koştu.
+
+        `rapor_2026-08-27.md` hiç oluşmadı; içerik 08-28 adıyla yazıldı ve
+        `predictions`ta asof=2026-08-26 satırı HİÇ yazılmadı.
+        """
+        an = _an(2026, 8, 28, 0, 34)                 # = 03:34 TR
+        assert util.slot_gunu(self.SLOT, 3, an) == "2026-08-27"
+
+    def test_slot_ONCESI_kosan_is_ONCEKI_slotu_gorur(self):
+        """Elle tetiklenen (workflow_dispatch) sabah koşusu dünün işidir."""
+        assert util.slot_gunu(self.SLOT, 3, _an(2026, 9, 1, 6, 0)) == "2026-08-31"
+
+    def test_HAFTANIN_GUNU_kaymaz(self):
+        """⚠ GERÇEK OLAY — Pazartesi mutabakatı bir hafta hiç koşmadı.
+
+        `daily_job` Pazartesi mutabakatını `weekday == 0` ile seçiyor.
+        2026-08-31 (Pazartesi) slotu Salı'ya taştı; duvar saatiyle weekday=1
+        oldu ve mutabakat sessizce atlandı.
+        """
+        from datetime import datetime as _dt
+        an = _an(2026, 8, 31, 21, 2)                 # Salı 00:02 TR
+        assert util.to_local(an, 3).weekday() == 1                  # Salı
+        assert _dt.fromisoformat(util.slot_gunu(self.SLOT, 3, an)).weekday() == 0
+
+    def test_config_slotu_ile_dogru_calisir(self):
+        """Slot koda gömülü değil; config'ten okunur (workflow'a testle bağlı)."""
+        assert CFG["schedule"]["daily_cron_utc"] == self.SLOT
+
+
+class TestRaporDosyaAdiCakismaz:
+    """⚠ L-021'in ÖLÇÜLEBİLİR sonucu: iki farklı slot AYNI dosyaya yazamaz."""
+
+    def test_iki_ardisik_slot_AYRI_dosyaya_yazar(self, izole_kok, monkeypatch):
+        from src import report
+        cfg, kok = izole_kok
+        yazilan = []
+        monkeypatch.setattr(report.util, "mask_pii", lambda t: t)
+
+        for an, beklenen in [(_an(2026, 8, 31, 21, 2), "rapor_2026-08-31.md"),
+                             (_an(2026, 9, 1, 18, 46), "rapor_2026-09-01.md")]:
+            monkeypatch.setattr(report.util, "utcnow", lambda a=an: a)
+            yol = report.save_report(cfg, f"# rapor {beklenen}")
+            yazilan.append(pathlib.Path(yol).name)
+
+        assert yazilan == ["rapor_2026-08-31.md", "rapor_2026-09-01.md"], (
+            "gecikmiş 08-31 koşusu 09-01 adıyla yazıldı ve bir sonraki koşu "
+            "onu EZDİ — 2026-08-31 raporunun kaybolduğu hata (L-021)")

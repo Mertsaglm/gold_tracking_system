@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from statistics import mean, pstdev
+from statistics import mean, median, pstdev
 from typing import Optional, Sequence
 
 TROY_OZ = 31.1034768
@@ -68,7 +68,18 @@ def turetilmis_mi(oranlar: Sequence[float], esik: float,
     cv = bagimsizlik_cv(oranlar)
     if cv is None:
         return None
-    return cv < esik
+    if cv < esik:
+        return True
+
+    # Tek bir bozuk/yuvarlaması farklı kaynak satırı, sabit oranlı bir günü
+    # "bağımsız" gösterip kimlik nöbetçisini kapatmamalı. Bu istisna yalnız
+    # bir aykırıyı ve en az `min_kayit` tutarlı gözlemi kabul eder; az kayıtta
+    # veya iki farklı rejimde sonuç yine False kalır.
+    centre = median(oranlar)
+    inliers = [r for r in oranlar if abs(r / centre - 1) < esik]
+    if len(oranlar) == len(inliers) + 1 and len(inliers) >= min_kayit:
+        return True
+    return False
 
 
 def spread_pct(buying: float, selling: float) -> float:

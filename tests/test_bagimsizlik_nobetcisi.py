@@ -79,6 +79,16 @@ def test_gercek_olcum_yakalanmaz(cfg):
     assert calc.turetilmis_mi(oranlar, esik, minr) is False
 
 
+def test_kimlik_tek_aykiri_satirla_maskelenmez(cfg):
+    """2026-09-09: altı ölçümden yalnız biri kaynak aykırısıydı."""
+    esik = cfg["stats"]["bagimsizlik_cv_esigi"]
+    minr = cfg["stats"]["bagimsizlik_min_kayit"]
+    oranlar = _kimlik_oranlari(minr + 1)
+    oranlar[-1] *= 1.0003
+    assert calc.bagimsizlik_cv(oranlar) > esik
+    assert calc.turetilmis_mi(oranlar, esik, minr) is True
+
+
 def test_az_kayitta_hukum_verilmez(cfg):
     esik = cfg["stats"]["bagimsizlik_cv_esigi"]
     minr = cfg["stats"]["bagimsizlik_min_kayit"]

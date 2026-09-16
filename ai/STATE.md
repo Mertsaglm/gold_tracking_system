@@ -1,7 +1,7 @@
 # Mevcut durum
 
 **Güncelleme:** 2026-09-16
-**Aktif iş:** Üç öncelik grubu yerelde uygulandı ve doğrulandı; yayın yapılmadı.
+**Aktif iş:** Üç öncelik grubu yerelde uygulandı ve doğrulandı; GitHub yayın ve CI takibi sürüyor.
 
 ## Kapsam
 
@@ -53,6 +53,15 @@
    DoD: iki gerçek hesapta güncel tarih/hash, korunmuş sunucu anahtarı, teslim makbuzu.
 3. Doğrulanmış üyelik/ödeme/masraf kaynaklarını edin ve yeni sanal kanıtı biriktir.
    DoD: belgeli kayıtlar idempotent içe alındı; boşluklar ve bağımsız dönem sayısı görünür.
+
+## TAKVİM & SENDE KALANLAR
+
+| Tarih | Kim | İş | DoD | Durum |
+|---|---|---|---|---|
+| 2026-09-16 | 🤖 | BIST paketi GitHub inceleme dalına gönderildi | Uzak dal commit'i içeriyor | Tamam |
+| 2026-09-16 | 🤖 | Altın paketi uzaktaki arşivlerle birleştirildi | Test + fast-forward push | Devam ediyor |
+| Sonraki Actions koşusu | 🤖 | Yeni workflow'ları izle | Test, nöbetçi ve yedek işleri görünür | Bekliyor |
+| Veri bulunduğunda | 👤 | Üyelik/ödeme/masraf kanıtı sağla | Belgeli içe alma kaydı | Bekliyor |
 
 ## Backlog
 

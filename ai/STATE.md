@@ -31,8 +31,7 @@
 - Eski stop hatası geçici kopyada geri konunca regresyon testi kırmızıya döndü.
 - Gerçek defterlerin ayrı arşivden geçici geri dönüşünde tüm hesap/hash eşleşti.
 - Başlangıçtaki 19 veri dosyasının SHA-256 özeti değişmedi; gizli değer sızıntısı yok.
-- Bu oturum commit/push/deploy veya gerçek Telegram gönderimi yapmadı.
-  Önceki `effc191` tabanı zaten vardı; önceki STATE'in commit durumu tarihsel nottur.
+- Bu oturum iki depoya commit/push yaptı; gerçek Telegram gönderimi veya deploy yapılmadı.
 
 ## Açık sınırlar
 
@@ -43,13 +42,13 @@
 - Bağımsız sanal dönem birikimi zaman ister; otomatik model terfisi yok.
 - Altın eski .venv pandas 3 içeriyor; kilit pandas 2.3.3/tzdata 2026.3.
   Test geçici PYTHONPATH ortamında yapıldı; eski .venv değiştirilmedi.
-- 2026-09-15 notundaki GitHub PR/Vercel erişim durumu bu oturum canlı doğrulanmadı.
+- Vercel hesabı canlı incelendi; BIST/altın paneline bağlı proje görünmüyor.
 
 ## Sıradaki 3 İş
 
-1. Hazır yerel paketin yayın kararını al; onaylanan commit/push ve CI'ı izle.
-   DoD: iki proje aynı manifestte, Actions testleri ve ilk yeni cycle başarılı.
-2. Vercel proje/erişim hedefini doğrula, panel preview ve gerçek teslimi doğrula.
+1. BIST PR #2'yi gözden geçirip merge kararını ver.
+   DoD: `main`de PR commit'i ve merge sonrası Actions testi yeşil.
+2. Vercel'de panel için proje/GitHub erişimi kur, preview'a yalnız sunucu değişkenlerini ekle.
    DoD: iki gerçek hesapta güncel tarih/hash, korunmuş sunucu anahtarı, teslim makbuzu.
 3. Doğrulanmış üyelik/ödeme/masraf kaynaklarını edin ve yeni sanal kanıtı biriktir.
    DoD: belgeli kayıtlar idempotent içe alındı; boşluklar ve bağımsız dönem sayısı görünür.
@@ -58,9 +57,9 @@
 
 | Tarih | Kim | İş | DoD | Durum |
 |---|---|---|---|---|
-| 2026-09-16 | 🤖 | BIST paketi GitHub inceleme dalına gönderildi | Uzak dal commit'i içeriyor | Tamam |
-| 2026-09-16 | 🤖 | Altın paketi uzaktaki arşivlerle birleştirildi | Test + fast-forward push | Devam ediyor |
-| Sonraki Actions koşusu | 🤖 | Yeni workflow'ları izle | Test, nöbetçi ve yedek işleri görünür | Bekliyor |
+| 2026-09-16 | 🤖 | BIST PR #2 açıldı | GitHub dashboard + pytest yeşil | Merge bekliyor |
+| 2026-09-16 | 🤖 | Altın `main` yayımlandı | GitHub dashboard + pytest yeşil | Tamam |
+| Vercel kurulumunda | 👤 | Panel projesine GitHub erişimi ver | Preview kurulabilir | Bekliyor |
 | Veri bulunduğunda | 👤 | Üyelik/ödeme/masraf kanıtı sağla | Belgeli içe alma kaydı | Bekliyor |
 
 ## Backlog

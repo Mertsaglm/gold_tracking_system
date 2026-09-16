@@ -45,7 +45,7 @@ def reconcile(ledger, actions, cfg, now):
         if not cfg['start_date'] <= a['date'] <= today:
             continue
         symbol = a['ticker']
-        for book in ('strategy', 'benchmark'):
+        for book in ('strategy', 'benchmark', 'shadow_reference', 'shadow_candidate'):
             key = f"corporate:{book}:{symbol}:{a['date']}:{a['kind']}"
             if key in ledger.keys:
                 continue
@@ -69,3 +69,27 @@ def reconcile(ledger, actions, cfg, now):
                            amount_cents=net, gross_per_share=a['value'], effective_date=a['date'],
                            note='Net temettü alacağı; ödeme tarihi doğrulanana kadar nakde eklenmez.')
     return blocked
+
+
+def settle(ledger, payments, now):
+    """Ödeme tarihi ve kanıt referansıyla alacağı bir kez nakde çevir."""
+    count=0
+    for payment in payments:
+        key=payment['receivable_key']
+        source=str(payment.get('source_reference','')).strip()
+        paid=date.fromisoformat(payment['paid_on'])
+        if not source or paid>now.date():raise ValueError('Geçerli ödeme günü ve kaynak referansı gerekli.')
+        receivable=next((e for e in ledger.events if e['kind']=='dividend_receivable' and e['key']==key),None)
+        if not receivable:raise ValueError('Temettü alacağı bulunamadı.')
+        d=receivable['data']
+        if paid.isoformat()<d['effective_date']:raise ValueError('Ödeme hak kazanma tarihinden önce olamaz.')
+        amount=payment.get('amount_cents')
+        if isinstance(amount,bool) or not isinstance(amount,int) or amount!=d['amount_cents']:
+            raise ValueError('Ödeme net alacak tutarıyla birebir eşleşmeli.')
+        prior=next((e['data'] for e in ledger.events if e['key']=='payment:'+key),None)
+        if prior and (prior['paid_on']!=paid.isoformat() or prior['source_reference']!=source):
+            raise ValueError('Önceki ödeme kanıtı değiştirilemez.')
+        count+=ledger.add('dividend_payment','payment:'+key,now.isoformat(),book=d['book'],symbol=d['symbol'],
+                          amount_cents=amount,paid_on=paid.isoformat(),source_reference=source,receivable_key=key)
+        ledger.account(d['book'])
+    return count

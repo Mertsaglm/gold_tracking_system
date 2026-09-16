@@ -3,5 +3,5 @@
   "private": true,
   "type": "module",
   "engines": {"node": ">=22"},
-  "scripts": {"dev": "node server.mjs", "test": "node --test test/*.test.mjs", "build": "node --check public/app.js && node --check api/status.js"}
+  "scripts": {"dev": "node server.mjs", "test": "node --test test/*.test.mjs", "build": "node --check public/app.js && node --check public/insights.js && node --check api/status.js"}
 }

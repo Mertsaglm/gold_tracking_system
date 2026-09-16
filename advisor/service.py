@@ -8,6 +8,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from . import history, learning, marketdata, news, policy, outcomes, corporate as corporate_module
+from . import engine, capsule, evidence, shadow, universe as universe_module, reporting, observations, risk as portfolio_risk
 from .ledger import Ledger, atomic_json, cents, digest, fund, locked
 
 IST = ZoneInfo("Europe/Istanbul")
@@ -19,43 +20,19 @@ def configuration(root):
         raise ValueError("Geçersiz portföy yapılandırması.")
     if not 0 < cfg["risk_per_trade_pct"] <= 2 or not 0 < cfg["max_position_pct"] <= 100:
         raise ValueError("Risk sınırı geçersiz.")
+    if not 0 < cfg.get('max_portfolio_risk_pct',5) <= 10 or cfg['learning'].get('min_live_periods',24)<24:
+        raise ValueError('Toplam risk/bağımsız kanıt sınırı geçersiz.')
     return cfg
 
 
 def holidays(root):
-    p = root / "holidays_tr.yaml"
-    if not p.exists():
-        p = root / 'holidays.yaml'
-    if not p.exists():
-        return []
-    # Her iki eski projenin takvimi farklı biçim kullanır; tarihli tüm kayıtları al.
-    import re
-    return sorted(set(re.findall(r"\b20\d{2}-\d{2}-\d{2}\b", p.read_text(encoding="utf-8"))))
+    from .calendar import load
+    return load(root)['full_days']
 
 
 def benchmark_step(ledger, cfg, quotes, symbols, now):
-    """Aynı katkı ve banka maliyetiyle ayda bir eşit tutar al-tut tabanı."""
-    if not symbols or any(marketdata.usable(quotes.get(s), cfg, now, cfg.get("holidays", ())) or s in cfg.get('blocked_symbols', {}) for s in symbols):
-        return
-    for event in list(ledger.events):
-        d = event["data"]
-        if event["kind"] != "contribution" or d.get("book") != "benchmark":
-            continue
-        key = "benchmark:allocation:" + event["key"]
-        if key in ledger.keys:
-            continue
-        budget = d["amount_cents"] // len(symbols)
-        for symbol in symbols:
-            px = policy.execution_price(quotes[symbol], cfg, "BUY")
-            qty = policy.quantity_for(budget, px, cfg)
-            if not qty:
-                continue
-            ledger.add("fill", key + ":" + symbol, now.isoformat(), book="benchmark", symbol=symbol,
-                       side="BUY", quantity=str(qty), price=px, notional_cents=cents(float(qty) * px),
-                       fee_cents=policy.fee(cfg, float(qty) * px, "BUY"), quote=quotes[symbol],
-                       reason="monthly_buy_hold", decision_key=key, stop=None, target=None, deadline=None)
-        ledger.add("benchmark_allocation", key, now.isoformat(), contribution_key=event["key"])
-    ledger.account("benchmark")
+    from .benchmark import step
+    return step(ledger, cfg, quotes, symbols, now)
 
 
 def feedback(ledger, view):
@@ -101,7 +78,10 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
     if now.tzinfo is None:
         raise ValueError("Koşu zamanı saat dilimi içermeli.")
     cfg = configuration(root)
-    cfg["holidays"] = holidays(root)
+    cfg['holidays'] = holidays(root)
+    from .calendar import load as load_calendar
+    if (root / 'holidays_tr.yaml').exists():
+        cfg['calendar'] = load_calendar(root)
     state = root / "data/advisor"
     with locked(state / ".lock"):
         ledger = Ledger(state / "events.jsonl")
@@ -127,6 +107,7 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
             fingerprint = digest({"data": str(pd.util.hash_pandas_object(frame, index=False).sum()), 'engine':digest(Path(learning.__file__).read_text()), 'config': cfg})
             cache = state / "model.json"
             model = json.loads(cache.read_text()) if cache.exists() else {}
+            previous_model = dict(model)
             if model.get("data_fingerprint") != fingerprint:
                 model, features = learning.train(frame, cfg, data_date)
                 model["data_fingerprint"] = fingerprint
@@ -142,10 +123,13 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
             if model.get('id'):
                 ledger.add('model_review', 'model:' + model['id'], now.isoformat(), model_id=model['id'],
                            approved=model['approved'], evaluation=model['evaluation'], limitations=model['limitations'])
+            reference_model = shadow.reference(state, previous_model, model)
             current = features[features.in_live == 1].groupby("symbol").tail(1).copy()
             symbols = sorted(current.symbol.unique().tolist())
+            live_symbols = list(symbols)
+            cfg['allowed_entry_symbols'] = live_symbols
             # Önceden alınmış ama izleme evreninden çıkarılmış varlık da izlenmeye devam eder.
-            owned = set(ledger.account()['positions']) | set(ledger.account('benchmark')['positions'])
+            owned = set().union(*(set(ledger.account(book)['positions']) for book in ('strategy','benchmark','shadow_reference','shadow_candidate')))
             current = features[features.symbol.isin(set(symbols) | owned)].groupby('symbol').tail(1).copy()
             symbols = sorted(set(symbols) | owned)
             legacy = history.legacy_summary(con, cfg["market"])
@@ -173,6 +157,9 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                 blocked_symbols[symbol] = 'Temettü/bölünme kaynağı doğrulanamadı.'
         cfg['blocked_symbols'] = blocked_symbols
         account = ledger.account()
+        universe_module.archive(ledger, live_symbols, now)
+        cost_config = {k: cfg[k] for k in ('commission_rate','commission_min_try','commission_bsmv_rate','exchange_fee_rate','gold_buy_tax_rate','slippage_bps')}
+        ledger.add('cost_policy', 'cost-policy:' + digest(cost_config), now.isoformat(), config=cost_config, sources=cfg['sources'])
         outcomes.resolve(ledger, features, cfg, now)
         scorecard = outcomes.calibration(ledger, cfg)
         forecasts = {}
@@ -180,43 +167,38 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
             valid = current.dropna(subset=learning.FEATURES)
             forecasts = dict(zip(valid.symbol, learning.predict(model, valid).tolist()))
         raw_forecasts = dict(forecasts)
+        shadow.record(ledger, reference_model, current, raw_forecasts, now)
+        shadow.resolve(ledger, features, now)
         forecasts = {s: f - scorecard['correction_pct'] for s, f in forecasts.items()}
-        current_view = policy.value_account(account, quotes, cfg)
+        current_view = policy.value_account(account, quotes, cfg, now)
         learned = feedback(ledger, current_view)
-        benchmark_before = policy.value_account(ledger.account('benchmark'), quotes, cfg)
-        cfg['live_gate_passed'] = (learned['roundtrips'] >= cfg['learning']['min_live_roundtrips']
-                                  and current_view['equity_try'] is not None and benchmark_before['equity_try'] is not None
-                                  and current_view['equity_try'] > benchmark_before['equity_try'])
+        benchmark_before = policy.value_account(ledger.account('benchmark'), quotes, cfg, now)
+        live_evidence = evidence.live(ledger, cfg)
+        cfg['live_gate_passed'] = live_evidence['approved'] and learned['roundtrips'] >= cfg['learning']['min_live_roundtrips']
         # Geçmiş performans gözlemdir: kendi düzelmesini engelleyen kalıcı kilit kurma.
         cfg['risk_multiplier'] = .25 if (learned.get('drawdown_pct') or 0) <= -cfg['learning']['max_live_drawdown_pct'] else 1
         imminent = [e for e in agenda.get('upcoming',[]) if 0 <= (datetime.fromisoformat(e['date']).date()-now.astimezone(IST).date()).days <= 1]
         if imminent:
             cfg['risk_multiplier'] *= .5
-        decisions = []
-        # V1 LLM yorumları bağlam olarak görünür; eski varsayımsal veto V2'yi kilitlemez.
-        for row in current.to_dict("records"):
-            symbol = row["symbol"]
-            block = marketdata.usable(quotes.get(symbol), cfg, now, cfg["holidays"], allow_wide_spread=symbol in account['positions'])
-            if symbol in blocked_symbols:
-                block = blocked_symbols[symbol]
-            d = policy.decision(row, forecasts.get(symbol), model, cfg, quotes.get(symbol), account["positions"].get(symbol), block, now)
-            if imminent:
-                d['event_note'] = 'Fed kararı yaklaşıyor; yeni sanal işlem tutarı yarıya indirildi.'
-            if cfg["market"] == "gold" and d["action"] == "TUT":
-                last_buy = max((f["at"] for f in account["fills"] if f["symbol"] == symbol and f["side"] == "BUY"), default="")
-                if last_buy[:7] < local_day[:7]:
-                    topup = policy.decision(row, forecasts.get(symbol), model, cfg, quotes.get(symbol), None, block, now)
-                    if topup["action"] == "AL":
-                        d = {**topup, "monthly_topup": True}
-            d["key"] = "decision:" + digest({"day": local_day, "data": d, "quote": quotes.get(symbol)})
-            decisions.append(d)
-        fills = policy.execute(ledger, cfg, decisions, quotes, now)
+        records = capsule.clean(current.to_dict('records'))
+        present = {r['symbol'] for r in records}
+        for symbol in set(account['positions']) - present:
+            records.append({'symbol': symbol, 'date': data_date, 'close': quotes.get(symbol, {}).get('bid'),
+                            'quality_ok': False, 'trend50': 0, 'rsi14': 50, 'volatility20': 0})
+        event_note = 'Fed kararı yaklaşıyor; yeni sanal işlem tutarı yarıya indirildi.' if imminent else None
+        shadow_books = shadow.portfolios(ledger, reference_model, current, forecasts, model, cfg, quotes, now, event_note)
+        context = capsule.inputs(ledger, records, forecasts, model, cfg, quotes, now, event_note)
+        decisions, fills = engine.run(ledger, records, forecasts, model, cfg, quotes, now, event_note)
+        receipt = capsule.save(state, context, decisions)
+        ledger.add('decision_capsule', 'capsule:' + receipt['id'], now.isoformat(), **receipt)
+        previous_snapshot = json.loads((state / 'latest.json').read_text()) if (state / 'latest.json').exists() else {}
+        reporting.enrich(decisions, ledger, cfg, previous_snapshot.get('decisions', []))
         outcomes.record(ledger, decisions, raw_forecasts, now)
         for d in decisions:
             ledger.add("decision", d["key"], now.isoformat(), **{k: v for k, v in d.items() if k != "key"})
-        benchmark_step(ledger, cfg, quotes, symbols, now)
-        strategy = policy.value_account(ledger.account(), quotes, cfg)
-        benchmark = policy.value_account(ledger.account("benchmark"), quotes, cfg)
+        benchmark_step(ledger, cfg, quotes, live_symbols, now)
+        strategy = policy.value_account(ledger.account(), quotes, cfg, now)
+        benchmark = policy.value_account(ledger.account("benchmark"), quotes, cfg, now)
         learned = feedback(ledger, strategy)
         baseline_nav = benchmark_nav(ledger, benchmark)
         if strategy["valuation_complete"]:
@@ -225,22 +207,33 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
         valuations = [dict(e["data"], at=e["at"]) for e in ledger.events if e["kind"] == "valuation"]
         # Ekran son 500 GÜNÜ alır; saatlik koşular geçmişi birkaç haftaya daraltmaz.
         daily_values = {datetime.fromisoformat(v['at']).astimezone(IST).date().isoformat(): v for v in valuations}
-        learned["live_gate_passed"] = (learned["roundtrips"] >= cfg["learning"]["min_live_roundtrips"]
-                                         and strategy.get("equity_try") is not None and benchmark.get("equity_try") is not None
-                                         and strategy["equity_try"] > benchmark["equity_try"])
+        learned['evidence'] = evidence.live(ledger, cfg)
+        learned['live_gate_passed'] = learned['evidence']['approved'] and learned['roundtrips'] >= cfg['learning']['min_live_roundtrips']
+        learned['shadow'] = shadow.score(ledger, cfg)
+        learned['shadow_portfolios'] = shadow_books
         learned['risk_multiplier'] = cfg['risk_multiplier']
         learned['scorecard'] = scorecard
-        if cfg["market"] == "gold" and quotes.get("GRAM"):
+        if cfg["market"] == "gold" and marketdata.price_problem(quotes.get("GRAM"), cfg, now) is None:
             cost = quotes["GRAM"]["ask"] * (1 + cfg["gold_buy_tax_rate"])
             for view in (strategy, benchmark):
                 held = sum(float(p["quantity"]) for p in view["positions"])
                 view["gold_equivalent_grams"] = held + view["cash_try"] / cost
+        from .calendar import session_block
+        if session_block(now,cfg) is None:
+            ledger.add('session_check','session-check:'+now.isoformat(),now.isoformat(),
+                       expected_quotes=len(symbols),
+                       valid_quotes=sum(marketdata.price_problem(quotes.get(s),cfg,now) is None for s in symbols),
+                       decisions=len(decisions),corporate_ok=not blocked_symbols,errors=errors)
         snapshot = {"schema_version": 2, "market": cfg["market"], "generated_at": now.isoformat(),
                     "analysis_date": data_date, "mode": "paper", "strategy": strategy, "benchmark": benchmark,
                     "decisions": decisions, "quotes": quotes, "news": agenda, "learning": {k: model.get(k) for k in ("id", "asof", "ready", "status", "approved", "training_rows", "training_dates", "evaluation", "limitations", "features")},
                     "feedback": learned, "history": list(daily_values.values())[-500:], "legacy": legacy,
-                    "health": {"errors": errors, "quote_coverage": len(quotes), "expected_quotes": len(symbols), 'corporate_sources': action_health,
+                    "health": {"errors": errors, "quote_coverage": sum(marketdata.price_problem(q, cfg, now) is None for q in quotes.values()),
+                               'received_quotes': len(quotes), "expected_quotes": len(symbols), 'corporate_sources': action_health,
                                "news_sources_ok": sum(s["ok"] for s in agenda["sources"]), "ledger_hash": ledger.root_hash},
+                    'risk': portfolio_risk.summary(ledger.account(), quotes, cfg, now),
+                    'weekly': reporting.weekly(ledger, now), 'funnel': reporting.funnel(decisions),
+                    'reproduction': receipt, 'cost_observations': observations.summary(ledger),
                     "budget": budget_signature, 'cost_notes': cfg.get('cost_notes', []), "costs": {k: cfg[k] for k in ("commission_rate", "commission_min_try", "commission_bsmv_rate", "exchange_fee_rate", "gold_buy_tax_rate", "slippage_bps")}}
         ledger.save()
         atomic_json(state / "latest.json", snapshot)

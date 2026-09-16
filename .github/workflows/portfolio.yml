@@ -31,7 +31,8 @@ jobs:
           python-version: '3.12'
           cache: pip
       - name: Bagimliliklar
-        run: pip install --quiet -r requirements.txt
+        run: |
+          pip install --quiet -r requirements-runtime.txt
       - name: Fiyat, karar ve sanal defter
         id: cycle
         run: python -m advisor cycle
@@ -62,6 +63,18 @@ jobs:
           git add data/advisor/
           if ! git diff --cached --quiet; then
             git commit -m "advisor: bildirim makbuzu"
+            bash ops/push_retry.sh
+          fi
+      - name: Cuma haftalik V2 ozeti
+        if: success()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m advisor weekly --notify
+          git add data/advisor/
+          if ! git diff --cached --quiet; then
+            git commit -m "advisor: haftalik ozet makbuzu"
             bash ops/push_retry.sh
           fi
       - uses: actions/upload-artifact@v4

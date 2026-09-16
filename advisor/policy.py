@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import math
-from datetime import date, timedelta
+from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_FLOOR
 from zoneinfo import ZoneInfo
 
@@ -37,28 +37,36 @@ def quantity_for(budget_cents, price, cfg):
     return Decimal(0)
 
 
-def value_account(account, quotes, cfg):
+def value_account(account, quotes, cfg, now=None):
+    from .marketdata import price_problem
+    now = now or datetime.now(timezone.utc)
     positions = []
     value = account["cash_cents"] + account.get('receivable_cents', 0)
     complete = True
+    last_known = value
     for symbol, p in account["positions"].items():
         q = quotes.get(symbol)
-        mark = execution_price(q, cfg, "SELL") if q else None
+        problem = price_problem(q, cfg, now)
+        mark = execution_price(q, cfg, "SELL") if q and all(isinstance(q.get(k), (int, float)) and math.isfinite(q[k]) and q[k] > 0 for k in ('bid', 'ask')) and q['ask'] >= q['bid'] else None
         net = cents(float(p["quantity"]) * mark) - fee(cfg, float(p["quantity"]) * mark, "SELL") if mark else None
-        if net is None:
+        if net is None or problem:
             complete = False
         else:
             value += net
+        last_known = last_known + net if net is not None and last_known is not None else None
         positions.append({"symbol": symbol, "quantity": str(p["quantity"]),
                           "cost_try": p["cost_cents"] / 100, "average_cost": p["cost_cents"] / 100 / float(p["quantity"]),
-                          "mark": mark, "value_try": net / 100 if net is not None else None,
-                          "pnl_try": (net - p["cost_cents"]) / 100 if net is not None else None,
+                          "mark": mark, "value_try": net / 100 if net is not None and not problem else None,
+                          "pnl_try": (net - p["cost_cents"]) / 100 if net is not None and not problem else None,
+                          'last_known_value_try': net / 100 if net is not None else None,
+                          'valuation_problem': problem, 'quoted_at': q.get('quoted_at') if q else None,
                           **{k: p.get(k) for k in ("stop", "target", "deadline", "opened_at")}})
     return {"cash_try": account["cash_cents"] / 100, "contributed_try": account["contributed_cents"] / 100,
             'receivable_try': account.get('receivable_cents', 0) / 100,
             "equity_try": value / 100 if complete else None,
             "pnl_try": (value - account["contributed_cents"]) / 100 if complete else None,
             "realized_try": account["realized_cents"] / 100, "positions": positions,
+            'last_known_equity_try': last_known / 100 if last_known is not None else None,
             "fills": account["fills"], "valuation_complete": complete}
 
 
@@ -68,10 +76,18 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
     action, code = "BEKLE", "no_edge"
     today = now.astimezone(ZoneInfo('Europe/Istanbul')).date()
     age = (today - date.fromisoformat(row["date"])).days
+    analysis_block = None
     if age > cfg["max_analysis_age_days"]:
-        blocked = "Analiz verisi eski; yeni kapanış gerekli."
+        analysis_block = "Analiz verisi eski; yeni kapanış gerekli."
     if not bool(row.get("quality_ok", False)):
-        blocked = "Fiyat geçmişi kalite kontrolünü geçmedi."
+        analysis_block = "Fiyat geçmişi kalite kontrolünü geçmedi."
+    from .marketdata import price_problem
+    blocked = blocked or price_problem(quote, cfg, now)
+    if quote and not all(isinstance(quote.get(k), (int, float)) and not isinstance(quote[k], bool)
+                         and math.isfinite(quote[k]) and quote[k] > 0 for k in ('bid', 'ask')):
+        quote = None
+    if not position:
+        blocked = blocked or analysis_block
     buy = execution_price(quote, cfg, "BUY") if quote else None
     sell = execution_price(quote, cfg, "SELL") if quote else None
     # Kapanıştan bu yana gerçekleşen yükselişi ikinci kez gelecek kazanç sayma.
@@ -94,12 +110,14 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
         elif cfg["market"] == "bist" and position.get("deadline") and today.isoformat() >= position["deadline"]:
             action, code = "SAT", "time_exit"
             reasons.append("Pozisyonun izleme süresi doldu.")
-        elif remaining is not None and remaining < -cfg["min_expected_net_pct"] and row["trend50"] < 0:
+        elif not analysis_block and remaining is not None and remaining < -cfg["min_expected_net_pct"] and row["trend50"] < 0:
             action, code = "SAT", "forecast_reversal"
             reasons.append("Model görünümü negatife döndü; fiyat kısa trendin altında.")
         else:
             action, code = "TUT", "hold"
             reasons.append("Satış sınırlarından hiçbiri tetiklenmedi.")
+        if analysis_block:
+            reasons.append(analysis_block + ' Mevcut stop/hedef izleniyor.')
     elif forecast is None or not model.get("ready"):
         reasons.append("Alım için yeterli model verisi yok.")
     else:
@@ -136,11 +154,12 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
         stop = target = None
     if position:
         stop, target = position.get('stop'), position.get('target')
+    from .calendar import add_sessions
     return {"symbol": symbol, "asof": row["date"], "action": action, "code": code,
             "reasons": reasons[:3], "forecast_pct": forecast, 'remaining_forecast_pct': remaining, "model_id": model.get("id"),
             "stop": stop, "target": target, "price": buy,
             "sector": row.get("sector"), "confidence": "sınırlı" if not model.get("approved") else "orta",
-            "deadline": position.get('deadline') if position else (today + timedelta(days=30)).isoformat() if cfg["market"] == "bist" else None}
+            "deadline": position.get('deadline') if position else add_sessions(today, cfg['horizon_sessions'], cfg) if cfg["market"] == "bist" else None}
 
 
 def execute(ledger, cfg, decisions, quotes, now, book="strategy"):
@@ -177,13 +196,13 @@ def execute(ledger, cfg, decisions, quotes, now, book="strategy"):
             if symbol not in account["positions"] and len(account["positions"]) >= cfg["max_positions"]:
                 d.update(action="BEKLE", code="capacity", reasons=["Sanal portföyde yeni pozisyon yeri yok."])
                 continue
-            equity = value_account(account, quotes, cfg)["equity_try"]
+            equity = value_account(account, quotes, cfg, now)["equity_try"]
             if equity is None:
                 d.update(action="VERİ BEKLENİYOR", code="incomplete_valuation", reasons=["Eldeki varlıkların fiyatı eksik; yeni para kullanma."])
                 continue
             reserve = cents(equity * cfg["minimum_cash_pct"] / 100)
             max_notional = cents(equity * cfg["max_position_pct"] / 100)
-            if (d.get("confidence") == "sınırlı" or not cfg.get('live_gate_passed', False)) and book == "strategy":
+            if (d.get("confidence") == "sınırlı" or not cfg.get('live_gate_passed', False)) and book != "benchmark":
                 max_notional = int(max_notional * cfg["learning"]["trial_position_multiplier"])
             max_notional = int(max_notional * cfg.get('risk_multiplier', 1))
             sector_count = sum(p.get('sector') == d.get('sector') for p in account['positions'].values())
@@ -196,6 +215,10 @@ def execute(ledger, cfg, decisions, quotes, now, book="strategy"):
             risk = (d["price"] - d["stop"]) / d["price"] if d.get("stop") else 1
             held_risk = sum(max(0, float(p['quantity']) * (execution_price(quotes[s], cfg, 'SELL') - (p.get('stop') or 0))) for s, p in account['positions'].items() if s == symbol)
             allowed_risk = cents(max(0, equity * cfg["risk_per_trade_pct"] / 100 * cfg.get('risk_multiplier', 1) - held_risk))
+            from .risk import summary as portfolio_risk
+            portfolio = portfolio_risk(account, quotes, cfg, now)
+            remaining_risk = max(0, equity * cfg.get('max_portfolio_risk_pct', 5) / 100 - portfolio['stop_risk_try'])
+            allowed_risk = min(allowed_risk, cents(remaining_risk))
             max_risk = int(allowed_risk / risk)
             budget = max(0, min(account["cash_cents"] - reserve, max_notional, max_risk))
             qty = quantity_for(budget, execution_price(quotes[symbol], cfg, side), cfg)

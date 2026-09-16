@@ -9,3 +9,5 @@
 .grid>*,.account-cards>*,.learning-stats>*{min-width:0}.chart-key{flex-wrap:wrap}.metric strong{overflow-wrap:anywhere;text-align:right}
 @media(max-width:800px){.account-bottom>span{display:block}}
 @media(max-width:540px){.panel-head{flex-wrap:wrap}.filters{width:100%}.filters input{max-width:none;flex:1}.stat-row{grid-template-columns:repeat(3,minmax(0,1fr))}.stat-row strong{white-space:normal}.account-amount small{display:inline;font-size:10px;margin-left:3px}.mini-stat{min-width:0}}
+
+.decision-detail{max-width:36rem;margin-top:.7rem;white-space:normal}.decision-detail summary{cursor:pointer;font-weight:600;color:var(--accent,#315c4b)}.decision-detail .metric{gap:1rem;align-items:flex-start}.decision-detail ul{padding-left:1.1rem;overflow-wrap:anywhere}.decision-detail strong{white-space:normal}.decision-detail p{font-size:.83rem;line-height:1.55}

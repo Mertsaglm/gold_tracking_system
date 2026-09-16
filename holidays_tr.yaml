@@ -39,3 +39,14 @@ us:
   "2027":
     - 2027-01-01
     - 2027-12-25
+
+# V2 banka referans penceresinin erken bitiş günleri.
+yarim_gun:
+  "2026":
+    - 2026-03-19   # Ramazan Bayramı arifesi
+    - 2026-05-26   # Kurban Bayramı arifesi
+    - 2026-10-28   # Cumhuriyet Bayramı arifesi (öğleden sonra kapalı)
+  "2027":
+    - 2027-03-09   # (TAHMİNİ)
+    - 2027-05-15   # (TAHMİNİ)
+    - 2027-10-28

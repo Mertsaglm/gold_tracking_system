@@ -33,7 +33,7 @@ jobs:
           cache: pip
 
       - name: Bagimliliklar
-        run: pip install --quiet requests PyYAML yfinance
+        run: pip install --quiet -r requirements-runtime.txt
 
       - name: Fiyat cek + CSV'ye ekle
         run: python -m src.archive_fetch

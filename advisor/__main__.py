@@ -11,16 +11,79 @@ from .ledger import atomic_json
 
 def main():
     p = argparse.ArgumentParser(description="BIST/altın sanal yatırım sistemi")
-    p.add_argument("command", choices=["cycle", "audit", "research", "status", 'notify'])
+    p.add_argument("command", choices=["cycle", "audit", "research", "status", 'notify', 'watchdog', 'backup', 'recovery-check',
+                                     'simulate', 'reproduce', 'settle-dividends', 'cost-observations', 'universe-import', 'weekly'])
     p.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
     p.add_argument("--database", type=Path)
     p.add_argument("--offline", action="store_true")
     p.add_argument("--notify", action="store_true")
     p.add_argument("--telegram", type=Path)
     p.add_argument("--output", type=Path)
+    p.add_argument('--input', type=Path)
+    p.add_argument('--start')
+    p.add_argument('--end')
+    p.add_argument('--scenario', type=Path)
     args = p.parse_args()
     cfg = service.configuration(args.root)
-    if args.command == 'research':
+    if args.command == 'simulate':
+        from .simulation import simulate
+        from .universe import read
+        from .calendar import load
+        if not args.start or not args.end or not args.output:p.error('simulate için --start, --end ve --output gerekli.')
+        if args.output.resolve().is_relative_to((args.root/'data').resolve()):p.error('Simülasyon raporu gerçek veri dizinine yazılamaz.')
+        cfg['calendar']=load(args.root)
+        with history.connection(args.root,cfg['market'],args.database) as con:
+            frame=history.load(con,cfg['market'],args.end)
+        scenario=json.loads(args.scenario.read_text()) if args.scenario else {}
+        result=simulate(frame,cfg,args.start,args.end,membership=read(args.root),scenario=scenario)
+        atomic_json(args.output,result)
+        print(json.dumps({'report':str(args.output),'fills':len(result['fills']),'fees_try':result['fees_try'],'production_eligible':False}))
+    elif args.command == 'reproduce':
+        from .capsule import reproduce
+        if not args.input:p.error('reproduce için --input gerekli.')
+        print(json.dumps(reproduce(args.input)))
+    elif args.command == 'universe-import':
+        from .universe import import_history
+        if not args.input:p.error('universe-import için --input gerekli.')
+        print(json.dumps(import_history(args.root,args.input)))
+    elif args.command in ('settle-dividends','cost-observations'):
+        from .ledger import Ledger,locked
+        from .corporate import settle
+        from .observations import record
+        if not args.input:p.error('Doğrulanmış kayıtları içeren --input gerekli.')
+        with locked(args.root/'data/advisor/.lock'):
+            ledger=Ledger(args.root/'data/advisor/events.jsonl')
+            count=(settle if args.command=='settle-dividends' else record)(ledger,json.loads(args.input.read_text()),datetime.now(timezone.utc))
+            ledger.save()
+        print(json.dumps({'added':count,'note':'Panel bir sonraki cycle ile güncellenir.'}))
+    elif args.command == 'weekly':
+        from .ledger import Ledger,locked
+        from .reporting import weekly,weekly_text
+        with locked(args.root/'data/advisor/.lock'):
+            ledger=Ledger(args.root/'data/advisor/events.jsonl')
+            now=datetime.now(timezone.utc)
+            snapshot={'market':cfg['market'],'weekly':weekly(ledger,now)}
+            print(weekly_text(snapshot))
+            if args.notify:
+                from .notifications import publish_weekly
+                publish_weekly(cfg,snapshot,ledger,now)
+    elif args.command == 'watchdog':
+        from .watchdog import inspect
+        value = inspect(args.root, datetime.now(timezone.utc))
+        print(json.dumps(value, ensure_ascii=False))
+        raise SystemExit(0 if value['ok'] else 1)
+    elif args.command in ('backup', 'recovery-check'):
+        from .recovery import backup, drill
+        if args.command == 'backup':
+            if not args.output:
+                p.error('backup için --output gerekli.')
+            value = backup(args.root, args.output)
+        else:
+            if not args.input:
+                p.error('recovery-check için --input gerekli.')
+            value = drill(args.input)
+        print(json.dumps(value, ensure_ascii=False))
+    elif args.command == 'research':
         from .research import retrospective
         with history.connection(args.root, cfg['market'], args.database) as con:
             result = retrospective(con, cfg)

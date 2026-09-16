@@ -1,0 +1,21 @@
+name: V2 portfoy nobetcisi
+on:
+  schedule:
+    - cron: '47 8-18 * * 1-5'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-runtime.txt
+      - name: Beklenen kosu, fiyat, defter ve teslim
+        run: python -m advisor watchdog

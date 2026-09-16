@@ -10,10 +10,37 @@ export function authorized(header, password) {
 }
 
 export function validate(data, market) {
+  const obj = x => x && typeof x === 'object' && !Array.isArray(x);
+  const num = x => typeof x === 'number' && Number.isFinite(x);
+  const nullable = x => x === null || num(x);
+  const account = a => obj(a) && ['cash_try','contributed_try','realized_try'].every(k=>num(a[k]))
+    && ['equity_try','pnl_try'].every(k=>nullable(a[k])) && Array.isArray(a.positions) && Array.isArray(a.fills)
+    && a.positions.every(p=>obj(p) && typeof p.symbol==='string' && typeof p.quantity==='string' && num(p.cost_try)
+      && nullable(p.value_try) && nullable(p.pnl_try))
+    && a.fills.every(f=>obj(f) && typeof f.symbol==='string' && ['BUY','SELL'].includes(f.side)
+      && num(f.price) && num(f.notional_cents) && num(f.fee_cents));
   if (!data || data.schema_version !== 2 || data.market !== market || data.mode !== 'paper'
-    || !Array.isArray(data.decisions) || !data.strategy || !Number.isFinite(Date.parse(data.generated_at))) {
+    || !Array.isArray(data.decisions) || !account(data.strategy) || !account(data.benchmark)
+    || !Number.isFinite(Date.parse(data.generated_at)) || !Number.isFinite(Date.parse(data.analysis_date))
+    || !obj(data.health) || !Array.isArray(data.health.errors) || !data.health.errors.every(x=>typeof x==='string')
+    || !num(data.health.quote_coverage) || !num(data.health.expected_quotes)
+    || !obj(data.quotes) || !Array.isArray(data.history) || !obj(data.budget)
+    || !num(data.budget.monthly_try) || !obj(data.feedback) || !obj(data.learning)
+    || !obj(data.news) || !Array.isArray(data.news.items) || !Array.isArray(data.news.sources)
+    || !obj(data.legacy) || !Array.isArray(data.legacy.sources) || !Array.isArray(data.legacy.recent)
+    || !data.decisions.every(d=>obj(d) && typeof d.symbol==='string'
+       && ['AL','SAT','TUT','BEKLE','VERİ BEKLENİYOR'].includes(d.action)
+       && Array.isArray(d.reasons) && d.reasons.every(x=>typeof x==='string') && nullable(d.price))) {
     throw new Error('Portföy verisinin biçimi doğrulanamadı.');
   }
+  const invalid = (data.risk != null && (!obj(data.risk) || !Array.isArray(data.risk.stress)
+      || !data.risk.stress.every(x=>obj(x) && num(x.fall_pct) && nullable(x.loss_try))
+      || !Array.isArray(data.risk.missing) || !data.risk.missing.every(x=>typeof x==='string')))
+    || (data.funnel != null && (!obj(data.funnel) || !obj(data.funnel.groups)
+      || !Object.values(data.funnel.groups).every(num) || !num(data.funnel.total)))
+    || data.decisions.some(d => d.change != null && (!obj(d.change) || !Array.isArray(d.change.items)
+      || !d.change.items.every(obj)));
+  if (invalid) throw new Error('Portföy açıklamalarının biçimi doğrulanamadı.');
   return data;
 }
 

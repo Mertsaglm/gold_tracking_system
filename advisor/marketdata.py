@@ -119,11 +119,14 @@ def fetch(cfg, symbols, now):
     return quotes
 
 
-def usable(quote, cfg, now, holidays=(), *, allow_wide_spread=False):
+def price_problem(quote, cfg, now):
+    """Fiyat güvenilirliği, piyasanın şu an açık olmasından ayrı bir kuraldır."""
     if not quote:
         return "Fiyat kaynağına ulaşılamadı."
     try:
         import math
+        if any(isinstance(quote[k], bool) or not isinstance(quote[k], (int, float)) for k in ('bid', 'ask')):
+            return "Alış/satış fiyatı sayısal olmalı."
         bid, ask = float(quote["bid"]), float(quote["ask"])
         if not all(math.isfinite(x) and x > 0 for x in (bid, ask)) or ask < bid:
             return "Alış/satış fiyatı geçersiz."
@@ -133,16 +136,26 @@ def usable(quote, cfg, now, holidays=(), *, allow_wide_spread=False):
         age = (now - stamp).total_seconds() / 60
         if age < -1 or age > cfg["max_quote_age_minutes"]:
             return "Fiyat bayat veya geleceğe ait."
-        local = now.astimezone(IST)
-        if local.weekday() > 4 or local.date().isoformat() in holidays:
-            return "Piyasa tatilinde yeni sanal işlem yapılmaz."
-        # Banka dışı saatlerde genişleyen makas ve belirsiz BIST referansı kullanılmaz.
-        if not (10 * 60 + 15 <= local.hour * 60 + local.minute <= 17 * 60 + 45):
-            return "İşlem penceresi dışında; uygun saat bekleniyor."
-        if stamp.astimezone(IST).date() != local.date():
+        if stamp.astimezone(IST).date() != now.astimezone(IST).date():
             return "Önceki güne ait kotasyon."
-        if not allow_wide_spread and (ask / bid - 1) * 100 > cfg["max_spread_pct"]:
-            return "Banka makası bugün fazla geniş."
     except (KeyError, TypeError, ValueError):
         return "Fiyat kaydı doğrulanamadı."
+    return None
+
+
+def usable(quote, cfg, now, holidays=(), *, allow_wide_spread=False):
+    from .calendar import session_block
+    problem = price_problem(quote, cfg, now)
+    if problem:
+        return problem
+    problem = session_block(now, {**cfg, 'holidays': holidays or cfg.get('holidays', [])})
+    if problem:
+        return problem
+    if quote.get('tradable') is False:
+        return 'Bu kotasyonda işlem gerçekleşmesi doğrulanamadı.'
+    # Eşiğe tam eşit makas, float yuvarlamasıyla yanlışlıkla üstünde sayılmasın.
+    from decimal import Decimal
+    spread = (Decimal(str(quote['ask'])) / Decimal(str(quote['bid'])) - 1) * 100
+    if not allow_wide_spread and spread - Decimal(str(cfg['max_spread_pct'])) > Decimal('0.000000001'):
+        return 'Banka makası bugün fazla geniş.'
     return None

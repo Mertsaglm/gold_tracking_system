@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {authorized, validate, collect, readRemote} from '../lib/status.mjs';
 import handler from '../api/status.js';
 
-const snapshot = market => ({schema_version:2,market,mode:'paper',generated_at:'2026-09-15T10:00:00Z',decisions:[],strategy:{cash_try:5000}});
+const account = () => ({cash_try:5000,contributed_try:5000,realized_try:0,equity_try:5000,pnl_try:0,positions:[],fills:[]});
+const snapshot = market => ({schema_version:2,market,mode:'paper',generated_at:'2026-09-15T10:00:00Z',analysis_date:'2026-09-14',
+ decisions:[],strategy:account(),benchmark:account(),health:{errors:[],quote_coverage:0,expected_quotes:0},
+ quotes:{},history:[],budget:{monthly_try:5000},feedback:{},learning:{},news:{items:[],sources:[]},legacy:{sources:[],recent:[]}});
 test('private endpoint refuses missing or wrong passwords before fetching', async()=>{
   assert.equal(authorized(undefined,'secret'),false);
   assert.equal(authorized('Basic '+Buffer.from('mert:wrong').toString('base64'),'secret'),false);
@@ -31,4 +34,15 @@ test('GitHub credentials stay at a fixed server-side destination',async()=>{
 test('only read operations are offered by the API',async()=>{
   let code;const res={setHeader(){},status(n){code=n;return this;},json(){}};
   await handler({method:'POST',headers:{}},res); assert.equal(code,405);
+});
+
+test('nested malformed data is rejected before the browser can lose both accounts', async()=>{
+ for (const damage of [s=>delete s.benchmark, s=>s.news.sources=null, s=>s.strategy.equity_try='5000',
+   s=>s.decisions=[{symbol:'AAA',action:'AL',price:100,reasons:null}],s=>s.strategy.positions=[{symbol:'AAA'}],
+   s=>s.risk={stress:null,missing:[]},s=>s.funnel={groups:null,total:1},
+   s=>s.decisions=[{symbol:'AAA',action:'AL',price:100,reasons:[],change:{items:'bad'}}]]) {
+   const broken=snapshot('bist');damage(broken);
+   const result=await collect(async m=>m==='bist'?broken:snapshot('gold'));
+   assert.ok(result.errors.bist);assert.equal(result.portfolios.gold.strategy.cash_try,5000);
+ }
 });

@@ -96,7 +96,16 @@ class Ledger:
             d = event["data"]
             if d.get("book") != book:
                 continue
-            if event["kind"] == "contribution":
+            if event['kind'] == 'account_checkpoint':
+                if cash or contributed or positions or fills:
+                    raise ValueError('Başlangıç kopyası dolu hesabın üstüne yazılamaz.')
+                import copy
+                account = copy.deepcopy(d['account'])
+                cash,contributed,realized,receivable = (account[k] for k in ('cash_cents','contributed_cents','realized_cents','receivable_cents'))
+                positions,fills=account['positions'],account['fills']
+                for p in positions.values():p['quantity']=Decimal(str(p['quantity']))
+                if min(cash,contributed,receivable)<0:raise ValueError('Başlangıç kopyasında negatif bakiye.')
+            elif event["kind"] == "contribution":
                 cash += d["amount_cents"]
                 contributed += d["amount_cents"]
             elif event["kind"] == "fill":
@@ -141,6 +150,11 @@ class Ledger:
                         cash += d["net_cents"]
             elif event['kind'] == 'dividend_receivable':
                 receivable += d['amount_cents']
+            elif event['kind'] == 'dividend_payment':
+                if d['amount_cents'] <= 0 or d['amount_cents'] > receivable:
+                    raise ValueError('Temettü ödemesi alacakla eşleşmiyor.')
+                receivable -= d['amount_cents']
+                cash += d['amount_cents']
         return {"cash_cents": cash, "contributed_cents": contributed,
                 "realized_cents": realized, 'receivable_cents': receivable,
                 "positions": {k: v for k, v in positions.items() if v["quantity"] > 0}, "fills": fills}

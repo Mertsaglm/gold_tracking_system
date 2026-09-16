@@ -8,7 +8,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const sources = {bist: process.env.BIST_SNAPSHOT, gold: process.env.GOLD_SNAPSHOT};
 const own = JSON.parse(await readFile(path.join(here, '../advisor/config.json'), 'utf8')).market;
 sources[own] ||= path.join(here, '../data/advisor/latest.json');
-const files = {'/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/favicon.svg': ['favicon.svg', 'image/svg+xml']};
+const files = {'/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/insights.js':['insights.js','text/javascript'], '/style.css': ['style.css', 'text/css'], '/favicon.svg': ['favicon.svg', 'image/svg+xml']};
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   res.setHeader('X-Content-Type-Options', 'nosniff');

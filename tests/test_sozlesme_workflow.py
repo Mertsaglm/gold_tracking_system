@@ -73,7 +73,7 @@ def test_workflow_dosyalari_yerinde():
     zırh GitHub'da hiçbir yerde koşmuyordu.
     """
     assert sorted(p.name for p in WF.glob("*.yml")) == [
-        "archive.yml", "daily.yml", "portfolio.yml", "test.yml"]
+        "advisor-recovery.yml", "advisor-watchdog.yml", "archive.yml", "daily.yml", "portfolio.yml", "test.yml"]
 
 
 # ------------------------------------------------------------ daily.yml sırası
@@ -139,9 +139,10 @@ def test_gunluk_cron_kapanis_oncesi():
 
 
 def test_gunluk_requirements_kuruyor():
-    """Görsel grafik (matplotlib) yalnız requirements.txt'te; `pip install
-    matplotlib` elle yazılırsa requirements ile ayrışır."""
-    assert any("-r requirements.txt" in k for k in _komutlar(GUNLUK_ADIM))
+    """2026-09-16: doğrulanmış kilit, grafik dahil tüm çalışma paketlerini taşır."""
+    assert any("-r requirements-runtime.txt" in k for k in _komutlar(GUNLUK_ADIM))
+    lock = (WF.parents[1] / 'requirements-runtime.txt').read_text()
+    assert 'matplotlib==' in lock and 'pandas==2.3.3' in lock
 
 
 # ------------------------------------------------------------ archive.yml

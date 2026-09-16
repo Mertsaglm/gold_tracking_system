@@ -39,15 +39,39 @@ def summary(snapshot, url="", max_characters=1000):
     return "\n".join(lines)[:max_characters]
 
 
+def notification_key(snapshot, now):
+    return digest({'day': now.date().isoformat(), 'errors': snapshot['health']['errors'],
+                   'decisions': [(d['symbol'], d['action'], d['code'], d.get('execution')) for d in snapshot['decisions']]})
+
+
+def publish_weekly(cfg, snapshot, ledger, now):
+    from .calendar import IST
+    from .reporting import weekly_text
+    local=now.astimezone(IST)
+    if not cfg['telegram']['enabled'] or local.weekday()!=4 or local.hour<18 or not snapshot['weekly'].get('ready'):
+        return False
+    key=f"weekly:{local.isocalendar().year}:{local.isocalendar().week}"
+    if key in ledger.keys:return False
+    token,chat=os.environ.get('TELEGRAM_BOT_TOKEN'),os.environ.get('TELEGRAM_CHAT_ID')
+    if not token or not chat:raise RuntimeError('Telegram bağlantısı eksik.')
+    text=weekly_text(snapshot)+'\n'+cfg.get('dashboard_url','')
+    try:
+        r=requests.post(f'https://api.telegram.org/bot{token}/sendMessage',json={'chat_id':chat,'text':text,'disable_web_page_preview':True},timeout=(5,15))
+        if r.status_code!=200 or not r.json().get('ok'):raise RuntimeError('Haftalık özet gönderilemedi.')
+    except requests.RequestException:
+        raise RuntimeError('Haftalık özet bağlantısı kurulamadı.') from None
+    ledger.add('weekly_notification',key,now.isoformat(),text=text)
+    ledger.save()
+    return True
+
+
 def publish(root, cfg, snapshot, ledger, now):
     if not cfg["telegram"]["enabled"]:
         return False
     token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chat:
         raise RuntimeError('Telegram bağlantısı için mevcut bot/chat ayarları eksik.')
-    event_key = digest({"day": now.date().isoformat(),
-                        'errors': snapshot['health']['errors'],
-                        "decisions": [(d["symbol"], d["action"], d["code"], d.get("execution")) for d in snapshot["decisions"]]})
+    event_key = notification_key(snapshot, now)
     if "telegram:" + event_key in ledger.keys:
         return False
     text = summary(snapshot, cfg.get("dashboard_url", ""), cfg['telegram']['max_characters'])

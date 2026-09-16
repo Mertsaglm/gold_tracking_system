@@ -6,6 +6,35 @@
 
 ---
 
+## #017 — 2026-09-16 — Üç öncelik grubu, koruyucu karar ve ölçülebilir sonuç
+
+**Bağlam:** Kullanıcı 25 öneriyi dört öncelik grubuna ayırıp ilk üç grubun
+uygulanmasını istedi. Önceki 25/26 bakım maddeleri tekleştirildi; 8+7+7+3 dağılımı.
+
+**Seçenekler:** Bağımsız yeni sistem/paket açmak bakım ve yayın parçalarını artırır.
+Mevcut iki projede ortak karar motoru ve checksum manifesti, mevcut işletimi korur.
+
+**Karar:** İlk 22 madde iki projeye yerelde uygulandı. Koruyucu çıkış analiz
+kalitesinden ayrılır; güncel fiyat şartı korunur. Eski fiyat yeni risk bütçesi
+üretmez. Başarı kanıtı örtüşmeyen dönemlerle ölçülür. Sabit/günlük model ayrı
+sanallarda karşılaştırılır; otomatik terfi yoktur. Tam portföy geçmiş deneyi
+araştırmadır; güncel evren/düzeltilmiş fiyat/banka makası sınırları açıkça yazılır.
+Yedek/nöbetçi ayrı salt-okur workflow'lardır; onarım kapısı değildir.
+
+**Bedel:** Kod kopyaları manifest eşliği gerektirir. Bağımlılık yükseltmesi iki
+suite ve kilit güncellemesi ister. Mühürlü karar kodları ve modeller arşivi büyütür.
+Tarihsel üyelik, gerçek masraf ve temettü ödeme kanıtı dış kaynak gerektirir.
+
+**Tekrar gözden geçir:** Bağımsız sanal dönemler yeterli olduğunda risk/model
+seçimini; arşiv büyüdüğünde saklama politikasını; doğrulanmış tarihsel veri
+edinildiğinde geçmiş deneyinin varsayımlarını yeniden değerlendir.
+
+**Kapsam dışı:** Panelden ayar, gerçek işlem günlüğü, etkileşimli senaryo ekranı.
+Commit/push/deploy ve gerçek mesaj bu yerel çalışma sırasında yapılmadı.
+Ayrıntı: `docs/IYILESTIRME-2026-09-16.md`, `reports/IYILESTIRME-2026-09-16.md`.
+
+---
+
 ## #016 — 2026-09-15 — Ayrı sanal defter, ortak panel ve ölçülen öğrenme
 
 **Bağlam.** Kullanıcı iki projeyi revize etmeyi, her birine aylık 5.000 TL sanal bütçe,

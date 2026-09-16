@@ -6,6 +6,7 @@ Yeni karar ve sanal portföy hattı `advisor/`, iki piyasayı birlikte gösteren
 `dashboard/` içindedir. Her hesap 5.000 TL başlangıç ve aylık 5.000 TL katkıyla izlenir.
 Gerçek emir gönderilmez. Alım/satım kararı, miktarı, masrafı ve fiyat kaynağı deftere yazılır.
 
+- [2026-09-16: öncelik grupları ve uygulama sonucu](reports/IYILESTIRME-2026-09-16.md)
 - [Kullanım, mimari ve Vercel kurulumu](docs/V2-REHBER.md)
 - [İnceleme, değişiklikler ve doğrulama raporu](reports/REVIZYON-2026-09-15.md)
 - Güncel durum: `ai/STATE.md`. Yerel revizyon hazır; yayın durumu burada tutulur.

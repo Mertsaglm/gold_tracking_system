@@ -37,7 +37,7 @@ def connection(root, market, database=None):
 def load(con, market, asof):
     if market == "bist":
         frame = pd.read_sql_query(
-            "SELECT b.ticker symbol,b.date,b.c close,b.c_tr total_close,b.h high,b.l low,"
+            "SELECT b.ticker symbol,b.date,b.o open,b.c close,b.c_tr total_close,b.h high,b.l low,"
             "b.v volume,u.sector,u.in_live FROM bars_daily b JOIN universe u USING(ticker) "
             "WHERE b.date<=? ORDER BY b.ticker,b.date", con, params=(asof,))
     else:
@@ -50,6 +50,7 @@ def load(con, market, asof):
         frame["high"] = frame["close"]
         frame["low"] = frame["close"]
         frame["volume"] = 1
+        frame['open'] = frame['close'].shift(1)
     if frame.empty:
         raise ValueError("Analiz edilebilecek tarihsel fiyat bulunamadı.")
     frame = frame.drop_duplicates(["symbol", "date"]).sort_values(["symbol", "date"])

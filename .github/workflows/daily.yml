@@ -33,7 +33,7 @@ jobs:
           cache: pip
 
       - name: Bagimliliklar
-        run: pip install --quiet -r requirements.txt
+        run: pip install --quiet -r requirements-runtime.txt
 
       - name: DB'yi dump'tan restore et (binary git'te yok)
         run: python -m src.restore_db

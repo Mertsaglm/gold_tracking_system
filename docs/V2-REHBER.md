@@ -48,10 +48,10 @@ Altın aylık katkısı yalnız yeni fırsat varsa kullanılır; ay sonu zorunlu
   açıklanır. Kişisel ekstre tarifesi doğrulanmış değildir.
 - Bölünme miktarı/seviyeleri düzeltir. Geç gelen ve geçmiş işlemlerle çelişen
   bölünme, mutabakat isteği olarak görünür. Net temettü **alacaktır**; ödeme tarihi
-  kaynağı bulunmadığından nakit olarak harcanmaz. Otomatik nakit mutabakatı henüz yoktur.
+  kaynağı bulunmadığından nakit olarak harcanmaz. Kanıt referanslı ödeme dosyasıyla nakit mutabakatı yapılabilir; otomatik ödeme kaynağı yoktur.
 
 Portföy değeri, eldeki varlıkların satış masrafı düşülmüş değeri + nakit + bilinen
-alacaklardır. Eksik fiyat varsa değerleme `null` olur; sıfır zarar gibi gösterilmez.
+alacaklardır. Eksik veya bayat fiyat varsa değerleme `null` olur; sıfır zarar gibi gösterilmez.
 Yeni katkı kazanç sayılmaz. Al-tut hesabı aynı katkıları, fiyat referansını ve
 masrafları kullanır; tam lota yetmeyen payı nakitte bırakır. Mevduat faizi eklenmez.
 
@@ -71,7 +71,8 @@ masrafları kullanır; tam lota yetmeyen payı nakitte bırakır. Mevduat faizi 
    Test gününün geleceği eğitimde veya ölçeklemede kullanılmaz.
 3. Zaman sıralı test blokları ve örtüşmeyen hedef dönemleriyle hata/fark ölçülür.
    Tarihsel banka kotasyonu olmadığı için maliyet 1×, 1,5× ve 2× sınanır.
-4. Bu sınav **tahmin taramasıdır; tam portföy/stop backtest'i değildir.**
+4. Modelin dahili sınavı tahmin taramasıdır. Ayrı `simulate` komutu tam sanal
+   portföy/stop/nakit deneyi sağlar; tarihsel veri sınırları aşağıda açıklanır.
    Sabit güncel evren ve sonradan düzeltilmiş fiyatlar ayrıca yanlılık yaratabilir.
 5. Model sınavı ve yeni sanal sonuçlar yeterli olmadan küçük deneme sınırı sürer.
    Kanıtlanmış üstünlük veya kâr garantisi yoktur; panel aksi izlenim vermez.
@@ -195,3 +196,98 @@ bu komutların güncel sonucu esas alınır.
 ## Getiri eğrisi
 
 Her iki hesabın ve al-tut karşılaştırmasının getirisi, eklenen paradan arındırılarak deftere yazılır. Panel son 500 günün son değerlemesini gösterir; saatlik kayıtların tamamı olay defterinde kalır. İlk günün alım/satım maliyeti sonuçtan düşer.
+
+## 2026-09-16 geliştirmeleri ve yeni komutlar
+
+Öncelik ve kapsam: [25 maddelik plan](IYILESTIRME-2026-09-16.md).
+Sonuçlar: [uygulama raporu](../reports/IYILESTIRME-2026-09-16.md).
+
+- Eski analiz yeni alımı durdurur; güncel, geçerli fiyatla mevcut stop/hedef izlenir.
+  Eski fiyat güncel portföy değerine ve yeni işlem bütçesine girmez.
+- Takvim YAML olarak okunur. Yarım gün 12:15 kapanışı sistemin ihtiyatlı işlem
+  penceresidir; resmî piyasa kapanışı iddiası değildir. Vade seans sayısıyla ilerler.
+- Toplam stop riski `max_portfolio_risk_pct` ile sınırlanır. Eksik değerlemede
+  risk artırılmaz. Ortak düşüş senaryoları stop dolum garantisi vermez.
+- Al-tut hesabında varlık başına kalan nakit sonraki katkıyla birleşir;
+  bir eksik kotasyon diğer varlıkların alımını durdurmaz.
+- Yeni riskin büyümesi en az 24 örtüşmeyen dönem, pozitif güven alt sınırı ve
+  mevcut kapalı işlem şartına bağlıdır. Önceki sabit model ve günlük model
+  ayrıca eşit başlangıç bütçeli iki gölge hesapta izlenir; otomatik model terfisi yoktur.
+- Karar detayları miktar, tutar, masraf, hedef/stop sonucu ve önceki kararla
+  değişimi gösterir. Bekleme nedenleri ile haftalık katkı ve yatırım sonucu ayrıdır.
+
+Python 3.12 ortamını `requirements-runtime.txt` ile kur. BIST'te ayrıca
+`pip install --no-deps -e .` kullan. Kaynak bağımlılık aralıkları pyproject.toml
+(BIST) / requirements.txt (altın) içinde kalır; sürüm değişince kilidi ve iki
+suite'i birlikte doğrula. Altın kilidi pandas 2.3.3 kullanır.
+
+İlgili projenin kökünde:
+
+```bash
+python -m advisor watchdog
+python -m advisor weekly
+python -m advisor backup --output /tmp/advisor-yedek.zip
+python -m advisor recovery-check --input /tmp/advisor-yedek.zip
+python -m advisor simulate --start 2026-06-01 --end 2026-08-26 --output /tmp/portfoy-deneyi.json
+python -m advisor reproduce --input /mutlak/yol/karar-kapsulu.json.gz
+python scripts/advisor_manifest.py
+```
+
+`watchdog` gözlemdir, hesabı onarmaz veya durdurmaz. Ayrı Actions işi kaçırılan
+seans kontrolünü, hata/eksik fiyatı ve teslim makbuzunu inceler; sorun exit 1'dir.
+`advisor-recovery.yml` ayrı yedeği geçici dizinde doğrular; artifact 90 gün tutulur.
+Arşiv hesap verisi içerir; paylaşım için hazırlanmış bir dosya değildir.
+`recovery-check` mevcut verinin üstüne yazmaz. Yedek adı daha önce varsa reddedilir.
+
+Her yeni karar koşusu girdi, ayar, model, defter başlangıcı, kullanılan Python kodu
+ve bağımlılık sürümlerini `data/advisor/capsules/` altında mühürler. `reproduce`
+arşivlenmiş kodu geçici dizinde çalıştırır; güvenilir kendi karar paketlerinde
+kullanılır. Bağımlılık ortamı farklıysa aynı sonucu üretmiş sayılmaz.
+
+Tam portföy `simulate` komutu, zaman sıralı eğitim ve ortak karar/muhasebe motorunu
+kullanır. Günlük bar içinde stop ve hedef görülürse stop önce varsayılır; açılış
+boşluğu stop fiyatından doldurulmaz. Haber gündemi, tarihsel banka kotasyonu ve
+ayrı tarihli tüm kurumsal nakit/lot akışları tam olarak yeniden kurulmaz.
+Bu yüzden rapor `production_eligible: false` taşır; geçmiş sonucu canlı kanıt
+kapısına aktarmaz. Stres dosyası örneği:
+
+```json
+{"cost_multiplier":2,"skip_every":3,"gap_day":"2026-07-01","gap_down_pct":10,
+ "untradable_symbols":["AAA"],"untradable_days":["2026-07-02"],"stale_days":["2026-07-03"]}
+```
+
+Bu JSON'u `--scenario /mutlak/yol/stres.json` ile simülasyona ver. AAA test
+sembolüdür; inceleme evrenindeki sembolle değiştir. Her üç kontrolden birini
+atlama, iki kat maliyet, fiyat boşluğu, satılamama ve bayat kotasyon ayrı varsayımlardır.
+
+### Kanıtlı veri içe alma
+
+Aşağıdaki komutlar kayıt yazar; yalnız doğrulanmış belgelerle kullanılır.
+Bu geliştirmede gerçek ödeme veya kişisel masraf gözlemi içe alınmadı.
+
+- `python -m advisor universe-import --input /mutlak/yol/uyelik.json`:
+  JSON liste satırında `symbol`, `known_at`, `effective_from`, `active` (boolean),
+  `source`; isteğe bağlı `effective_to`. Gelecekte öğrenilen üyelik geçmişe taşınmaz.
+  Kayıt `advisor/universe-history.json` olur. Kaynak yoksa güncel evren varsayımı
+  raporda açıkça belirtilir; eski üyelik uydurulmaz.
+- `python -m advisor settle-dividends --input /mutlak/yol/odeme.json`:
+  JSON liste satırında defterdeki `receivable_key`, kuruş cinsinden tam eşleşen
+  `amount_cents`, `paid_on` (YYYY-MM-DD), `source_reference`.
+  Alacak bir kez nakde döner; toplam servet artmaz. Her sanal hesabın alacağı
+  kendi anahtarıyla mutabık olmalıdır. Doğrulanmış ödeme akışı otomatik kurulmuş değildir.
+- `python -m advisor cost-observations --input /mutlak/yol/masraf.json`:
+  JSON liste satırında `symbol`, `side` (BUY/SELL), `reference_price`,
+  `observed_price`, `expected_fee_try`, `observed_fee_try`, `source_reference`.
+  Fiyat/masraf farkı kaydedilir; gerçek veya sanal emir oluşturmaz.
+
+`weekly` yalnız özet basar. `weekly --notify` mevcut Telegram hattından cuma
+18:00 sonrasında haftada bir gönderir. Otomatik çağrı mevcut tek yazarlı
+`portfolio.yml` içindedir. Gerçek teslim, yayın sonrası doğrulanmalıdır.
+
+### Ortak kod bakımı
+
+İki projedeki `advisor/*.py` dosyaları aynı manifestle doğrulanır. Her projede
+`python scripts/advisor_manifest.py` CI sözleşmesine dahildir. BIST kökünde
+`python scripts/advisor_manifest.py --peer ../gold_tracking_system` iki gerçek
+kopyayı da karşılaştırır. `--write --peer ...` yalnız iki kopya eşitse manifesti
+bilinçli günceller. Projeye özgü kurallar `advisor/config.json` içinde kalır.

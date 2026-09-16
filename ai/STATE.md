@@ -46,8 +46,8 @@
 
 ## Sıradaki 3 İş
 
-1. BIST PR #2'yi gözden geçirip merge kararını ver.
-   DoD: `main`de PR commit'i ve merge sonrası Actions testi yeşil.
+1. BIST `main`deki ilk yeni V2 koşusu ile nöbetçi/yedek işlerini izle.
+   DoD: yeni defter yazımı, nöbetçi ve geri dönüş artifact'i ayrı ayrı yeşil.
 2. Vercel'de panel için proje/GitHub erişimi kur, preview'a yalnız sunucu değişkenlerini ekle.
    DoD: iki gerçek hesapta güncel tarih/hash, korunmuş sunucu anahtarı, teslim makbuzu.
 3. Doğrulanmış üyelik/ödeme/masraf kaynaklarını edin ve yeni sanal kanıtı biriktir.
@@ -57,7 +57,7 @@
 
 | Tarih | Kim | İş | DoD | Durum |
 |---|---|---|---|---|
-| 2026-09-16 | 🤖 | BIST PR #2 açıldı | GitHub dashboard + pytest yeşil | Merge bekliyor |
+| 2026-09-16 | 🤖 | BIST PR #2 squash merge edildi | `34273ab`, GitHub dashboard + pytest yeşil | Tamam |
 | 2026-09-16 | 🤖 | Altın `main` yayımlandı | GitHub dashboard + pytest yeşil | Tamam |
 | Vercel kurulumunda | 👤 | Panel projesine GitHub erişimi ver | Preview kurulabilir | Bekliyor |
 | Veri bulunduğunda | 👤 | Üyelik/ödeme/masraf kanıtı sağla | Belgeli içe alma kaydı | Bekliyor |

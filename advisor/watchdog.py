@@ -48,7 +48,9 @@ def inspect(root, now):
         if not path.is_file():
             raise ValueError('Defter eksik.')
         ledger = Ledger(path)
-        checks=[e for e in ledger.events if e['kind']=='session_check']
+        # Mesai dışı early-return kaydı, kaçırılmış gündüz çevrimini asla
+        # başarılı gösteremez. Eski arşiv kayıtları alan yoksa gerçek seanstır.
+        checks=[e for e in ledger.events if e['kind']=='session_check' and e['data'].get('in_execution_window', True)]
         check=checks[-1] if checks else None
         if due.date().isoformat()>=cfg['start_date']:
             if check is None or datetime.fromisoformat(check['at'])<due:

@@ -82,7 +82,36 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
     from .calendar import load as load_calendar
     if (root / 'holidays_tr.yaml').exists():
         cfg['calendar'] = load_calendar(root)
+
+    # Bu kapı fiyat/model/veritabanı hattından ÖNCE çalışır. Mesai dışındaki
+    # workflow_run yalnız iz bırakır; yeni karar veya sanal işlem üretmez.
+    from .calendar import session_block
+    blocked = session_block(now, cfg)
     state = root / "data/advisor"
+    if blocked is not None:
+        with locked(state / ".lock"):
+            ledger = Ledger(state / "events.jsonl")
+            ledger.add(
+                "session_check",
+                "session-check:" + now.isoformat(),
+                now.isoformat(),
+                expected_quotes=0,
+                valid_quotes=0,
+                decisions=0,
+                corporate_ok=True,
+                errors=[],
+                in_execution_window=False,
+                skip_reason=blocked,
+            )
+            ledger.save()
+        return {
+            "generated_at": now.isoformat(),
+            "market": cfg["market"],
+            "skipped": True,
+            "skip_reason": blocked,
+            "health": {"errors": []},
+        }
+
     with locked(state / ".lock"):
         ledger = Ledger(state / "events.jsonl")
         budget_signature = {k: cfg[k] for k in ("market", "start_date", "initial_try", "monthly_try")}
@@ -218,12 +247,11 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
             for view in (strategy, benchmark):
                 held = sum(float(p["quantity"]) for p in view["positions"])
                 view["gold_equivalent_grams"] = held + view["cash_try"] / cost
-        from .calendar import session_block
-        if session_block(now,cfg) is None:
-            ledger.add('session_check','session-check:'+now.isoformat(),now.isoformat(),
-                       expected_quotes=len(symbols),
-                       valid_quotes=sum(marketdata.price_problem(quotes.get(s),cfg,now) is None for s in symbols),
-                       decisions=len(decisions),corporate_ok=not blocked_symbols,errors=errors)
+        ledger.add('session_check','session-check:'+now.isoformat(),now.isoformat(),
+                   expected_quotes=len(symbols),
+                   valid_quotes=sum(marketdata.price_problem(quotes.get(s),cfg,now) is None for s in symbols),
+                   decisions=len(decisions),corporate_ok=not blocked_symbols,errors=errors,
+                   in_execution_window=True)
         snapshot = {"schema_version": 2, "market": cfg["market"], "generated_at": now.isoformat(),
                     "analysis_date": data_date, "mode": "paper", "strategy": strategy, "benchmark": benchmark,
                     "decisions": decisions, "quotes": quotes, "news": agenda, "learning": {k: model.get(k) for k in ("id", "asof", "ready", "status", "approved", "training_rows", "training_dates", "evaluation", "limitations", "features")},

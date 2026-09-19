@@ -46,6 +46,27 @@ def test_contributions_idempotent_and_month_rollover(tmp_path, advisor_cfg):
     assert l.account("benchmark")["cash_cents"] == 2500000
 
 
+def test_closed_session_exits_before_history_model_or_trades(tmp_path, monkeypatch):
+    """Mesai dışı workflow_run eski sürümlerde tam hesaplama yapıyordu."""
+    cfg = service.configuration(ROOT)
+    (tmp_path / "advisor").mkdir()
+    (tmp_path / "advisor/config.json").write_text(json.dumps(cfg))
+
+    def history_must_not_open(*args, **kwargs):
+        raise AssertionError("Mesai dışı koşu veritabanını açmamalı.")
+
+    monkeypatch.setattr(service.history, "connection", history_must_not_open)
+    night = datetime(2026, 9, 15, 20, 0, tzinfo=timezone.utc)
+    result = service.cycle(tmp_path, now=night, offline=True)
+
+    assert result["skipped"] is True
+    assert "İşlem penceresi dışında" in result["skip_reason"]
+    ledger = Ledger(tmp_path / "data/advisor/events.jsonl")
+    assert [event["kind"] for event in ledger.events] == ["session_check"]
+    assert ledger.events[0]["data"]["in_execution_window"] is False
+    assert not (tmp_path / "data/advisor/latest.json").exists()
+
+
 def test_hash_chain_catches_modified_history(tmp_path, advisor_cfg):
     p = tmp_path / "events.jsonl"
     l = Ledger(p)

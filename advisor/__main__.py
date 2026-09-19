@@ -122,7 +122,11 @@ def main():
                 atomic_json(latest, old)
             print(json.dumps(error))
             raise SystemExit(1) from None
-        atomic_json(args.root / 'data/advisor/run_status.json', {'at': value['generated_at'], 'ok': not value['health']['errors']})
+        status = {'at': value['generated_at'], 'ok': not value['health']['errors'], 'skipped': value.get('skipped', False)}
+        atomic_json(args.root / 'data/advisor/run_status.json', status)
+        if value.get('skipped'):
+            print(json.dumps({"market": value["market"], "skipped": True, "reason": value['skip_reason']}, ensure_ascii=False))
+            return
         print(json.dumps({"market": value["market"], "analysis_date": value["analysis_date"], "decisions": len(value["decisions"]), "errors": value["health"]["errors"]}, ensure_ascii=False))
         if value['health']['errors'] and not args.offline:
             raise SystemExit(1)

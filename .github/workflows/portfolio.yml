@@ -1,8 +1,6 @@
 name: Sanal portfoy V2
 
 on:
-  schedule:
-    - cron: '17 7-14 * * 1-5' # 10:17–17:17 TR; GitHub zamanlaması gecikebilir.
   workflow_run:
     workflows: ['Gunluk otonom rapor']
     types: [completed]

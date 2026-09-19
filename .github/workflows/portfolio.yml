@@ -35,7 +35,7 @@ jobs:
         id: cycle
         run: |
           python -m advisor cycle
-          echo "skipped=$(python -c \"import json; print(str(json.load(open('data/advisor/run_status.json')).get('skipped', False)).lower())\")" >> "$GITHUB_OUTPUT"
+          echo "skipped=$(python -c 'import json; print(str(json.load(open("data/advisor/run_status.json")).get("skipped", False)).lower())')" >> "$GITHUB_OUTPUT"
       - name: Arşivi koru
         if: always()
         run: |

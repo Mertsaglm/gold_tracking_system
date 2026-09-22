@@ -354,7 +354,8 @@ def test_run_basarili_gonderimde_defter_temiz(izole_kok, ag_kapali,
 
 
 def test_ariza_defteri_SESSIZ_KOSUMDA_SILINMEZ(izole_kok, ag_kapali,
-                                               ag_susturuldu, monkeypatch):
+                                               ag_susturuldu, sabit_zaman,
+                                               monkeypatch):
     """KİLİT TEST — görünürlük katmanı kendi korumaya çalıştığı hataya kurban gitti.
 
     ÜRETİMDE yakalandı (2026-08-11): `apply_cooldown` state'i sıfırdan kuruyor

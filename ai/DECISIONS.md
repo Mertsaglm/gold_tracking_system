@@ -19,8 +19,8 @@ değişkenlerinde kalır. İki `advisor/config.json` aynı production URL'sini t
 
 **Doğrulama:** 2026-09-23'te canlı panel iki hesabı gösterdi; yeni production
 deployment `767860e` Ready ve parolasız API 401. İlk yeni çevrimler iki depoda
-başarılı; altın eksik 2026-09-22 kapanışını ekledi. Yeni sürümde parola sonrası
-görünüm için kullanıcının yeniden girişi bekleniyor.
+başarılı; altın eksik 2026-09-22 kapanışını ekledi. Yeni sürümde parola
+sonrası BIST 18/18 ve altın 1/1 fiyatla, ikisi de 2026-09-22 analiziyle açıldı.
 
 **Tekrar gözden geçir:** Daha ayrıntılı erişim yönetimi gerekirse veya GitHub
 dosyasını her istekle okuma sınır/maliyet sorunu doğurursa.

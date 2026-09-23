@@ -1,7 +1,7 @@
 # Mevcut durum
 
 **Güncelleme:** 2026-09-23
-**Aktif iş:** Denetim düzeltmeleri GitHub ve Vercel'de yayında; ilk yeni üretim çevrimi doğrulandı. Cron yedeği, alıcı teslimi ve panelin yeni sürümde parola sonrası görünümü izlenecek.
+**Aktif iş:** Denetim düzeltmeleri GitHub ve Vercel'de yayında; ilk yeni üretim çevrimi ve panelde iki hesabın yeni verisi doğrulandı. Cron yedeği ve alıcı teslimi izlenecek.
 
 ## Kapsam ve doğrulanmış gerçek
 
@@ -50,19 +50,20 @@
 - Saklama/MKK dönemsel ücretleri sanal defterde yok; maliyet notunda açık.
 - Panel `https://birikim-paneli.vercel.app/` adresinde iki hesabı gösterdi. BIST
   `767860e` Vercel production deployment'ı Ready; yeni sürümde parolasız API 401.
-  Yeni sürümde parola sonrası ekran kontrolü için kullanıcının yeniden girişi bekleniyor.
+  Parola sonrası BIST 18/18, altın 1/1 fiyatla ve ikisi de 2026-09-22 analiz
+  tarihiyle açıldı; altın tarihi GitHub arşiviyle eşleşti.
 - İlk yeni çevrim: BIST `f71f923`, altın `2493e06`; her iki `run_status.json`
   `ok=true`, `skipped=false`. Altın workflow'unda yenileme, çevrim, arşiv ve bildirim
   adımları başarılı. Telegram alıcı ekranı bağımsız doğrulanmadı.
 
 ## Sıradaki 3 İş
 
-1. Panelin yeni sürümünde parola sonrası iki hesabı ve 2026-09-22 analiz tarihini doğrula.
-   DoD: BIST ve altın aynı oturumda görünür; altın tarihi ve GitHub görünümü eşleşir.
-2. İlk GitHub cron yedeğini ve 45 dakika nöbetçi uyarısını üretimde gözle.
+1. İlk GitHub cron yedeğini ve 45 dakika nöbetçi uyarısını üretimde gözle.
    DoD: tetik türü ve zaman aralığı arşivde görülür; gerçek boşluk uyarısı yalnız gözlemdir.
-3. Güncel Telegram alıcı kaydını arşiv/makbuzla ve ilk olgunlaşan sonucu karar kapsülüyle eşleştir.
-   DoD: teslim zinciri, mühürlü vade ve sonuç hesabı gerçek veriden yeniden üretilebilir.
+2. Güncel Telegram alıcı kaydını arşiv ve makbuzla eşleştir.
+   DoD: gönderim sonucu alıcı kaydı ve repo makbuzunda aynı çevrime bağlanır.
+3. İlk olgunlaşan tahmin sonucunu mühürlü karar kapsülüyle eşleştir.
+   DoD: vade, tahmin hatası ve sonuç hesabı gerçek veriden yeniden üretilebilir.
 
 ## TAKVİM & SENDE KALANLAR
 
@@ -71,6 +72,7 @@
 | 2026-09-22 | 🤖 | Üretim denetimi ve yerel düzeltme | Test ve gerçek arşiv kanıtı | Tamam |
 | 2026-09-23 | 🤖 | Yerel düzeltmelerin commit/push/yayını | İlk yeni çevrim ve Vercel Ready | Tamam |
 | 2026-09-23 | 👤 | Panel projesine GitHub erişimi | Canlı panelde iki hesap görünür | Tamam |
+| 2026-09-23 | 🤖 | Yeni sürümde parola sonrası panel kontrolü | İki hesap 2026-09-22 analizini gösterir | Tamam |
 | Veri bulunduğunda | 👤 | Üyelik/ödeme/masraf kanıtı | Belgeli içe alma/mutabakat | Bekliyor |
 
 ## Backlog

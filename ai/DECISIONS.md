@@ -17,8 +17,10 @@ Contents Read yetkili token kullanır. Altın deposu herkese açıktır. Panel A
 parola yoksa 503, yanlış/eksik parolada 401 döner. Token ve parola sunucu ortam
 değişkenlerinde kalır. İki `advisor/config.json` aynı production URL'sini taşır.
 
-**Doğrulama:** 2026-09-23'te canlı panel iki hesabı gösterdi; parolasız API 401
-döndü. Güncel üretim çevrimi ve yeni kodla yeniden yayın ayrıca doğrulanacaktır.
+**Doğrulama:** 2026-09-23'te canlı panel iki hesabı gösterdi; yeni production
+deployment `767860e` Ready ve parolasız API 401. İlk yeni çevrimler iki depoda
+başarılı; altın eksik 2026-09-22 kapanışını ekledi. Yeni sürümde parola sonrası
+görünüm için kullanıcının yeniden girişi bekleniyor.
 
 **Tekrar gözden geçir:** Daha ayrıntılı erişim yönetimi gerekirse veya GitHub
 dosyasını her istekle okuma sınır/maliyet sorunu doğurursa.

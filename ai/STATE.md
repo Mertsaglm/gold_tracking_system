@@ -48,8 +48,8 @@
 - Altın bağımsız prim ve FRED kaynak sorunları sürüyor; eski rapor V2 öğrenme kanıtı değil.
 - Kişisel tarife/ödeme belgesi, tarihsel banka makası ve BIST tarihsel üyelik verisi yok.
 - Saklama/MKK dönemsel ücretleri sanal defterde yok; maliyet notunda açık.
-- Panel `https://birikim-paneli.vercel.app/` adresinde iki hesabı gösterdi. BIST
-  `767860e` Vercel production deployment'ı Ready; yeni sürümde parolasız API 401.
+- Panel `https://birikim-paneli.vercel.app/` adresinde iki hesabı gösterdi.
+  Vercel production deployment'ı Ready; yeni sürümde parolasız API 401.
   Parola sonrası BIST 18/18, altın 1/1 fiyatla ve ikisi de 2026-09-22 analiz
   tarihiyle açıldı; altın tarihi GitHub arşiviyle eşleşti.
 - İlk yeni çevrim: BIST `f71f923`, altın `2493e06`; her iki `run_status.json`

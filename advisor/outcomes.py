@@ -7,13 +7,33 @@ from collections import defaultdict
 from .ledger import digest
 
 
+def targets(features, horizon):
+    """Kararın mühürlü vadesi; sonradan değişmiş forward_pct kolonunu kullanma."""
+    if type(horizon) is not int or horizon < 1:
+        raise ValueError('Tahmin vadesi pozitif tam sayı olmalı.')
+    if 'total_close' not in features:
+        raise ValueError('Tahmin sonucu için ham toplam getiri fiyat serisi gerekli.')
+    result = {}
+    for symbol, group in features.sort_values(['symbol', 'date']).groupby('symbol'):
+        rows = group.to_dict('records')
+        for i, row in enumerate(rows[:-horizon]):
+            end = rows[i+horizon]
+            if row['total_close'] > 0 and end['total_close'] > 0:
+                result[(symbol, row['date'])] = {'label_end': end['date'],
+                    'forward_pct': (end['total_close']/row['total_close']-1)*100}
+    return result
+
+
 def resolve(ledger, features, cfg, now):
-    lookup = {(r['symbol'], r['date']): r for r in features.to_dict('records')}
+    lookups = {}
     for e in list(ledger.events):
         if e['kind'] != 'forecast':
             continue
         d = e['data']
-        row = lookup.get((d['symbol'], d['asof']))
+        horizon = d.get('horizon_sessions', 20)  # 2026-09-15 V2 eski kayıt sözleşmesi.
+        if horizon not in lookups:
+            lookups[horizon] = targets(features, horizon)
+        row = lookups[horizon].get((d['symbol'], d['asof']))
         if not row or not isinstance(row.get('label_end'), str):
             continue
         actual = float(row['forward_pct'])
@@ -25,6 +45,7 @@ def resolve(ledger, features, cfg, now):
                    forecast_pct=d['forecast_pct'], raw_forecast_pct=d['raw_forecast_pct'],
                    actual_pct=actual, error_pct=d['raw_forecast_pct'] - actual,
                    action=d['action'], model_id=d['model_id'],
+                   horizon_sessions=horizon,
                    missed_upside=d['action'] not in ('AL', 'TUT') and actual > cfg['min_expected_net_pct'])
 
 
@@ -33,14 +54,18 @@ def record(ledger, decisions, raw_forecasts, now):
         raw = raw_forecasts.get(d['symbol'])
         if raw is None or d['forecast_pct'] is None or d['action'] == 'VERİ BEKLENİYOR':
             continue
-        key = 'forecast:' + digest({'symbol': d['symbol'], 'asof': d['asof']})
+        identity = {'symbol': d['symbol'], 'asof': d['asof']}
+        if d.get('horizon_sessions', 20) != 20:
+            identity['horizon_sessions'] = d['horizon_sessions']
+        key = 'forecast:' + digest(identity)
         ledger.add('forecast', key, now.isoformat(), symbol=d['symbol'], asof=d['asof'],
                    action=d['action'], forecast_pct=d['forecast_pct'], raw_forecast_pct=raw,
-                   model_id=d['model_id'])
+                   model_id=d['model_id'], horizon_sessions=d.get('horizon_sessions', 20))
 
 
 def calibration(ledger, cfg):
-    rows = [e['data'] for e in ledger.events if e['kind'] == 'forecast_outcome']
+    rows = [e['data'] for e in ledger.events if e['kind'] == 'forecast_outcome'
+            and e['data'].get('horizon_sessions', 20) == cfg['horizon_sessions']]
     groups = defaultdict(list)
     for row in rows:
         groups[row['asof']].append(row)
@@ -61,4 +86,4 @@ def calibration(ledger, cfg):
             'mean_error_pct': bias, 'correction_pct': correction,
             'missed_upside_count': sum(r['missed_upside'] for r in rows),
             'recent': rows[-100:],
-            'note': 'Hata tahmin eksi gerçekleşen fiyat değişimidir. Kaçan yükseliş, net işlem kârı değildir.'}
+            'note': 'Hata, tahmin eksi düzeltilmiş toplam getiri serisinin değişimidir; net banka getirisi değildir. Kaçan yükseliş, net işlem kârı değildir.'}

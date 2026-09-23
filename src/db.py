@@ -292,8 +292,14 @@ def insert_prim(con, **kw) -> None:
 
 def insert_weekend_exp(con, ts_utc, weekend_gram, frozen_theoretical, expectation_pct) -> None:
     con.execute(
-        "INSERT OR REPLACE INTO weekend_expectation"
-        "(ts_utc,weekend_gram,frozen_theoretical,expectation_pct) VALUES(?,?,?,?)",
+        "INSERT INTO weekend_expectation"
+        "(ts_utc,weekend_gram,frozen_theoretical,expectation_pct) VALUES(?,?,?,?) "
+        "ON CONFLICT(ts_utc) DO UPDATE SET "
+        "reconciled=CASE WHEN weekend_gram IS excluded.weekend_gram "
+        "AND frozen_theoretical IS excluded.frozen_theoretical "
+        "AND expectation_pct IS excluded.expectation_pct THEN reconciled ELSE 0 END, "
+        "weekend_gram=excluded.weekend_gram,frozen_theoretical=excluded.frozen_theoretical,"
+        "expectation_pct=excluded.expectation_pct",
         (ts_utc, weekend_gram, frozen_theoretical, expectation_pct),
     )
 

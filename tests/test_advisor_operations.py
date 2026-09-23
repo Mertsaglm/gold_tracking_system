@@ -59,3 +59,13 @@ def test_watchdog_night_run_cannot_hide_missing_daytime_session(tmp_path):
     night=NOW.replace(hour=20);s['generated_at']=night.isoformat();p.write_text(json.dumps(s))
     result=watchdog.inspect(tmp_path,night)
     assert any(f['code']=='missed_cycle' for f in result['findings'])
+
+
+def test_watchdog_observes_a_daytime_gap_without_blocking_the_producer(tmp_path):
+    archive(tmp_path)
+    early = watchdog.inspect(tmp_path, NOW + timedelta(minutes=25))
+    assert not any(f['code'] == 'cycle_gap' for f in early['findings'])
+    late = watchdog.inspect(tmp_path, NOW + timedelta(minutes=55))
+    assert any(f['code'] == 'cycle_gap' for f in late['findings'])
+    after_close = watchdog.inspect(tmp_path, NOW + timedelta(hours=4))
+    assert any(f['code'] == 'cycle_gap' for f in after_close['findings'])

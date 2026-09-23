@@ -157,7 +157,7 @@ def test_hafta_sonu_yerel_takvimle():
 
 
 # ------------------------------------------------------------ pencere hesapları
-def test_history_guncellemesi_gerideki_pencereyi_kullaniyor(sabitle):
+def test_history_guncellemesi_gerideki_pencereyi_kullaniyor(sabitle, izole_kok):
     """`update_recent(days=45)`: ATR(14) penceresine tampon bırakır. Pencere
     kısalırsa ATR yeniden hesaplanamaz ve alarm eşiği donar (ADR #004)."""
     from src import history
@@ -170,7 +170,7 @@ def test_history_guncellemesi_gerideki_pencereyi_kullaniyor(sabitle):
 
     import unittest.mock as mock
     with mock.patch.object(history, "_yf_ons_daily", _yakala):
-        history.update_recent(util.load_config(), days=45)
+        history.update_recent(izole_kok[0], days=45)
     assert cagri["start"] == "2026-06-08"                  # 45 gün geride
     assert cagri["min_days"] == 20, "kısa pencerede 200 gün eşiği asla dolmaz"
 

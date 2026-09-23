@@ -1,71 +1,77 @@
 # Mevcut durum
 
-**Güncelleme:** 2026-09-16
-**Aktif iş:** Üç öncelik grubu yerelde uygulandı ve doğrulandı; GitHub yayın ve CI takibi sürüyor.
+**Güncelleme:** 2026-09-23
+**Aktif iş:** Vercel paneli yayında; yerel denetim düzeltmeleri iki depoda GitHub üretim arşiviyle birleştirilip yayımlanıyor.
 
-## Kapsam
+## Kapsam ve doğrulanmış gerçek
 
-- BIST + altın: iki ayrı sanal hesap, 5.000 TL başlangıç/aylık katkı varsayımı.
-- Kullanıcı 25 öneriden ilk üç öncelik grubunun uygulanmasını istedi.
-- Dağılım 8 + 7 + 7 + 3; ilk 22 madde uygulandı, son üç madde ertelendi.
-- Önceki 25/26 sürüm-doküman maddeleri birleştirildi. Gerçek emir yok.
+- BIST ve banka gram altını ayrı sanal hesaplar; gerçek emir gönderimi yok.
+- 2026-09-15–2026-09-22 üretimi sabit GitHub commit arşivlerinden incelendi.
+- BIST canlı evreni 18 hisse; BIST30'un tamamı değil. Araştırma tabanı 70 hisse.
+- 143 mühürlü karar paketi kendi kod/runtime'ıyla birebir yeniden üretildi.
+- Dört hesabın muhasebesi bağımsız hesapla, yedek dönüşü ve tekrar çevrimiyle sınandı.
+- BIST stratejide 1 alış, 0 satış; altında 0 işlem. Canlı tahmin sonucu henüz yok.
+- Model onayları kapalı, canlı kalibrasyon düzeltmesi sıfır; üstünlük kanıtı yok.
 
-## Tamamlandı — 2026-09-16
+## Tamamlandı — 2026-09-22, henüz yayımlanmadı
 
-- Eski analiz mevcut stopu kapatmaz; eski fiyat güncel değerleme/bütçe üretmez.
-- Ortak tam/yarım gün takvimi, seans vadesi, al-tut nakit cepleri, toplam risk.
-- Ayrı V2 nöbetçisi ve yedek/geri dönüş workflow'ları; panel Node CI.
-- Tam sanal portföy geçmiş motoru, maliyet/boşluk/aksama stresleri.
-- Bağımsız dönem kanıtı; sabit/günlük model için ayrı gölge hesaplar.
-- Tarihli evren, kanıtlı temettü ödeme ve masraf gözlemi içe alma araçları.
-- Karar detay/değişim/dağılımı, haftalık sonuç, mühürlü karar yeniden üretimi.
-- Ortak kod manifesti, runtime kilitleri, rehber ve işletim dokümanları.
-- Toplu plan: `docs/IYILESTIRME-2026-09-16.md`.
-- Kanıt/sınırlar: `reports/IYILESTIRME-2026-09-16.md`; kullanım: `docs/V2-REHBER.md`.
-
-## Doğrulama
-
-- Tam suite: BIST 1.393 geçti; altın 944 geçti, 7 eski CLI testi atlandı (2026-09-16).
-- İki panelde npm test/build geçti; masaüstü ve 390×844 mobil kontrolü başarılı.
-- İki projede 27 ortak modül eşleşiyor; pip check ve git diff --check geçti.
-- Eski stop hatası geçici kopyada geri konunca regresyon testi kırmızıya döndü.
-- Gerçek defterlerin ayrı arşivden geçici geri dönüşünde tüm hesap/hash eşleşti.
-- Başlangıçtaki 19 veri dosyasının SHA-256 özeti değişmedi; gizli değer sızıntısı yok.
-- Bu oturum iki depoya commit/push yaptı; gerçek Telegram gönderimi veya deploy yapılmadı.
+- Telegram A→hata→A iyileşmesi, eski görünümü gönderme ve nöbetçi makbuz kontrolü.
+- Eksik hisse geçmişinin paydayı daraltması; yalnız gölge hesaptaki stop takibi.
+- Belirsiz kurumsal işlemde kesin servet/risk bütçesi göstermeme.
+- Model/tahmin vadesini mühürleme; farklı vadeli sonuçları kalibrasyonda ayırma.
+- Geçersiz fiyat/referans ve gelecekteki analiz; dayanaksız hedef/getiri temizliği.
+- Geciken analiz panel/Telegram/nöbetçide görünür; fiyat korumaları değişmedi.
+- Altın eski hattında yanlış gün mutabakatı, importta bayrak sıfırlama ve YOK hatası.
+- Altın testlerinde otomatik ağ/üretim DB/log koruması; sızan test izole edildi.
+- Ortak motor iki depoda eş; regresyon testleri ve gerçek veri karşılaştırması hazır.
+- Kanıt: `reports/URETIM-DENETIMI-2026-09-22.md` ve aynı adlı JSON ekleri.
+- Komut: `python scripts/audit_production.py --root /tmp/sabit-kopya --output /tmp/denetim.json --replay --validate-fixes`.
+- Üretim defteri/SQL değiştirilmedi; gerçek Telegram mesajı, commit/push/deploy yapılmadı.
 
 ## Açık sınırlar
 
-- 2026-06-01–2026-08-26 yerel tarihsel denemelerinde strateji işlemi yok.
-  Kârlılık kanıtı yok; işlemli mekanizma senaryoları kontrollü testlerde doğrulandı.
-- Tarihsel banka makası, kişisel masraf ve ödeme belgeleri henüz sağlanmadı.
-- Tarihsel evren kaynağı yok; güncel evren varsayımı açıkça etiketleniyor.
-- Bağımsız sanal dönem birikimi zaman ister; otomatik model terfisi yok.
-- Altın eski .venv pandas 3 içeriyor; kilit pandas 2.3.3/tzdata 2026.3.
-  Test geçici PYTHONPATH ortamında yapıldı; eski .venv değiştirilmedi.
-- Vercel hesabı canlı incelendi; BIST/altın paneline bağlı proje görünmüyor.
+- 2026-09-23'te altın SQL'i 2026-09-21 kapanışındaydı; yerel düzeltme seans öncesi
+  tamamlanmış barı geçici DB'de doğrulayıp atomik yayımlar. Eski kapanış yeni alımı kapatır;
+  mevcut stop açık kalır. Gerçek GC=F ile 2026-09-22 barı izole kopyada üretildi.
+- İki portföy workflow'una 30 dakika nominal GitHub cron yedeği, nöbetçiye 45 dakika
+  çevrim boşluğu gözlemi eklendi. Üretimde henüz yayımlanmadı; GitHub zaman garantisi yok.
+- Eski altın mutabakatının 303 yanlış tamamlandı bayrağı kopyada düzeltildi.
+  Üretimde yeni uzlaştırıcı çalışana kadar eski bayraklar ve eski raporlar geçersizdir.
+- 2026-09-16/17/18'de günde bir seans çevrimi; 2026-09-21/22'de yaklaşık 15 dakika.
+  GitHub gerçek tetik türü workflow_dispatch. Bu Mac'te kurulu advisor LaunchAgent yok.
+  Eski hafızanın yerel 10 dakika runner iddiası doğrulanmadı; haricî çağıranın güvencesi bilinmiyor.
+- Haricî 15 dakika dispatch çağırıcısının kimliği hâlâ doğrulanmadı; yedek bunu bağımlılık
+  olmaktan çıkarır fakat 15 dakika SLA'sı vermez.
+- Telegram dışa aktarımları revizyon sonrasını kapsamıyor; alıcı ekranı doğrulanamadı.
+- Gerçek satış/stop/aylık katkı henüz yaşanmadı; yalnız kontrollü test kanıtı var.
+- Altın bağımsız prim ve FRED kaynak sorunları sürüyor; eski rapor V2 öğrenme kanıtı değil.
+- Kişisel tarife/ödeme belgesi, tarihsel banka makası ve BIST tarihsel üyelik verisi yok.
+- Saklama/MKK dönemsel ücretleri sanal defterde yok; maliyet notunda açık.
+- Panel 2026-09-23'te `https://birikim-paneli.vercel.app/` adresinde iki sanal hesabı gösterdi; parolasız API isteği 401 döndü. Yeni kodla yeniden yayın ve ilk üretim çevrimi henüz doğrulanmadı.
 
 ## Sıradaki 3 İş
 
-1. BIST `main`deki ilk yeni V2 koşusu ile nöbetçi/yedek işlerini izle.
-   DoD: yeni defter yazımı, nöbetçi ve geri dönüş artifact'i ayrı ayrı yeşil.
-2. Vercel'de panel için proje/GitHub erişimi kur, preview'a yalnız sunucu değişkenlerini ekle.
-   DoD: iki gerçek hesapta güncel tarih/hash, korunmuş sunucu anahtarı, teslim makbuzu.
-3. Doğrulanmış üyelik/ödeme/masraf kaynaklarını edin ve yeni sanal kanıtı biriktir.
-   DoD: belgeli kayıtlar idempotent içe alındı; boşluklar ve bağımsız dönem sayısı görünür.
+1. İki depodaki düzeltmeleri yayımla; son üretim arşivini koruyarak birleştir.
+   DoD: CI yeşil, gerçek çevrim yeni uyarı ve izlenebilir makbuz üretiyor; hesap mutabakatı aynı.
+2. İlk üretim seansında yedek cron, altın refresh ve 45 dakika nöbetçi bulgusunu doğrula.
+   DoD: beklenen kapanış arşivde; eksikse alım yok; kaçan çevrim nöbetçide görünür.
+3. Güncel Telegram alıcı kaydını arşiv/makbuzla ve ilk olgunlaşan sonucu karar kapsülüyle eşleştir.
+   DoD: teslim zinciri, mühürlü vade ve sonuç hesabı gerçek veriden yeniden üretilebilir.
 
 ## TAKVİM & SENDE KALANLAR
 
 | Tarih | Kim | İş | DoD | Durum |
 |---|---|---|---|---|
-| 2026-09-16 | 🤖 | BIST PR #2 squash merge edildi | `34273ab`, GitHub dashboard + pytest yeşil | Tamam |
-| 2026-09-16 | 🤖 | Altın `main` yayımlandı | GitHub dashboard + pytest yeşil | Tamam |
-| Vercel kurulumunda | 👤 | Panel projesine GitHub erişimi ver | Preview kurulabilir | Bekliyor |
-| Veri bulunduğunda | 👤 | Üyelik/ödeme/masraf kanıtı sağla | Belgeli içe alma kaydı | Bekliyor |
+| 2026-09-22 | 🤖 | Üretim denetimi ve yerel düzeltme | Test ve gerçek arşiv kanıtı | Tamam |
+| 2026-09-23 | 🤖 | Yerel düzeltmelerin commit/push/yayını | Doğrulanmış dosyalar üretime taşınır | Devam ediyor |
+| 2026-09-23 | 👤 | Panel projesine GitHub erişimi | Canlı panelde iki hesap görünür | Tamam |
+| Veri bulunduğunda | 👤 | Üyelik/ödeme/masraf kanıtı | Belgeli içe alma/mutabakat | Bekliyor |
 
 ## Backlog
 
+- Kapsül büyümesini ve arşiv saklama maliyetini izle; geçmiş karar kanıtını kaybetme.
 - Grup 4: panelden ayar, gerçek işlem günlüğü, etkileşimli senaryo ekranı.
-- Bankanın yetkili fiyat kaynağı ve kişisel tarife doğrulaması.
-- 2026-11-25: altın GC=F referansında roll etkisini ayrı ölç.
-- Önceki ayrıntılar: `ai/archive/STATE-2026-09-16-before-improvements.md`.
-- V1 geçmiş araştırma ve ölçümleri korunur; V2 başarısı gibi yeniden yazılmaz.
+- 2026-11-25: altın GC=F referansında roll etkisini ayrıca ölç.
+- Önceki durumun tam kopyası: `ai/archive/STATE-2026-09-22-before-production-audit.md`.
+- 2026-09-23 açık risk aksiyonu: `reports/ACIK-RISKLER-2026-09-23.md`.
+- Ayrıntılı eski çalışmalar: `docs/IYILESTIRME-2026-09-16.md`; V1 ölçümleri korunur.

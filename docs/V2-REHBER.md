@@ -77,7 +77,7 @@ masrafları kullanır; tam lota yetmeyen payı nakitte bırakır. Mevduat faizi 
 5. Model sınavı ve yeni sanal sonuçlar yeterli olmadan küçük deneme sınırı sürer.
    Kanıtlanmış üstünlük veya kâr garantisi yoktur; panel aksi izlenim vermez.
 6. Güncel kararlardan ilk uygulanabilir tahmin mühürlenir. Hedef vadesi dolunca
-   gerçekleşen fiyat değişimi, hata ve kaçan yükseliş kaydedilir. Veri bekleyen
+   düzeltilmiş toplam getiri serisinin değişimi, tahmin hatası ve kaçan yükseliş kaydedilir; bu net banka getirisi değildir. Veri bekleyen
    koşu, değerlendirilmiş yatırım fırsatı gibi sayılmaz.
 7. En az 10 bağımsız dönem sonra ölçülen ortalama tahmin yanlılığı, en çok 2
    yüzde puanlık düzeltmeyle yeni tahmine uygulanır. Model yeni fiyatlarla yeniden
@@ -128,11 +128,17 @@ kurulumdaki varsayımı değiştirirken eski hesabı silmeden arşivle.
 
 ## Otomatik çalışma
 
-`portfolio.yml`, hafta içi saat başına yakın ve günlük veri workflow'u bitince
-çalışır. GitHub cron kesin zaman veya kesintisiz fiyat akışı sağlamaz; stop da
+`portfolio.yml`, hafta içi 10:17–17:17 TR arasında nominal 30 dakika yedek
+zamanlamayla, elle/dışarıdan dispatch ile ve günlük veri workflow'u bitince
+çalışır. Dışarıdan gelen 15 dakikalık dispatch'in sahibi doğrulanmadı.
+GitHub cron kesin zaman veya kesintisiz fiyat akışı sağlamaz; stop da
 yalnız koşunun gördüğü fiyatla simüle edilir. Aradaki fiyat hareketi doldurulmaz.
 
-Sıra: SQL'i salt okunur aç → fiyat/gündem → karar/defter → GitHub'a kaydet →
+Altında önce `python -m src.advisor_refresh` önceki tamamlanmış GC=F kapanışını
+geçici DB'de doğrular; başarılıysa SQL dump'ını atomik yeniler. Kaynak eksikse
+SQL değişmez, yeni sanal alım kapanır. BIST SQL'i yalnız salt okunur.
+
+Sıra: beklenen kapanışı doğrula → fiyat/gündem → karar/defter → GitHub'a kaydet →
 Telegram özeti → bildirim makbuzunu kaydet. V2 defterinin tek yazarı bu workflow'dur.
 V1 günlük raporu üretmeye devam eder; `ADVISOR_V2=1` ile uzun normal Telegram
 raporunun yerini V2 özeti alır. BIST hata uyarıları ve altın arşiv alarm hattı korunur.
@@ -157,19 +163,27 @@ aynı bütçeli al-tut, öğrenme karnesi ve eski sonuçları içerir. İlk iki 
 birikmeden çizgi grafik uydurulmaz. Parola gerekiyorsa `ADVISOR_DASHBOARD_PASSWORD`
 ayarlanabilir; tarayıcı parolayı yalnız oturum belleğinde tutar.
 
-## Vercel'e bağlama
+## Canlı panel ve Vercel
 
-Mevcut proje doğrulanıp yayın onayı alındıktan sonra:
+Canlı adres: [birikim-paneli.vercel.app](https://birikim-paneli.vercel.app/).
+Paneli izlemek için Mac'te Node sunucusunu açık tutmak gerekmez. Portföy çevrimleri
+GitHub Actions'ta çalışır; Vercel yalnız iki depodaki son `latest.json` görünümünü sunar.
+Yerel `node dashboard/server.mjs` komutu geliştirme ve çevrimdışı inceleme içindir.
+
+Kurulum ve yeniden yayın denetimi:
 
 1. Vercel proje root directory'si `dashboard`; framework `Other`/otomatik yok.
    Yapılandırma `dashboard/vercel.json` içindedir. Zamanlama GitHub'da kalır.
-2. Sunucuda `ADVISOR_GITHUB_TOKEN`: yalnız iki depo için Contents Read yetkisi
-   olan bağlantı. BIST özel olduğu için gerekir; tarayıcıya hiç gönderilmez.
+2. Sunucuda `ADVISOR_GITHUB_TOKEN`: özel `Mertsaglm/bist-analiz` deposu için
+   yalnız Contents Read yetkili fine-grained token. `Mertsaglm/gold_tracking_system`
+   herkese açık olduğu için aynı tokenın o depoya ayrıca erişmesi gerekmez.
+   Token tarayıcıya gönderilmez ve repoya yazılmaz.
 3. `ADVISOR_DASHBOARD_PASSWORD`: panel giriş parolası. Ayarsız sunucu özel hesap
    verisini yayınlamaz, 503 döner. Kullanıcı adı sabit `mert`.
-4. Preview'da iki hesabı, parolayı ve veri tarihlerini doğrula; sonra production.
-5. Production adresini iki `advisor/config.json` içindeki `dashboard_url` alanına
-   yaz. Telegram özeti panel bağlantısını ekler.
+4. Production'da iki hesabı ve veri tarihlerini kontrol et. Parolasız
+   `/api/status` isteği 401 dönmelidir; yeni arşiv gelince paneldeki tarih yenilenmelidir.
+5. Production adresi iki `advisor/config.json` içindeki `dashboard_url` alanında
+   tutulur. Telegram özeti panel bağlantısını ekler.
 
 Vercel endpoint'i salt okunurdur. Dosyayı her istekte yeniden analiz etmez;
 GitHub'daki son görünümü okur. İstek yeni model eğitimi veya al/sat tetiklemez.
@@ -202,7 +216,7 @@ Her iki hesabın ve al-tut karşılaştırmasının getirisi, eklenen paradan ar
 Öncelik ve kapsam: [25 maddelik plan](IYILESTIRME-2026-09-16.md).
 Sonuçlar: [uygulama raporu](../reports/IYILESTIRME-2026-09-16.md).
 
-- Eski analiz yeni alımı durdurur; güncel, geçerli fiyatla mevcut stop/hedef izlenir.
+- Önceki işlem gününün kapanışı eksikse yeni alım durur; güncel, geçerli fiyatla mevcut stop/hedef izlenir.
   Eski fiyat güncel portföy değerine ve yeni işlem bütçesine girmez.
 - Takvim YAML olarak okunur. Yarım gün 12:15 kapanışı sistemin ihtiyatlı işlem
   penceresidir; resmî piyasa kapanışı iddiası değildir. Vade seans sayısıyla ilerler.
@@ -234,7 +248,8 @@ python scripts/advisor_manifest.py
 ```
 
 `watchdog` gözlemdir, hesabı onarmaz veya durdurmaz. Ayrı Actions işi kaçırılan
-seans kontrolünü, hata/eksik fiyatı ve teslim makbuzunu inceler; sorun exit 1'dir.
+seans kontrolünü, 45 dakikayı aşan gerçek çevrim boşluğunu, hata/eksik fiyatı
+ve teslim makbuzunu inceler; sorun exit 1'dir.
 `advisor-recovery.yml` ayrı yedeği geçici dizinde doğrular; artifact 90 gün tutulur.
 Arşiv hesap verisi içerir; paylaşım için hazırlanmış bir dosya değildir.
 `recovery-check` mevcut verinin üstüne yazmaz. Yedek adı daha önce varsa reddedilir.

@@ -6,6 +6,10 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch: {}
+  schedule:
+    # Dış 15 dk tetikleyici aksarsa ilk taraf yedeği; GitHub cron zaman garantisi vermez.
+    - cron: '17,47 7-13 * * 1-5'
+    - cron: '17 14 * * 1-5'
 
 permissions:
   contents: write
@@ -31,6 +35,12 @@ jobs:
       - name: Bagimliliklar
         run: |
           pip install --quiet -r requirements-runtime.txt
+      - name: Kapanmis altin barini tamamla
+        id: refresh
+        continue-on-error: true
+        env:
+          EVDS_API_KEY: ${{ secrets.EVDS_API_KEY }}
+        run: python -m src.advisor_refresh
       - name: Fiyat, karar ve sanal defter
         id: cycle
         run: |
@@ -46,7 +56,7 @@ jobs:
         run: |
           git config user.name 'birikim-advisor'
           git config user.email 'actions@github.com'
-          git add data/advisor/
+          git add data/advisor/ data/altin.sql
           if ! git diff --cached --quiet; then
             git commit -m "advisor: sanal portfoy $(date -u +%Y-%m-%dT%H:%MZ)"
             bash ops/push_retry.sh

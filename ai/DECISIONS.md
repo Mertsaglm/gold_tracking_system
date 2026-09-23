@@ -6,6 +6,94 @@
 
 ---
 
+## #021 — 2026-09-23 — Okuma paneli Vercel'de, karar ve defter GitHub'da
+
+**Bağlam:** Mert iki sanal hesabı Mac'i açık tutmadan izleyecek. Karar çevrimi
+ve defter zaten iki ayrı GitHub deposunda; panelin işlem yazmasına gerek yok.
+
+**Karar:** `bist-analiz/dashboard` tek Vercel projesi olarak yayınlanır. Sunucu
+iki deponun `data/advisor/latest.json` dosyasını okur; özel BIST deposuna yalnız
+Contents Read yetkili token kullanır. Altın deposu herkese açıktır. Panel API'si
+parola yoksa 503, yanlış/eksik parolada 401 döner. Token ve parola sunucu ortam
+değişkenlerinde kalır. İki `advisor/config.json` aynı production URL'sini taşır.
+
+**Doğrulama:** 2026-09-23'te canlı panel iki hesabı gösterdi; parolasız API 401
+döndü. Güncel üretim çevrimi ve yeni kodla yeniden yayın ayrıca doğrulanacaktır.
+
+**Tekrar gözden geçir:** Daha ayrıntılı erişim yönetimi gerekirse veya GitHub
+dosyasını her istekle okuma sınır/maliyet sorunu doğurursa.
+
+---
+
+## #020 — 2026-09-23 — Önceki kapanış kararın zorunlu girdisidir
+
+**Kanıt:** 2026-09-23 sabahında V2 altın SQL'i 2026-09-21'de, EVDS kuru
+2026-09-22'deydi. Önceki günün GC=F barı gerçek kaynaktan çekilebiliyordu;
+yalnız akşam günlük işinin saatinde henüz tam kapanmamıştı. Eski analiz yaş
+eşiği içinde kaldığından sanal alım olasıydı.
+
+**Karar:** V2 altın çevrimi karar öncesi geçici DB'de eksik tamamlanmış barı
+yeniler ve beklenen tam tarih kanıtlanınca SQL'i atomik değiştirir. İki piyasa
+önceki işlem günü kapanışı olmadan yeni alım açmaz; açık stop/hedef yaşar.
+Haricî `workflow_dispatch` sahibine bağlı kalmamak için portföyde nominal
+30 dakika GitHub cron yedeği, salt-okur nöbetçide 45 dakika boşluk uyarısı
+bulunur. Bu, önceki #018 yerel runner varsayımının yerine ölçülmüş sınırdır;
+15 dakika garanti iddiası yoktur.
+
+**Tekrar gözden geçir:** Kaynak barı sabah da yoksa, GC=F roll etkisi ölçülüp
+kaynak değişecekse veya gerçek üretim çevrimi yedeğin çalışmadığını gösterirse.
+
+---
+
+## #019 — 2026-09-22 — Üretim gerçeği, teslim durumu ve mühürlü ölçüm vadesi
+
+**Kanıt:** Sabit üretim commit arşivleri, gerçek SQL/defter ve 143 karar paketi.
+Önceki STATE'teki yerel 10 dakika runner iddiası gözlemle doğrulanmadı;
+2026-09-21/22 arşivleri workflow_dispatch kaynaklı yaklaşık 15 dakika ritim gösteriyor.
+
+**Karar:** Bildirim teslimi son gönderilmiş DURUMA bağlıdır; A→hata→A yeni teslimdir.
+Beklenen evren fiyat satırlarından türetilemez. Kurumsal işlem belirsizliği servet ve
+risk bütçesinde bilinmiyor olarak kalır. Tahmin ve model vadeleri mühürlenir; farklı
+vadeli hatalar aynı kalibrasyona girmez. Geciken kapanış ayrı bir gözlemdir; mevcut
+stopu devre dışı bırakmaz. Altın eski mutabakatı doğru açık güne yeniden bağlanır,
+gerçekleşme yoksa tamamlandı bayrağı korunmaz; ham tarihsel gözlem silinmez.
+
+**Sınır:** Kod yerelde düzeltildi, üretim veri değişmedi, commit/push/deploy yapılmadı.
+Maliyet/sermaye/risk eşikleri performans çıksın diye gevşetilmedi. Kişisel maliyet ve
+bağımsız kaynak eksiklikleri veri bulunmadan kapatılmış sayılmaz.
+
+**Doğrulama:** `reports/URETIM-DENETIMI-2026-09-22.md`, makine JSON ekleri,
+`tests/test_advisor_production_audit.py`; altın eski hat için
+`tests/test_production_reconciliation.py` altın deposundadır.
+
+---
+
+## #018 — 2026-09-17 — Seans içi V2, GitHub cron değil yerel uyanık runner ile çalışır
+
+**Bağlam:** 2026-09-16'da GitHub Actions, iki repodaki saatlik `portfolio.yml`
+tetiklemelerinin çoğunu hiç başlatmadı. Başlatılan geç iş işlem penceresi dışına
+sarktı; salt-okur nöbetçi doğru olarak `missed_cycle` ile kırmızıya döndü.
+
+**Karar:** Mert'in macOS'unda `launchd`, V2 çevrimini yalnız işlem penceresinde
+10 dakikada bir çalıştırır. Her koşu önce `main`i fast-forward günceller, yalnız
+temiz çalışma ağacında devam eder, sonra defter ve Telegram makbuzunu ayrı
+commit/push ile teslim eder. GitHub Actions üretim yedeği, recovery ve bağımsız
+gözcü olarak kalır; yerel runner eksikliği gizlemez.
+
+**Neden:** V2'nin işlem kapısı seans içi kotasyon ister; kapanış-sonrası tek
+günlük koşu yeni işlemi sistematik olarak `VERİ BEKLENİYOR`a düşürür. GitHub
+cron ise saatlik zaman garantisi vermez. Mac uyanıkken `launchd` bu dar zaman
+gereksinimi için daha güvenilir ve ilave ücret gerektirmeyen tek mevcut ortamdır.
+
+**Sınır:** Mac kapalı veya uykudaysa yerel süreç de koşamaz. Bu fiziksel sınır
+gözcü ile görünür kalır; kesintisiz garanti gerekirse bir sonraki seçenek sürekli
+haricî runner'dır.
+
+**Tekrar gözden geçir:** Mac'in seans saatlerinde düzenli kapalı kaldığı veya
+üç işlem gününde teslim aralıkları 10 dakika + çevrim süresini aştığı ölçülürse.
+
+---
+
 ## #017 — 2026-09-16 — Üç öncelik grubu, koruyucu karar ve ölçülebilir sonuç
 
 **Bağlam:** Kullanıcı 25 öneriyi dört öncelik grubuna ayırıp ilk üç grubun

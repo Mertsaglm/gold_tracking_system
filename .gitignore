@@ -8,6 +8,7 @@
 __pycache__/
 *.pyc
 .venv/
+.advisor-runtime/
 venv/
 .pytest_cache/
 

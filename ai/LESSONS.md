@@ -10,7 +10,64 @@
 > eklerken **iki dosyadaki en büyük numaraya** bak ve bir sonrakini al —
 > yalnız buraya bakıp numara vermek çakışma üretir (2026-07-27'de tam bu oldu:
 > yeni ders L-005 sanıldı, oysa pakette L-005 `.gitignore` dersiydi → L-009'a
-> taşındı). Kontrol: `grep -h '^## L-023 — 2026-09-16 — Koruyucu çıkışın kapısını ayrı sına
+> taşındı). Kontrol: `pytest tests/test_dokuman_tutarliligi.py -q`.
+
+---
+
+## L-026 — 2026-09-23 — Üretici yeşilken tüketici eksik kapanışla karar verebilir
+
+**Anti-pattern:** Akşam işi bugünün yarım barını doğru biçimde dışlıyor, fakat
+ertesi sabah V2 önceki günün tam barını yenilemeden eski geçmişi kullanıyor.
+Beş günlük yaş toleransı ve görünür uyarı, yeni alımı durdurmuyordu.
+
+**Düzeltme:** Tüketici kendi kararından önce beklenen tam tarihi doğrular;
+eksikse geçici arşivde yeniler ve yalnız tam sonucu atomik yayımlar. Başarısız
+yenilemede eski arşiv korunur, yeni alım kapanır, mevcut stop açık kalır.
+Gölge model karnesi de eski kapanıştan yeni tahmin kaydedemez.
+
+**Kilit:** Gerçek SQL kopyasında eski/yeni kapanışla tam çevrim; başarısız ve
+gelecek tarihli yenilemede bayt eşliği; iki piyasada yeni alım/stop testi.
+
+---
+
+## L-025 — 2026-09-22 — Bir kez doğru olmak, son durumun doğru teslim edildiğini göstermez
+
+**Anti-pattern:** Gün içinde geçmiş bir makbuz varsa iyileşmeyi yeniden göndermemek;
+son mevcut fiyatı başka haftanın gerçekleşmesi saymak; fiyatı kaybolan varlığı
+beklenen evrenden de düşürmek. Üçü de eksikliği sessizce başarıya çevirir.
+
+**Düzeltme:** Son gönderilen durumla karşılaştır, gerçekleşmeyi mühürlü zamana bağla,
+paydayı gözlenen satırdan bağımsız kur. Öğrenme vadesini kararla birlikte kaydet;
+ayar değişikliği eski sınavı değiştirmesin. Eksik veri normal sonuç değildir.
+
+**Kilit:** A→hata→A gönderim testi; doğru gün/eksik gün/tekrar import; kayıp tarihsel
+sembolle tam çevrim ve gölge stopu. Yeni korumanın eski kodda kırmızıya döndüğünü
+sına. Salt test başarısı yetmez: gerçek arşiv, muhasebe, karar tekrarı ve geri dönüş
+birlikte doğrulanır. Kanıt: `reports/URETIM-DENETIMI-2026-09-22.md`.
+
+---
+
+## L-024 — 2026-09-17 — Cron sıklığı, zaman garantisi değildir
+
+**2026-09-23 durum notu:** Aşağıdaki yerel `launchd` tercihi o tarihteki
+tasarımdır; bu Mac'te kurulu runner doğrulanmadı. Güncel üretim kararı
+ADR #020: nominal GitHub cron yedeği ve ayrı boşluk gözlemi, zaman garantisi yok.
+
+**Anti-pattern:** Saatlik bir piyasa çevrimini GitHub Actions `schedule` ile
+çalıştırıp cron ifadesinin çalışma sıklığını garanti ettiğini varsaymak.
+
+**Düzeltme:** 2026-09-16 üretim kanıtında işlerin çoğu hiç başlamadı; geç
+başlayan koşu seans dışına düştü. Seans içi V2 çevrimi, Mac uyanıkken `launchd`
+ile 10 dakikada bir yürütülür; GitHub bağımsız teslim/gözcü yedeği kalır.
+Nöbetçiyi yeşile zorlamak yerine eksikliği görünür tutmak zorunludur.
+
+**Kilit:** `ops/advisor_local_runner.sh` temiz olmayan ağaçta koşmaz, önce
+fast-forward günceller, hata arşivini de teslim eder; iki LaunchAgent plist'i
+`plutil -lint` ile doğrulanır.
+
+---
+
+## L-023 — 2026-09-16 — Koruyucu çıkışın kapısını ayrı sına
 
 **Anti-pattern:** Eski analizle yeni alımı engelleyen şartın mevcut stopu da
 engellemesi; bayat kotasyonun güncel servet/risk bütçesi sayılması. Bir testin
@@ -28,10 +85,6 @@ tolerans eklendi; eşik üstündeki gerçek fiyat farkını reddeden sınır tes
 **Kilitler:** `tests/test_advisor_safety.py`, `tests/test_advisor_measurement.py`,
 `tests/test_advisor_operations.py`. Test verisi gerçek data/advisor'a yazamaz;
 simülasyon ve geri dönüş yalnız geçici dizinlerde sınanır.
-
----
-
-## L-' ai/LESSONS.md 'Proje Yardımcısı'*/ai/LESSONS.md | sort -u`
 
 ---
 

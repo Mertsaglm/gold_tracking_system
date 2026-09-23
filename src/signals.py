@@ -197,7 +197,7 @@ def build_signals(cfg: dict) -> dict:
     if not regime:
         # Sessizce düşmek, "ölçtüm ama bir şey çıkmadı" ile "ölçemedim"i aynı
         # şeye çevirir. Rapor NEDEN söyleyemediğini yazsın (denetim 2026-08-28).
-        out.append(_signal("rejim", YOK, ["trend", "birikimci"],
+        out.append(_signal("rejim", "veri_bekliyor", ["trend", "birikimci"],
                            ["Reel faiz serisi (FRED DFII10) alınamıyor → rejim "
                             "sınıflandırıcı tek sınıfa çöküyor.",
                             "Tek sınıflı etiket 'rejim' değil, tüm verinin "

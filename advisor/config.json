@@ -38,7 +38,7 @@
     "terms_reference": "https://www.isbank.com.tr/vadesiz-altin-hesabi",
     "verified_on": "2026-09-15"
   },
-  "dashboard_url": "",
+  "dashboard_url": "https://birikim-paneli.vercel.app/",
   "telegram": {
     "enabled": true,
     "max_characters": 1000
@@ -48,7 +48,8 @@
   "cost_notes": [
     "İş Bankası gram altın alış/satış referansı Döviz.com üzerinden izlenir; İşCep kişisel fiyatıyla farklı olabilir.",
     "Alımda banka satış fiyatı ve %0,20 KMV; satımda banka alış fiyatı kullanılır.",
-    "Miktar 0,01 gram adımıyla yuvarlanır. Geçmiş testte banka makası mevcut olmadığından maliyet varsayımı kullanılır."
+    "Miktar 0,01 gram adımıyla yuvarlanır. Geçmiş testte banka makası mevcut olmadığından maliyet varsayımı kullanılır.",
+    "Banka hesabı 995/1000 saflıkta gram altın birimindedir; ons×kur geçmişi banka gram fiyatının ve tarihsel makasının eşdeğeri değildir."
   ],
   "max_portfolio_risk_pct": 5,
   "watchdog_grace_minutes": 90,

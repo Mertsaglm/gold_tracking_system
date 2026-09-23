@@ -84,7 +84,8 @@ def test_universe_uses_knowledge_date_and_keeps_delisted_history(tmp_path):
 def test_shadow_waits_for_future_outcome_and_never_auto_promotes(tmp_path):
     cfg=config();l=Ledger(tmp_path/'events.jsonl')
     l.add('shadow_forecast','s',NOW.isoformat(),symbol='AAA',asof='2026-09-15',reference_id='frozen',reference_forecast=10,candidate_forecast=5)
-    f=pd.DataFrame([{'symbol':'AAA','date':'2026-09-15','forward_pct':4,'label_end':'2026-10-15'}])
+    dates=pd.bdate_range('2026-09-15',periods=21).strftime('%Y-%m-%d')
+    f=pd.DataFrame([{'symbol':'AAA','date':day,'total_close':100+4*i/20} for i,day in enumerate(dates)])
     shadow.resolve(l,f,NOW);assert shadow.score(l,cfg)['periods']==0
     later=NOW+timedelta(days=40)
     shadow.resolve(l,f,later);shadow.resolve(l,f,later)

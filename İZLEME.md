@@ -1,5 +1,21 @@
 # İZLEME — İzleme Dönemi El Kitabı
 
+## Birikim V2 — güncel kısa kontrol (2026-09-23)
+
+- [Canlı panel](https://birikim-paneli.vercel.app/): BIST ve gram altın ayrı sanal
+  hesap olarak görünmeli. Son kayıt ve analiz tarihine bak; eski analiz varsa yeni
+  alımın durması beklenir, koruyucu satışın durması beklenmez.
+- GitHub Actions'ta her iki depodaki `portfolio.yml` ve `advisor-watchdog.yml`
+  çalışmalarını kontrol et. Yeni nominal 30 dakika cron yedeği ve 45 dakika
+  çevrim boşluğu uyarısı ilk üretim seansında ayrıca doğrulanacak; cron zaman
+  garantisi vermez.
+- Karar/defter kanıtı her deponun `data/advisor/latest.json`, `run_status.json`
+  ve `events.jsonl` dosyalarında. Açık riskler `reports/ACIK-RISKLER-2026-09-23.md`,
+  görevlerin güncel sırası `ai/STATE.md` içindedir.
+
+**Aşağıdaki kontrol listesi V1 altın veri toplama ve rapor hattına aittir.**
+V2 portföy çevriminin veya panelin sağlığını tek başına kanıtlamaz.
+
 İnşa dönemi bitti. Sistem GitHub Actions'ta kendi kendine çalışıyor. Bu belge haftalık
 **5 dakikalık kontrol listesi** ve karşılaşabileceğin durumların ne anlama geldiğidir.
 
@@ -120,8 +136,8 @@ sadeleşiyor; prim artık piyasayı değil satıcının saflık çarpanını öl
 kapı bir **kimlik** üzerinden açılırdı.
 
 **Bu bir arıza değil, nöbetçinin doğru çalışması.** Sayaç ancak bağımsız bir
-spot ons kaynağı devreye girince yeniden ilerler — o karar `ai/STATE.md` →
-**Sıradaki 3 İş** → 1 numaralı satırda, sende.
+spot ons kaynağı devreye girince yeniden ilerler — bu açık sınırın güncel durumu
+`ai/STATE.md` ve `reports/ACIK-RISKLER-2026-09-23.md` içinde izlenir.
 
 ⚠️ Kapı yeniden açılmaya başladığında taban **sıfırdan** kurulmalı: kalan 19 gün
 eski yfinance rejiminden ve o rejim yenisiyle aynı dağılım değil (F=11.73,

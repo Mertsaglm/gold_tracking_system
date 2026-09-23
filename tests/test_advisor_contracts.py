@@ -39,3 +39,21 @@ def test_panel_and_operational_checks_are_wired_into_ci():
         wf=next(w for w in workflows if any(command in s.get('run','') for j in w['jobs'].values() for s in j.get('steps',[])))
         assert wf['permissions']['contents']=='read'
     assert all('==' in line for line in (ROOT/'requirements-runtime.txt').read_text().splitlines() if line and not line.startswith('#'))
+
+
+def test_portfolio_has_a_scheduled_fallback_and_observer_remains_read_only():
+    # Üretimde 15 dk'lık dispatch'in sahibi doğrulanamadı; repo kendi yedeğini de tanımlamalı.
+    portfolio=yaml.safe_load((ROOT/'.github/workflows/portfolio.yml').read_text())
+    triggers=portfolio.get('on',portfolio.get(True))
+    assert 'workflow_dispatch' in triggers and triggers['schedule']
+    assert portfolio['concurrency']['cancel-in-progress'] is False
+    watchdog=yaml.safe_load((ROOT/'.github/workflows/advisor-watchdog.yml').read_text())
+    observer=watchdog.get('on',watchdog.get(True))
+    assert len(observer['schedule']) == 1 and '13,43' in observer['schedule'][0]['cron']
+    assert watchdog['permissions']['contents'] == 'read'
+    if (ROOT/'src/advisor_refresh.py').exists():
+        steps=portfolio['jobs']['portfolio']['steps']
+        refresh=next(i for i,s in enumerate(steps) if 'src.advisor_refresh' in s.get('run',''))
+        cycle=next(i for i,s in enumerate(steps) if 'advisor cycle' in s.get('run',''))
+        assert refresh < cycle and steps[refresh].get('continue-on-error') is True
+        assert any('git add data/advisor/ data/altin.sql' in s.get('run','') for s in steps)

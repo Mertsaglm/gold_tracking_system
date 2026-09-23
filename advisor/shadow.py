@@ -18,8 +18,8 @@ def reference(state, previous_model, current_model):
     return model
 
 
-def record(ledger, reference_model, rows, current_forecasts, now):
-    if not reference_model:
+def record(ledger, reference_model, rows, current_forecasts, now, horizon_sessions=20):
+    if not reference_model or reference_model.get('horizon_sessions', 20) != horizon_sessions:
         return
     valid=rows.dropna(subset=learning.FEATURES)
     valid=valid[valid.date>=reference_model.get('label_end',reference_model.get('asof','9999'))]
@@ -30,16 +30,21 @@ def record(ledger, reference_model, rows, current_forecasts, now):
         if current is None:
             continue
         key=f"shadow:{reference_model['id']}:{row['symbol']}:{row['date']}"
+        if horizon_sessions != 20: key += f':horizon:{horizon_sessions}'
         ledger.add('shadow_forecast',key,now.isoformat(),symbol=row['symbol'],asof=row['date'],
-                   reference_id=reference_model['id'],reference_forecast=float(value),candidate_forecast=float(current))
+                   reference_id=reference_model['id'],reference_forecast=float(value),candidate_forecast=float(current),
+                   horizon_sessions=horizon_sessions)
 
 
 def resolve(ledger, features, now):
-    lookup={(r['symbol'],r['date']):r for r in features.to_dict('records')}
+    from .outcomes import targets
+    lookups={}
     for e in list(ledger.events):
         if e['kind']!='shadow_forecast':
             continue
-        d=e['data'];row=lookup.get((d['symbol'],d['asof']))
+        d=e['data'];horizon=d.get('horizon_sessions',20)
+        if horizon not in lookups:lookups[horizon]=targets(features,horizon)
+        row=lookups[horizon].get((d['symbol'],d['asof']))
         if row is None or not isinstance(row.get('label_end'),str) or row['label_end']>now.date().isoformat():
             continue
         import math
@@ -55,7 +60,8 @@ def score(ledger,cfg):
     from collections import defaultdict
     groups=defaultdict(list)
     for e in ledger.events:
-        if e['kind']=='shadow_outcome':groups[e['data']['asof']].append(e['data'])
+        if e['kind']=='shadow_outcome' and e['data'].get('horizon_sessions',20)==cfg['horizon_sessions']:
+            groups[e['data']['asof']].append(e['data'])
     next_day='';values=[]
     for day, rows in sorted(groups.items()):
         if day<next_day:continue

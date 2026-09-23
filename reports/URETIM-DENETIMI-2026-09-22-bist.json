@@ -1,0 +1,1110 @@
+{
+  "market": "bist",
+  "through": "2026-09-22T14:46:03.179845+00:00",
+  "snapshot_at": "2026-09-22T14:31:03.442310+00:00",
+  "analysis_date": "2026-09-21",
+  "ledger_sha256": "82e38c6f0d6e117339e24f8d9e9eff16a246a972530b9b3b5b721cdac66f56e1",
+  "ledger_hash": "26be1db53a1775e603579a200050b4fc1480474ecb2cf4d3850f003a0786f5db",
+  "events": 1965,
+  "kinds": {
+    "account_opened": 1,
+    "contribution": 2,
+    "model_review": 6,
+    "quote_snapshot": 73,
+    "forecast": 108,
+    "decision": 1338,
+    "fill": 26,
+    "benchmark_allocation": 1,
+    "valuation": 72,
+    "notification": 25,
+    "universe_snapshot": 6,
+    "cost_policy": 1,
+    "shadow_forecast": 90,
+    "account_checkpoint": 2,
+    "shadow_books_opened": 1,
+    "shadow_valuation": 68,
+    "decision_capsule": 72,
+    "benchmark_policy_started": 1,
+    "session_check": 70,
+    "weekly_notification": 1,
+    "dividend_receivable": 1
+  },
+  "accounts": {
+    "strategy": {
+      "cash_cents": 479164,
+      "contributed_cents": 500000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "positions": {
+        "KCHOL": {
+          "quantity": "1",
+          "cost_cents": 20836
+        }
+      }
+    },
+    "benchmark": {
+      "cash_cents": 97663,
+      "contributed_cents": 500000,
+      "realized_cents": 0,
+      "receivable_cents": 153,
+      "positions": {
+        "AKBNK": {
+          "quantity": "4",
+          "cost_cents": 27969
+        },
+        "EKGYO": {
+          "quantity": "18",
+          "cost_cents": 35667
+        },
+        "ENKAI": {
+          "quantity": "4",
+          "cost_cents": 34500
+        },
+        "EREGL": {
+          "quantity": "9",
+          "cost_cents": 34301
+        },
+        "EUPWR": {
+          "quantity": "4",
+          "cost_cents": 28636
+        },
+        "FROTO": {
+          "quantity": "4",
+          "cost_cents": 31591
+        },
+        "GARAN": {
+          "quantity": "2",
+          "cost_cents": 26279
+        },
+        "KCHOL": {
+          "quantity": "1",
+          "cost_cents": 22097
+        },
+        "KRDMD": {
+          "quantity": "8",
+          "cost_cents": 35337
+        },
+        "PETKM": {
+          "quantity": "16",
+          "cost_cents": 36059
+        },
+        "SISE": {
+          "quantity": "8",
+          "cost_cents": 33745
+        },
+        "TAVHL": {
+          "quantity": "1",
+          "cost_cents": 26319
+        },
+        "TCELL": {
+          "quantity": "3",
+          "cost_cents": 29837
+        }
+      }
+    },
+    "shadow_reference": {
+      "cash_cents": 479164,
+      "contributed_cents": 500000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "positions": {
+        "KCHOL": {
+          "quantity": "1",
+          "cost_cents": 20836
+        }
+      }
+    },
+    "shadow_candidate": {
+      "cash_cents": 479164,
+      "contributed_cents": 500000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "positions": {
+        "KCHOL": {
+          "quantity": "1",
+          "cost_cents": 20836
+        }
+      }
+    }
+  },
+  "snapshot_accounts_match": true,
+  "daily_cycles": [
+    {
+      "date": "2026-09-16",
+      "count": 1,
+      "first": "2026-09-16T12:37:59.405473+00:00",
+      "last": "2026-09-16T12:37:59.405473+00:00",
+      "max_gap_minutes": 0,
+      "full_quote_cycles": 1
+    },
+    {
+      "date": "2026-09-17",
+      "count": 1,
+      "first": "2026-09-17T12:37:26.942729+00:00",
+      "last": "2026-09-17T12:37:26.942729+00:00",
+      "max_gap_minutes": 0,
+      "full_quote_cycles": 1
+    },
+    {
+      "date": "2026-09-18",
+      "count": 1,
+      "first": "2026-09-18T12:15:30.483782+00:00",
+      "last": "2026-09-18T12:15:30.483782+00:00",
+      "max_gap_minutes": 0,
+      "full_quote_cycles": 1
+    },
+    {
+      "date": "2026-09-21",
+      "count": 30,
+      "first": "2026-09-21T07:15:58.605878+00:00",
+      "last": "2026-09-21T14:31:04.853451+00:00",
+      "max_gap_minutes": 15.22,
+      "full_quote_cycles": 28
+    },
+    {
+      "date": "2026-09-22",
+      "count": 31,
+      "first": "2026-09-22T07:15:57.309788+00:00",
+      "last": "2026-09-22T14:31:03.442310+00:00",
+      "max_gap_minutes": 15.6,
+      "full_quote_cycles": 29
+    }
+  ],
+  "decisions": {
+    "reward_risk": 397,
+    "no_edge": 675,
+    "data_block": 204,
+    "sized_reward_risk": 2,
+    "cost_adjusted_opportunity": 1,
+    "hold": 59
+  },
+  "fills": [
+    {
+      "book": "benchmark",
+      "symbol": "AKBNK",
+      "side": "BUY",
+      "quantity": "3",
+      "price": 70.88542499999998,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "EKGYO",
+      "side": "BUY",
+      "quantity": "13",
+      "price": 20.25012,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "ENKAI",
+      "side": "BUY",
+      "quantity": "3",
+      "price": 86.84339999999999,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "EREGL",
+      "side": "BUY",
+      "quantity": "7",
+      "price": 38.599289999999996,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "EUPWR",
+      "side": "BUY",
+      "quantity": "3",
+      "price": 73.88692499999999,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "FROTO",
+      "side": "BUY",
+      "quantity": "3",
+      "price": 79.689825,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "GARAN",
+      "side": "BUY",
+      "quantity": "2",
+      "price": 130.8654,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "KCHOL",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 219.9099,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "KRDMD",
+      "side": "BUY",
+      "quantity": "6",
+      "price": 44.90244,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "PETKM",
+      "side": "BUY",
+      "quantity": "12",
+      "price": 22.97148,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "SISE",
+      "side": "BUY",
+      "quantity": "6",
+      "price": 43.00149,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "TAVHL",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 262.131,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "TCELL",
+      "side": "BUY",
+      "quantity": "2",
+      "price": 100.15005,
+      "fee_cents": 106,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:38:52.358897+00:00"
+    },
+    {
+      "book": "shadow_reference",
+      "symbol": "KCHOL",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 207.3036,
+      "fee_cents": 106,
+      "decision_key": "decision:ed4c2e72c324a0d7a07939cd095ff946afb258e36789a0a4fcae60065997e481",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "shadow_candidate",
+      "symbol": "KCHOL",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 207.3036,
+      "fee_cents": 106,
+      "decision_key": "decision:ed4c2e72c324a0d7a07939cd095ff946afb258e36789a0a4fcae60065997e481",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "strategy",
+      "symbol": "KCHOL",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 207.3036,
+      "fee_cents": 106,
+      "decision_key": "decision:ed4c2e72c324a0d7a07939cd095ff946afb258e36789a0a4fcae60065997e481",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "AKBNK",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 65.282625,
+      "fee_cents": 69,
+      "decision_key": "benchmark:pocket:AKBNK:184",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "EKGYO",
+      "side": "BUY",
+      "quantity": "5",
+      "price": 18.279135,
+      "fee_cents": 96,
+      "decision_key": "benchmark:pocket:EKGYO:185",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "ENKAI",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 82.54124999999999,
+      "fee_cents": 87,
+      "decision_key": "benchmark:pocket:ENKAI:186",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "EREGL",
+      "side": "BUY",
+      "quantity": "2",
+      "price": 35.49773999999999,
+      "fee_cents": 75,
+      "decision_key": "benchmark:pocket:EREGL:187",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "EUPWR",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 62.981474999999996,
+      "fee_cents": 66,
+      "decision_key": "benchmark:pocket:EUPWR:188",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "FROTO",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 74.987475,
+      "fee_cents": 79,
+      "decision_key": "benchmark:pocket:FROTO:189",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "KRDMD",
+      "side": "BUY",
+      "quantity": "2",
+      "price": 41.0205,
+      "fee_cents": 86,
+      "decision_key": "benchmark:pocket:KRDMD:190",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "PETKM",
+      "side": "BUY",
+      "quantity": "4",
+      "price": 20.750369999999997,
+      "fee_cents": 87,
+      "decision_key": "benchmark:pocket:PETKM:191",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "SISE",
+      "side": "BUY",
+      "quantity": "2",
+      "price": 38.779379999999996,
+      "fee_cents": 82,
+      "decision_key": "benchmark:pocket:SISE:192",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    },
+    {
+      "book": "benchmark",
+      "symbol": "TCELL",
+      "side": "BUY",
+      "quantity": "1",
+      "price": 95.997975,
+      "fee_cents": 101,
+      "decision_key": "benchmark:pocket:TCELL:193",
+      "at": "2026-09-16T12:37:59.405473+00:00"
+    }
+  ],
+  "last_notification": {
+    "at": "2026-09-22T12:31:29.691189+00:00",
+    "text": "BIST · SON KOŞU TAMAMLANAMADI\nYeni karar üretilemedi.\nBanka fiyat kaynağı alınamadı: ReadTimeout\nSon başarılı kayıt: 2026-09-22T12:30\n"
+  },
+  "latest_notification_matches_current_state": false,
+  "learning": {
+    "roundtrips": 0,
+    "live_gate_passed": false,
+    "scorecard": {
+      "correction_pct": 0.0,
+      "independent_periods": 0,
+      "mean_error_pct": null,
+      "missed_upside_count": 0,
+      "note": "Hata tahmin eksi gerçekleşen fiyat değişimidir. Kaçan yükseliş, net işlem kârı değildir.",
+      "recent": [],
+      "resolved_forecasts": 0
+    },
+    "evidence": {
+      "approved": false,
+      "lower_95_pct": null,
+      "mean_excess_pct": null,
+      "method": "Örtüşmeyen dönemlerde eşleştirilmiş fark; yaklaşık t güven aralığı.",
+      "minimum_periods": 24,
+      "periods": 0,
+      "series": [],
+      "status": "bağımsız sanal kanıt yetersiz",
+      "upper_95_pct": null
+    }
+  },
+  "models": [
+    {
+      "id": "0cc9fcf1be85f872",
+      "asof": "2026-09-17",
+      "training_dates": 2716,
+      "training_rows": 183864,
+      "approved": false,
+      "periods": 111,
+      "lower_95_pct": -0.020924715269836858
+    },
+    {
+      "id": "42c52dfa88470be6",
+      "asof": "2026-09-21",
+      "training_dates": 2718,
+      "training_rows": 184002,
+      "approved": false,
+      "periods": 111,
+      "lower_95_pct": -0.020924715269836858
+    },
+    {
+      "id": "a48632cc3c96d350",
+      "asof": "2026-09-15",
+      "training_dates": 2714,
+      "training_rows": 183725,
+      "approved": false,
+      "periods": 111,
+      "lower_95_pct": -0.021009805271172022
+    },
+    {
+      "id": "aa9a0eda3ad15a53",
+      "asof": "2026-09-16",
+      "training_dates": 2715,
+      "training_rows": 183794,
+      "approved": false,
+      "periods": 111,
+      "lower_95_pct": -0.020924715269836858
+    },
+    {
+      "id": "bc48d7386d71a966",
+      "asof": "2026-09-18",
+      "training_dates": 2717,
+      "training_rows": 183933,
+      "approved": false,
+      "periods": 111,
+      "lower_95_pct": -0.020924715269836858
+    },
+    {
+      "id": "dabc060a06cd6741",
+      "asof": "2026-09-14",
+      "training_dates": 2713,
+      "training_rows": 183656,
+      "approved": false,
+      "periods": 111,
+      "lower_95_pct": -0.021009805271172022
+    }
+  ],
+  "capsules": {
+    "hash_verified": 72,
+    "archived_code_reproduced": 72,
+    "runtimes": [
+      {
+        "PyYAML": "6.0.3",
+        "numpy": "2.5.1",
+        "pandas": "2.3.3",
+        "requests": "2.34.2"
+      }
+    ]
+  },
+  "sql_sha256": "b88a2321cfa9139e1b0df5850c97a522cd12a1bc5b44d9c8c5183783bd802648",
+  "history": {
+    "rows": 199781,
+    "last_date": "2026-09-21",
+    "live_symbols": [
+      "AKBNK",
+      "ASELS",
+      "ASTOR",
+      "BIMAS",
+      "EKGYO",
+      "ENKAI",
+      "EREGL",
+      "EUPWR",
+      "FROTO",
+      "GARAN",
+      "KCHOL",
+      "KRDMD",
+      "PETKM",
+      "SISE",
+      "TAVHL",
+      "TCELL",
+      "THYAO",
+      "TUPRS"
+    ],
+    "latest_by_live_symbol": {
+      "AKBNK": "2026-09-21",
+      "ASELS": "2026-09-21",
+      "ASTOR": "2026-09-21",
+      "BIMAS": "2026-09-21",
+      "EKGYO": "2026-09-21",
+      "ENKAI": "2026-09-21",
+      "EREGL": "2026-09-21",
+      "EUPWR": "2026-09-21",
+      "FROTO": "2026-09-21",
+      "GARAN": "2026-09-21",
+      "KCHOL": "2026-09-21",
+      "KRDMD": "2026-09-21",
+      "PETKM": "2026-09-21",
+      "SISE": "2026-09-21",
+      "TAVHL": "2026-09-21",
+      "TCELL": "2026-09-21",
+      "THYAO": "2026-09-21",
+      "TUPRS": "2026-09-21"
+    }
+  },
+  "fix_validation": {
+    "current_engine_capsules": 72,
+    "current_engine_decisions": 1296,
+    "comparison_excludes": [
+      "key",
+      "decision_key",
+      "horizon_sessions"
+    ],
+    "invalid_reference_displays_corrected": [
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "AKBNK",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "ASELS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "ASTOR",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "BIMAS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "EKGYO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "ENKAI",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "EREGL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "EUPWR",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "FROTO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "GARAN",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "KCHOL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "KRDMD",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "PETKM",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "SISE",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "TAVHL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "TCELL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "THYAO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T07:15:58.605878+00:00",
+        "symbol": "TUPRS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "AKBNK",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "ASELS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "ASTOR",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "BIMAS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "EKGYO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "ENKAI",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "EREGL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "EUPWR",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "FROTO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "GARAN",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "KCHOL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "KRDMD",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "PETKM",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "SISE",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "TAVHL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "TCELL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "THYAO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-21T12:31:11.594146+00:00",
+        "symbol": "TUPRS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "AKBNK",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "ASELS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "ASTOR",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "BIMAS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "EKGYO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "ENKAI",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "EREGL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "EUPWR",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "FROTO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "GARAN",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "KCHOL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "KRDMD",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "PETKM",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "SISE",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "TAVHL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "TCELL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "THYAO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T11:01:04.319454+00:00",
+        "symbol": "TUPRS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "AKBNK",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "ASELS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "ASTOR",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "BIMAS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "EKGYO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "ENKAI",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "EREGL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "EUPWR",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "FROTO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "GARAN",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "KCHOL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "KRDMD",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "PETKM",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "SISE",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "TAVHL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "TCELL",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "THYAO",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      },
+      {
+        "at": "2026-09-22T12:30:58.295205+00:00",
+        "symbol": "TUPRS",
+        "fields": [
+          "remaining_forecast_pct"
+        ]
+      }
+    ],
+    "full_cycle_runs": 2,
+    "all_four_accounts_unchanged": true,
+    "retrained_model_parameters_and_evaluation_match": true,
+    "model_comparison_absolute_tolerance": 1e-10,
+    "model_maximum_absolute_difference": 1.7891244041834398e-13,
+    "analysis_issues_visible": {},
+    "backup_restore_all_accounts_match": true,
+    "backup_files": 118
+  },
+  "source_repository": "Mertsaglm/bist-analiz",
+  "source_commit": "253501683a340c35099096fda0f1ed5a94e3ab6e"
+}

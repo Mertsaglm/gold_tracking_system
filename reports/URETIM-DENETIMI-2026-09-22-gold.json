@@ -1,0 +1,465 @@
+{
+  "market": "gold",
+  "through": "2026-09-22T14:45:58.250043+00:00",
+  "snapshot_at": "2026-09-22T14:31:13.215394+00:00",
+  "analysis_date": "2026-09-18",
+  "ledger_sha256": "fcc488174ccdfc8cf2a45cc77f2bef7f4416eb032fdccd912ef43d5de90ecb77",
+  "ledger_hash": "f0794f21ea76963d407988a7ebd3cb00febe55da88e925e29b612c3aaaee3807",
+  "events": 483,
+  "kinds": {
+    "account_opened": 1,
+    "contribution": 2,
+    "model_review": 7,
+    "quote_snapshot": 75,
+    "forecast": 5,
+    "decision": 75,
+    "fill": 1,
+    "benchmark_allocation": 1,
+    "valuation": 75,
+    "notification": 12,
+    "universe_snapshot": 6,
+    "cost_policy": 1,
+    "shadow_forecast": 5,
+    "account_checkpoint": 2,
+    "shadow_books_opened": 1,
+    "shadow_valuation": 71,
+    "decision_capsule": 71,
+    "benchmark_policy_started": 1,
+    "session_check": 70,
+    "weekly_notification": 1
+  },
+  "accounts": {
+    "strategy": {
+      "cash_cents": 500000,
+      "contributed_cents": 500000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "positions": {}
+    },
+    "benchmark": {
+      "cash_cents": 4968,
+      "contributed_cents": 500000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "positions": {
+        "GRAM": {
+          "quantity": "0.73",
+          "cost_cents": 495032
+        }
+      }
+    },
+    "shadow_reference": {
+      "cash_cents": 500000,
+      "contributed_cents": 500000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "positions": {}
+    },
+    "shadow_candidate": {
+      "cash_cents": 500000,
+      "contributed_cents": 500000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "positions": {}
+    }
+  },
+  "snapshot_accounts_match": true,
+  "daily_cycles": [
+    {
+      "date": "2026-09-16",
+      "count": 1,
+      "first": "2026-09-16T12:36:42.251827+00:00",
+      "last": "2026-09-16T12:36:42.251827+00:00",
+      "max_gap_minutes": 0,
+      "full_quote_cycles": 1
+    },
+    {
+      "date": "2026-09-17",
+      "count": 1,
+      "first": "2026-09-17T12:36:31.406368+00:00",
+      "last": "2026-09-17T12:36:31.406368+00:00",
+      "max_gap_minutes": 0,
+      "full_quote_cycles": 1
+    },
+    {
+      "date": "2026-09-18",
+      "count": 1,
+      "first": "2026-09-18T12:14:30.504518+00:00",
+      "last": "2026-09-18T12:14:30.504518+00:00",
+      "max_gap_minutes": 0,
+      "full_quote_cycles": 1
+    },
+    {
+      "date": "2026-09-21",
+      "count": 30,
+      "first": "2026-09-21T07:15:54.121125+00:00",
+      "last": "2026-09-21T14:31:07.639879+00:00",
+      "max_gap_minutes": 15.18,
+      "full_quote_cycles": 30
+    },
+    {
+      "date": "2026-09-22",
+      "count": 30,
+      "first": "2026-09-22T07:16:00.933249+00:00",
+      "last": "2026-09-22T14:31:13.215394+00:00",
+      "max_gap_minutes": 15.24,
+      "full_quote_cycles": 30
+    }
+  ],
+  "decisions": {
+    "reward_risk": 54,
+    "data_block": 10,
+    "no_edge": 11
+  },
+  "fills": [
+    {
+      "book": "benchmark",
+      "symbol": "GRAM",
+      "side": "BUY",
+      "quantity": "0.73",
+      "price": 6767.72,
+      "fee_cents": 988,
+      "decision_key": "benchmark:allocation:benchmark:initial",
+      "at": "2026-09-15T11:39:02.124908+00:00"
+    }
+  ],
+  "last_notification": {
+    "at": "2026-09-22T07:16:11.152160+00:00",
+    "text": "ALTIN · SANAL PORTFÖY\nAnaliz: 2026-09-18\nBEKLE · GRAM\n• GRAM: Olası kazanç riske göre düşük: 1 TL risk için 0.51 TL beklenti; en az 1.50 TL gerekiyor.\nYeni sanal işlem yok. 1 varlık değerlendirildi.\nPortföy 5,000.00 TL · K/Z +0.00 TL · nakit 5,000.00 TL"
+  },
+  "latest_notification_matches_current_state": true,
+  "learning": {
+    "roundtrips": 0,
+    "live_gate_passed": false,
+    "scorecard": {
+      "correction_pct": 0.0,
+      "independent_periods": 0,
+      "mean_error_pct": null,
+      "missed_upside_count": 0,
+      "note": "Hata tahmin eksi gerçekleşen fiyat değişimidir. Kaçan yükseliş, net işlem kârı değildir.",
+      "recent": [],
+      "resolved_forecasts": 0
+    },
+    "evidence": {
+      "approved": false,
+      "lower_95_pct": null,
+      "mean_excess_pct": null,
+      "method": "Örtüşmeyen dönemlerde eşleştirilmiş fark; yaklaşık t güven aralığı.",
+      "minimum_periods": 24,
+      "periods": 0,
+      "series": [],
+      "status": "bağımsız sanal kanıt yetersiz",
+      "upper_95_pct": null
+    }
+  },
+  "models": [
+    {
+      "id": "1ea2ff9ba5eb2cfe",
+      "asof": "2026-09-18",
+      "training_dates": 2381,
+      "training_rows": 2381,
+      "approved": false,
+      "periods": 94,
+      "lower_95_pct": -2.166822926368057
+    },
+    {
+      "id": "4490cdec1e5bcdbd",
+      "asof": "2026-09-16",
+      "training_dates": 2379,
+      "training_rows": 2379,
+      "approved": false,
+      "periods": 94,
+      "lower_95_pct": -2.166822926368057
+    },
+    {
+      "id": "618cbfcf3c864310",
+      "asof": "2026-09-17",
+      "training_dates": 2380,
+      "training_rows": 2380,
+      "approved": false,
+      "periods": 94,
+      "lower_95_pct": -2.166822926368057
+    },
+    {
+      "id": "926dae738ef5c1ae",
+      "asof": "2026-09-11",
+      "training_dates": 2376,
+      "training_rows": 2376,
+      "approved": false,
+      "periods": 94,
+      "lower_95_pct": -2.1463044769156583
+    },
+    {
+      "id": "9f54661fe729a79d",
+      "asof": "2026-09-14",
+      "training_dates": 2377,
+      "training_rows": 2377,
+      "approved": false,
+      "periods": 94,
+      "lower_95_pct": -2.166822926368057
+    },
+    {
+      "id": "afe43def1b246edd",
+      "asof": "2026-09-14",
+      "training_dates": 2377,
+      "training_rows": 2377,
+      "approved": false,
+      "periods": 94,
+      "lower_95_pct": -2.166822926368057
+    },
+    {
+      "id": "d87a15ccc37b59ce",
+      "asof": "2026-09-15",
+      "training_dates": 2378,
+      "training_rows": 2378,
+      "approved": false,
+      "periods": 94,
+      "lower_95_pct": -2.166822926368057
+    }
+  ],
+  "capsules": {
+    "hash_verified": 71,
+    "archived_code_reproduced": 71,
+    "runtimes": [
+      {
+        "PyYAML": "6.0.3",
+        "numpy": "2.5.1",
+        "pandas": "2.3.3",
+        "requests": "2.34.2"
+      }
+    ]
+  },
+  "sql_sha256": "77ad95592524ae6bd695cdfa264be51f07bb785b2be77ac734c497c88ef1568b",
+  "history": {
+    "rows": 2600,
+    "last_date": "2026-09-18",
+    "live_symbols": [
+      "GRAM"
+    ],
+    "latest_by_live_symbol": {
+      "GRAM": "2026-09-18"
+    }
+  },
+  "legacy_reconciliation": {
+    "rows": 398,
+    "valid_matches": 95,
+    "invalid_completed_flags": 303,
+    "after_revision": [
+      {
+        "ts": "2026-09-18T22:29:56.135812+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T00:34:06.938904+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T05:07:39.707659+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T09:32:35.328238+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T13:26:51.933034+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T16:43:32.143881+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T18:58:21.809396+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T21:24:11.438410+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T23:22:30.624288+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T01:26:36.613713+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T06:49:00.122286+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T12:05:32.052397+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T16:08:07.263919+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T18:48:53.005635+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.5024030542601476,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T21:15:31.352634+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.4872230390585486,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": true,
+        "valid": false
+      }
+    ]
+  },
+  "fix_validation": {
+    "current_engine_capsules": 71,
+    "current_engine_decisions": 71,
+    "comparison_excludes": [
+      "key",
+      "decision_key",
+      "horizon_sessions"
+    ],
+    "invalid_reference_displays_corrected": [
+      {
+        "at": "2026-09-19T09:08:33.647354+00:00",
+        "symbol": "GRAM",
+        "fields": [
+          "remaining_forecast_pct",
+          "stop",
+          "target"
+        ]
+      },
+      {
+        "at": "2026-09-19T10:36:23.670514+00:00",
+        "symbol": "GRAM",
+        "fields": [
+          "remaining_forecast_pct",
+          "stop",
+          "target"
+        ]
+      },
+      {
+        "at": "2026-09-21T09:45:56.686432+00:00",
+        "symbol": "GRAM",
+        "fields": [
+          "remaining_forecast_pct",
+          "stop",
+          "target"
+        ]
+      }
+    ],
+    "full_cycle_runs": 2,
+    "all_four_accounts_unchanged": true,
+    "retrained_model_parameters_and_evaluation_match": true,
+    "model_comparison_absolute_tolerance": 1e-10,
+    "model_maximum_absolute_difference": 1.0880185641326534e-14,
+    "analysis_issues_visible": {
+      "GRAM": "Beklenen kapanış gerisinde: 2026-09-18"
+    },
+    "backup_restore_all_accounts_match": true,
+    "backup_files": 116
+  },
+  "legacy_repair_drill": {
+    "flags_corrected": 303,
+    "pending": 303,
+    "valid_after": 95,
+    "second_run_changes": 0,
+    "real_database_modified": false
+  },
+  "legacy_weekend_report_replay": {
+    "at": "2026-09-21T20:07:00+00:00",
+    "wrong_previous_reference": {
+      "ts_utc": "2026-07-29T07:20:28.862906+00:00",
+      "prim_pct": -0.42743059700470765
+    },
+    "corrected_text": "## Hafta Sonu Beklentisi vs Gerçekleşme\n\n- 2026-09-21 açılışı için ortalama beklenti: **%-0.48** (15/15 nokta)\n- _Gerçekleşme bekleniyor: 2026-09-21 için 15 kaydın geçerli primi yok._\n"
+  },
+  "source_repository": "Mertsaglm/gold_tracking_system",
+  "source_commit": "c12ecd43e836d02b1a8c8a982074a10e403558e7"
+}

@@ -11,6 +11,37 @@
 
 ---
 
+## L-026 — Üretici doğru olsa da tüketici güncel olmayabilir
+
+Günlük iş yarım fiyat barını doğru dışlayabilir; ertesi sabah karar verici
+önceki tam barı çekmiyorsa eski veriyle işlem açabilir. Tüketici beklediği
+tam tarihi zorlamalı, geçici kopyada tamamlamalı ve hata halinde eski arşivi
+bozmadan yeni işlemi kapatmalıdır. Açık koruyucu çıkışlar sürmelidir.
+
+---
+
+## L-025 — Son durumun doğruluğunu bağımsız veriyle sınama
+
+Eski makbuz iyileşmenin teslimi değildir. Son fiyat başka günün gerçekleşmesi değildir.
+Beklenen evreni gözlenen satırlardan türetme; öğrenmenin vadesini sonradan değiştirme.
+Eksik veri başarısızlığı görünür kalsın. Korumayı eski hatayı geri koyarak da sına.
+
+---
+
+## L-024 — Zamanlayıcı ayarı çalışma kanıtı değildir
+
+Nominal sıklık yerine gerçek başlangıç, bitiş ve arşiv teslim aralığını ölç.
+Kurulu olmayan runner dosyası çalışan otomasyon diye belgelenemez.
+
+---
+
+## L-023 — Koruyucu çıkışın kapısını ayrı sına
+
+Eski analiz yeni alımı engelleyebilir; güvenilir güncel fiyatla mevcut stop
+çalışmaya devam etmelidir. Testi eski hatayı geri koyarak da sına.
+
+---
+
 ## L-022 — Karar, muhasebe ve teslimi uçtan uca sına
 
 Bir kararın doğru olması, miktarın bütçeye sığdığını veya kaydın kullanıcıya teslim

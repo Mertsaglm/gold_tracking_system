@@ -197,7 +197,7 @@ def test_deposit_is_not_investment_profit(tmp_path):
 
 
 def test_no_imaginary_reward_target_to_pass_gate(advisor_cfg):
-    row = {"symbol": "AAA", "date": "2026-09-14", "quality_ok": True, "trend50": 5, "rsi14": 55, "volatility20": 2}
+    row = {"symbol": "AAA", "date": "2026-09-14", "close": 100, "quality_ok": True, "trend50": 5, "rsi14": 55, "volatility20": 2}
     d = policy.decision(row, 2.5, {"ready": True, "approved": True}, advisor_cfg, quote(), None, None, NOW)
     assert d["action"] == "BEKLE" and d["code"] == "reward_risk"
     assert d["target"] < 103

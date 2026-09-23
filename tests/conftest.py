@@ -91,7 +91,7 @@ class AgKapaliHatasi(RuntimeError):
     pass
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def ag_kapali(monkeypatch):
     """Bağlantı kurmayı kapatır: bu fixture'ı alan test ağa ÇIKAMAZ.
 
@@ -110,6 +110,23 @@ def ag_kapali(monkeypatch):
     monkeypatch.setattr(socket, "create_connection", _yasak)
     monkeypatch.setattr(socket, "getaddrinfo", _yasak)
     return _yasak
+
+
+@pytest.fixture(autouse=True)
+def production_db_and_logs_are_read_only(monkeypatch, tmp_path):
+    """2026-09-22: suite çıktıları gerçek history.log dosyasına sızıyordu."""
+    import logging
+    from src import db, logging_setup
+    original = db.connect
+    protected = (KOK / CFG_GERCEK['paths']['db']).resolve()
+    def connect(cfg, *args, **kwargs):
+        target = Path(util.abspath(cfg['paths']['db'])).resolve()
+        if target == protected:
+            raise RuntimeError('Test gerçek veritabanına yazamaz; izole_kok kullan.')
+        return original(cfg, *args, **kwargs)
+    monkeypatch.setattr(db, 'connect', connect)
+    # pytest log yakalama mekanizması yeterlidir; üretim FileHandler'ı açılmaz.
+    monkeypatch.setattr(logging_setup, 'setup', lambda name, *a, **k: logging.getLogger(name))
 
 
 # Üretimin gerçek anı: Perşembe 15:35 UTC = 18:35 TR (daily.yml cron'u).

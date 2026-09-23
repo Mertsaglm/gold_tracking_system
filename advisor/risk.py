@@ -8,7 +8,7 @@ def summary(account, quotes, cfg, now):
     rows, missing = [], []
     for symbol, p in account['positions'].items():
         q = quotes.get(symbol)
-        if price_problem(q, cfg, now):
+        if cfg.get('blocked_symbols', {}).get(symbol) or price_problem(q, cfg, now):
             missing.append(symbol)
             continue
         price, qty = execution_price(q, cfg, 'SELL'), float(p['quantity'])

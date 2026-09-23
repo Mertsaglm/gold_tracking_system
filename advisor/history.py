@@ -54,6 +54,9 @@ def load(con, market, asof):
     if frame.empty:
         raise ValueError("Analiz edilebilecek tarihsel fiyat bulunamadı.")
     frame = frame.drop_duplicates(["symbol", "date"]).sort_values(["symbol", "date"])
+    # Payda fiyat tablosundan gelirse verisi kaybolan hisse sağlık oranından da silinir.
+    frame.attrs['live_symbols'] = ([r[0] for r in con.execute('SELECT ticker FROM universe WHERE in_live=1 ORDER BY ticker')]
+                                   if market == 'bist' else ['GRAM'])
     return frame
 
 

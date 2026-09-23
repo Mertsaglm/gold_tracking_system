@@ -46,7 +46,7 @@ def value_account(account, quotes, cfg, now=None):
     last_known = value
     for symbol, p in account["positions"].items():
         q = quotes.get(symbol)
-        problem = price_problem(q, cfg, now)
+        problem = cfg.get('blocked_symbols', {}).get(symbol) or price_problem(q, cfg, now)
         mark = execution_price(q, cfg, "SELL") if q and all(isinstance(q.get(k), (int, float)) and math.isfinite(q[k]) and q[k] > 0 for k in ('bid', 'ask')) and q['ask'] >= q['bid'] else None
         net = cents(float(p["quantity"]) * mark) - fee(cfg, float(p["quantity"]) * mark, "SELL") if mark else None
         if net is None or problem:
@@ -79,8 +79,15 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
     analysis_block = None
     if age > cfg["max_analysis_age_days"]:
         analysis_block = "Analiz verisi eski; yeni kapanış gerekli."
+    if age < 0:
+        analysis_block = 'Analiz verisi geleceğe ait.'
+    expected = cfg.get('expected_analysis_date')
+    if expected and row['date'] < expected:
+        analysis_block = 'Beklenen son kapanış eksik: ' + expected + '.'
     if not bool(row.get("quality_ok", False)):
         analysis_block = "Fiyat geçmişi kalite kontrolünü geçmedi."
+    if model.get('horizon_sessions', 20) != cfg['horizon_sessions']:
+        analysis_block = 'Model vadesi mevcut politika ile eşleşmiyor.'
     from .marketdata import price_problem
     blocked = blocked or price_problem(quote, cfg, now)
     if quote and not all(isinstance(quote.get(k), (int, float)) and not isinstance(quote[k], bool)
@@ -92,10 +99,20 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
     sell = execution_price(quote, cfg, "SELL") if quote else None
     # Kapanıştan bu yana gerçekleşen yükselişi ikinci kez gelecek kazanç sayma.
     reference = quote.get('reference_price') if quote and cfg['market'] == 'gold' else quote.get('bid') if quote else None
-    remaining = ((row.get('close', reference) * (1 + forecast / 100) / reference - 1) * 100
-                 if forecast is not None and reference else forecast)
-    if cfg['market'] == 'gold' and quote and not quote.get('reference_price') and not position:
-        blocked = blocked or 'Gün içi ons/kur referansı doğrulanamadı; yeni alım bekliyor.'
+    reference_valid = isinstance(reference, (int, float)) and not isinstance(reference, bool) and math.isfinite(reference) and reference > 0
+    if not reference_valid:
+        reference = None
+        if cfg['market'] == 'gold' and not position:
+            blocked = blocked or 'Gün içi ons/kur referansı doğrulanamadı; yeni alım bekliyor.'
+    if forecast is not None and (not isinstance(forecast, (int, float)) or isinstance(forecast, bool) or not math.isfinite(forecast)):
+        forecast = None
+    close = row.get('close')
+    if not isinstance(close, (int, float)) or isinstance(close, bool) or not math.isfinite(close) or close <= 0:
+        close = None
+    remaining = ((close * (1 + forecast / 100) / reference - 1) * 100
+                 if forecast is not None and reference and close else None)
+    if remaining is None and not position:
+        blocked = blocked or ('Analiz kapanış fiyatı doğrulanamadı.' if close is None else None)
     if blocked:
         action, code = "VERİ BEKLENİYOR", "data_block"
         reasons.append(blocked)
@@ -136,7 +153,7 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
                 reasons.append("Kısa vadeli yükseliş hızlandı; fiyatı kovalamıyorum.")
     if model.get("ready") and not model.get("approved"):
         reasons.append("Geçmiş testte üstünlük doğrulanmadı; sanal deneme tutarı sınırlı.")
-    if buy:
+    if buy and remaining is not None:
         vol = float(row.get('volatility20') or 0)
         volatility = max(vol / 100, .005) if math.isfinite(vol) else .005
         stop_distance = max(buy * volatility * 2.5, buy * 0.02)
@@ -157,6 +174,7 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
     from .calendar import add_sessions
     return {"symbol": symbol, "asof": row["date"], "action": action, "code": code,
             "reasons": reasons[:3], "forecast_pct": forecast, 'remaining_forecast_pct': remaining, "model_id": model.get("id"),
+            'horizon_sessions': cfg['horizon_sessions'],
             "stop": stop, "target": target, "price": buy,
             "sector": row.get("sector"), "confidence": "sınırlı" if not model.get("approved") else "orta",
             "deadline": position.get('deadline') if position else add_sessions(today, cfg['horizon_sessions'], cfg) if cfg["market"] == "bist" else None}

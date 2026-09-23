@@ -131,6 +131,7 @@ def train(frame, cfg, asof):
                 and evaluation.get("mae_pct", math.inf) < evaluation.get("baseline_mae_pct", 0))
     model = fit(valid, policy["ridge_penalty"])
     model.update(ready=True, asof=asof, training_rows=len(valid), training_dates=len(dates),
+                 horizon_sessions=cfg['horizon_sessions'],
                  label_end=str(valid.label_end.max()), features=FEATURES,
                  evaluation=evaluation, folds=folds, approved=promoted,
                  status="doğrulama geçti" if promoted else "sınırlı sanal deneme",
@@ -140,5 +141,5 @@ def train(frame, cfg, asof):
                               "Sabit güncel hisse evreni geçmişte kapanan şirketleri içermeyebilir."] if cfg["market"] == "bist" else
                               ["Geçmiş gram fiyatı vadeli ons×kur göstergesidir; İş Bankası işlem fiyatı değildir.",
                                "Tarihsel banka makası yok; sabit maliyetle stres testi yapıldı."])
-    model["id"] = digest({k: model[k] for k in ("asof", "weights", "mean", "scale", "intercept", "training_rows", 'evaluation')})[:16]
+    model["id"] = digest({k: model[k] for k in ("asof", "weights", "mean", "scale", "intercept", "training_rows", 'evaluation', 'horizon_sessions')})[:16]
     return model, f

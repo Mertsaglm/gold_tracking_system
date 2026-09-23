@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.mertsaglm.advisor-v2.gold</string>
+  <key>ProgramArguments</key><array><string>/bin/zsh</string><string>/Users/mert/Desktop/mert/projeler/gold_tracking_system/ops/advisor_local_runner.sh</string></array>
+  <key>WorkingDirectory</key><string>/Users/mert/Desktop/mert/projeler/gold_tracking_system</string>
+  <key>RunAtLoad</key><true/>
+  <key>StartInterval</key><integer>600</integer>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>/tmp/mertsaglm-advisor-v2-gold.log</string>
+  <key>StandardErrorPath</key><string>/tmp/mertsaglm-advisor-v2-gold.log</string>
+</dict></plist>

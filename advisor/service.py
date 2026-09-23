@@ -16,6 +16,8 @@ IST = ZoneInfo("Europe/Istanbul")
 
 def configuration(root):
     cfg = json.loads((root / "advisor/config.json").read_text(encoding="utf-8"))
+    if type(cfg['horizon_sessions']) is not int or cfg['horizon_sessions'] < 1:
+        raise ValueError('Tahmin vadesi pozitif tam sayı olmalı.')
     if cfg["market"] not in {"bist", "gold"} or cfg["initial_try"] <= 0 or cfg["monthly_try"] < 0:
         raise ValueError("Geçersiz portföy yapılandırması.")
     if not 0 < cfg["risk_per_trade_pct"] <= 2 or not 0 < cfg["max_position_pct"] <= 100:
@@ -154,13 +156,19 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                            approved=model['approved'], evaluation=model['evaluation'], limitations=model['limitations'])
             reference_model = shadow.reference(state, previous_model, model)
             current = features[features.in_live == 1].groupby("symbol").tail(1).copy()
-            symbols = sorted(current.symbol.unique().tolist())
+            symbols = sorted(frame.attrs.get('live_symbols', current.symbol.unique().tolist()))
             live_symbols = list(symbols)
             cfg['allowed_entry_symbols'] = live_symbols
             # Önceden alınmış ama izleme evreninden çıkarılmış varlık da izlenmeye devam eder.
             owned = set().union(*(set(ledger.account(book)['positions']) for book in ('strategy','benchmark','shadow_reference','shadow_candidate')))
             current = features[features.symbol.isin(set(symbols) | owned)].groupby('symbol').tail(1).copy()
             symbols = sorted(set(symbols) | owned)
+            missing = set(symbols) - set(current.symbol)
+            if missing:
+                # Ana ve gölge hesaptaki stoplar, tarihsel seri silindiğinde de görünür kalır.
+                placeholders = pd.DataFrame([{'symbol': s, 'date': data_date, 'close': float('nan'),
+                                              'quality_ok': False, 'in_live': int(s in live_symbols)} for s in sorted(missing)])
+                current = pd.concat([current, placeholders], ignore_index=True)
             legacy = history.legacy_summary(con, cfg["market"])
             agenda = news.collect(con, cfg["market"], now, fetch_external=not offline)
             # Kurumsal işlem bilgisi yoksa risk, sayıya eklenen hayali temettüyle örtülmez.
@@ -196,7 +204,21 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
             valid = current.dropna(subset=learning.FEATURES)
             forecasts = dict(zip(valid.symbol, learning.predict(model, valid).tolist()))
         raw_forecasts = dict(forecasts)
-        shadow.record(ledger, reference_model, current, raw_forecasts, now)
+        from .calendar import trading_day
+        expected_close = now.astimezone(IST).date() - timedelta(days=1)
+        while not trading_day(expected_close, cfg):
+            expected_close -= timedelta(days=1)
+        # Önceki kapanış gelmediyse eski model yeni sanal alım açamaz.
+        # Mevcut pozisyonun stop/hedef izlemesi policy içinde açık kalır.
+        cfg['expected_analysis_date'] = expected_close.isoformat()
+        # Gecikmiş analizden bugün yeni tahmin kaydı çıkarma; sonuç karnesi
+        # kapanış anında üretilmemiş bir tahminle geriye dönük kirlenmesin.
+        fresh_current = current[(current['date'] == cfg['expected_analysis_date']) &
+                                (current['quality_ok'] == True)]
+        fresh_symbols = set(fresh_current['symbol'])
+        raw_forecasts = {s: value for s, value in raw_forecasts.items() if s in fresh_symbols}
+        forecasts = {s: value for s, value in forecasts.items() if s in fresh_symbols}
+        shadow.record(ledger, reference_model, fresh_current, raw_forecasts, now, cfg['horizon_sessions'])
         shadow.resolve(ledger, features, now)
         forecasts = {s: f - scorecard['correction_pct'] for s, f in forecasts.items()}
         current_view = policy.value_account(account, quotes, cfg, now)
@@ -210,10 +232,9 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
         if imminent:
             cfg['risk_multiplier'] *= .5
         records = capsule.clean(current.to_dict('records'))
-        present = {r['symbol'] for r in records}
-        for symbol in set(account['positions']) - present:
-            records.append({'symbol': symbol, 'date': data_date, 'close': quotes.get(symbol, {}).get('bid'),
-                            'quality_ok': False, 'trend50': 0, 'rsi14': 50, 'volatility20': 0})
+        analysis_issues = {r['symbol']: ('Fiyat geçmişi eksik/geçersiz.' if not r.get('quality_ok') else
+                                      'Beklenen kapanış gerisinde: ' + r['date'])
+                           for r in records if not r.get('quality_ok') or r['date'] < expected_close.isoformat()}
         event_note = 'Fed kararı yaklaşıyor; yeni sanal işlem tutarı yarıya indirildi.' if imminent else None
         shadow_books = shadow.portfolios(ledger, reference_model, current, forecasts, model, cfg, quotes, now, event_note)
         context = capsule.inputs(ledger, records, forecasts, model, cfg, quotes, now, event_note)
@@ -251,6 +272,8 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                    expected_quotes=len(symbols),
                    valid_quotes=sum(marketdata.price_problem(quotes.get(s),cfg,now) is None for s in symbols),
                    decisions=len(decisions),corporate_ok=not blocked_symbols,errors=errors,
+                   analysis_issues=analysis_issues,
+                   data_blocked_symbols=[d['symbol'] for d in decisions if d['action']=='VERİ BEKLENİYOR'],
                    in_execution_window=True)
         snapshot = {"schema_version": 2, "market": cfg["market"], "generated_at": now.isoformat(),
                     "analysis_date": data_date, "mode": "paper", "strategy": strategy, "benchmark": benchmark,
@@ -258,6 +281,7 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                     "feedback": learned, "history": list(daily_values.values())[-500:], "legacy": legacy,
                     "health": {"errors": errors, "quote_coverage": sum(marketdata.price_problem(q, cfg, now) is None for q in quotes.values()),
                                'received_quotes': len(quotes), "expected_quotes": len(symbols), 'corporate_sources': action_health,
+                               'analysis_issues': analysis_issues, 'expected_analysis_date': expected_close.isoformat(),
                                "news_sources_ok": sum(s["ok"] for s in agenda["sources"]), "ledger_hash": ledger.root_hash},
                     'risk': portfolio_risk.summary(ledger.account(), quotes, cfg, now),
                     'weekly': reporting.weekly(ledger, now), 'funnel': reporting.funnel(decisions),

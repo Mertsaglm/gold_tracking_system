@@ -57,18 +57,27 @@ def inspect(root, now):
                 flag('missed_cycle','Beklenen işlem penceresindeki V2 koşusu arşivde yok.')
             elif check['data']['valid_quotes']<check['data']['expected_quotes']:
                 flag('price_coverage','Son işlem penceresinde fiyat kapsamı veya kotasyon zamanı eksik.')
+            local_now = now.astimezone(IST)
+            if trading_day(local_now.date(), cfg) and local_now.date().isoformat() >= cfg['start_date']:
+                start, end = window(local_now.date(), cfg)
+                required = min(local_now, end) - timedelta(minutes=45)
+                if required >= start and (check is None or datetime.fromisoformat(check['at']) < required):
+                    flag('cycle_gap', 'İşlem penceresinde son V2 çevrimi 45 dakikadan eski.')
             if check and not check['data'].get('corporate_ok',True):
                 flag('corporate_uncertain','Kurumsal işlem kaynağı/mutabakatı doğrulanamadı.')
             if check and check['data']['decisions']<check['data']['expected_quotes']:
                 flag('decision_coverage','Bazı varlıklar karar akışına ulaşmadı.')
+            if check and check['data'].get('analysis_issues'):
+                flag('analysis_coverage', 'Eksik veya beklenen kapanışın gerisinde analiz: ' + ', '.join(check['data']['analysis_issues']))
+            if check and check['data'].get('data_blocked_symbols'):
+                flag('decision_data', 'Karar girdisi doğrulanamayan varlıklar: ' + ', '.join(check['data']['data_blocked_symbols']))
         for book in ('strategy', 'benchmark'):
             ledger.account(book)
         if s['health']['ledger_hash'] not in {e['hash'] for e in ledger.events}:
             flag('snapshot_ledger', 'Panel görünümü arşivdeki defterle eşleşmiyor.')
         if cfg['telegram']['enabled']:
-            from .notifications import notification_key
-            key = 'telegram:' + notification_key(s, at)
-            if key not in ledger.keys:
+            from .notifications import delivered
+            if not delivered(ledger, s):
                 flag('notification_missing', 'Son kararın Telegram makbuzu arşivde yok.')
     except (OSError, ValueError, KeyError, TypeError):
         flag('archive_invalid', 'V2 arşivi okunamadı veya bütünlüğü doğrulanamadı.')

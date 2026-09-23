@@ -197,7 +197,7 @@ def _ucuncu_parti() -> dict[str, set[str]]:
             elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
                 adlar = [n.module.split(".")[0]]
             for ad in adlar:
-                if ad not in stdlib and ad != "src":
+                if ad not in stdlib and ad not in {"src", "advisor"}:
                     out.setdefault(ad, set()).add(p.name)
     return out
 

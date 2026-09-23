@@ -108,6 +108,7 @@ function render() {
   if (s && !fresh(s)) alerts.push(`Gösterilen son kayıt ${date(s.generated_at,true)} tarihinden. Güncel karar için yeni koşu gerekli.`);
   if (s && s.health.errors.length) alerts.push(...s.health.errors);
   if (s && s.health.quote_coverage < s.health.expected_quotes) alerts.push('Güncel fiyat kapsamı eksik. Eksik fiyatla yeni sanal işlem yapılmaz.');
+  if (s && Object.keys(s.health.analysis_issues || {}).length) alerts.push('Analiz güncelliği: ' + Object.entries(s.health.analysis_issues).map(([symbol, reason])=>`${symbol}: ${reason}`).join(' · '));
   $('#global-alert').innerHTML=alerts.length?`<div class="notice">${esc(alerts.join(' '))}</div>`:'';
   $('#updated').textContent=s?`Son kayıt ${date(s.generated_at,true)}`:'Bağlantı bekleniyor';
   renderContent();

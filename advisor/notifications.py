@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -13,7 +14,7 @@ def summary(snapshot, url="", max_characters=1000):
     name = "BIST" if snapshot["market"] == "bist" else "ALTIN"
     view = snapshot["strategy"]
     if snapshot.get('health', {}).get('errors'):
-        return (f"{name} · SON KOŞU TAMAMLANAMADI\nYeni karar üretilemedi.\n" + '\n'.join(snapshot['health']['errors']) + f"\nSon başarılı kayıt: {snapshot['generated_at'][:16]}\n" + url)[:max_characters]
+        return (f"{name} · SON KOŞUDA VERİ SORUNU\nYeni işlem için veri doğrulanamadı.\n" + '\n'.join(snapshot['health']['errors']) + f"\nKayıt zamanı: {snapshot['generated_at'][:16]} UTC\n" + url)[:max_characters]
     ds = snapshot["decisions"]
     trades = [d for d in ds if d.get("execution")]
     actionable = [d for d in ds if d["action"] in {"AL", "SAT"}]
@@ -32,6 +33,9 @@ def summary(snapshot, url="", max_characters=1000):
     if snapshot.get('news', {}).get('upcoming'):
         e = snapshot['news']['upcoming'][0]
         lines.append(f"Gündem: {e['date']} · {e['title']}")
+    issues = snapshot.get('health', {}).get('analysis_issues', {})
+    if issues:
+        lines.append('Analiz güncelliği uyarısı: ' + ', '.join(issues))
     equity = view.get("equity_try")
     lines.append((f"Portföy {equity:,.2f} TL · K/Z {view['pnl_try']:+,.2f} TL" if equity is not None else "Portföy değerlemesi eksik.") + f" · nakit {view['cash_try']:,.2f} TL")
     if url:
@@ -40,8 +44,23 @@ def summary(snapshot, url="", max_characters=1000):
 
 
 def notification_key(snapshot, now):
-    return digest({'day': now.date().isoformat(), 'errors': snapshot['health']['errors'],
-                   'decisions': [(d['symbol'], d['action'], d['code'], d.get('execution')) for d in snapshot['decisions']]})
+    state = {'day': now.date().isoformat(), 'errors': snapshot['health']['errors'],
+             'decisions': [(d['symbol'], d['action'], d['code'], d.get('execution')) for d in snapshot['decisions']]}
+    # Kararlar aynı kalırken yeni veri uyarısı da teslim edilmelidir.
+    if snapshot['health'].get('analysis_issues'):
+        state['analysis_issues'] = snapshot['health']['analysis_issues']
+    if snapshot['strategy'].get('valuation_complete') is False:
+        state['valuation_complete'] = False
+    return digest(state)
+
+
+def delivered(ledger, snapshot):
+    """Son GÖNDERİLEN durumla karşılaştır; A→hata→A iyileşmesi kaybolmasın."""
+    key = notification_key(snapshot, datetime.fromisoformat(snapshot['generated_at']))
+    last = next((e for e in reversed(ledger.events) if e['kind'] == 'notification'), None)
+    if last is None:
+        return False
+    return last['data'].get('state_key', last['key'].removeprefix('telegram:')) == key
 
 
 def publish_weekly(cfg, snapshot, ledger, now):
@@ -71,8 +90,11 @@ def publish(root, cfg, snapshot, ledger, now):
     token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chat:
         raise RuntimeError('Telegram bağlantısı için mevcut bot/chat ayarları eksik.')
-    event_key = notification_key(snapshot, now)
-    if "telegram:" + event_key in ledger.keys:
+    at = datetime.fromisoformat(snapshot['generated_at'])
+    if at.tzinfo is None or not -60 <= (now-at).total_seconds() <= cfg['max_quote_age_minutes'] * 60:
+        raise ValueError('Bildirim için görünüm eski veya zamanı geçersiz; güncel cycle gerekli.')
+    event_key = notification_key(snapshot, at)
+    if delivered(ledger, snapshot):
         return False
     text = summary(snapshot, cfg.get("dashboard_url", ""), cfg['telegram']['max_characters'])
     try:
@@ -80,8 +102,16 @@ def publish(root, cfg, snapshot, ledger, now):
     except requests.RequestException:
         raise RuntimeError('Telegram bağlantısı kurulamadı.') from None
     # Hata cevabındaki URL/token log'a taşınmaz.
-    if r.status_code != 200 or not r.json().get("ok"):
+    response = r.json()
+    if r.status_code != 200 or not response.get("ok"):
         raise RuntimeError("Telegram özeti gönderilemedi; sonraki koşuda tekrar denenecek.")
-    ledger.add("notification", "telegram:" + event_key, now.isoformat(), text=text)
+    # Aynı durumun sonraki geri dönüşü ayrı makbuzdur; anlık fiyat değişimi spam üretmez.
+    receipt = digest({'state': event_key, 'snapshot_at': snapshot['generated_at'],
+                      'previous_receipt': next((e['key'] for e in reversed(ledger.events) if e['kind']=='notification'), None)})
+    result = response.get('result', {})
+    ledger.add("notification", "telegram:" + receipt, now.isoformat(), text=text,
+               state_key=event_key, snapshot_at=snapshot['generated_at'],
+               snapshot_ledger_hash=snapshot.get('health', {}).get('ledger_hash'),
+               message_id=result.get('message_id'), telegram_date=result.get('date'))
     ledger.save()
     return True

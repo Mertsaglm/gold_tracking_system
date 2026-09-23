@@ -43,18 +43,16 @@ def test_weekend_expectation_max_one_per_day():
 
 
 # (b) Rapor hafta sonu bölümü: veri yoksa SESSİZ
-def test_weekend_section_silent_when_empty(tmp_path):
-    cfg = {"paths": {"db": str(tmp_path / "t.sqlite"), "db_dump": str(tmp_path / "t.sql")},
-           "timezone_offset_hours": 3}
+def test_weekend_section_silent_when_empty(izole_kok):
+    cfg, _ = izole_kok
     con = db.connect(cfg)
     assert weekend_section(con, cfg) == []       # hafta içi yanlışlıkla görünmez
     con.close()
 
 
 # (b) Rapor hafta sonu bölümü: veri varsa görünür
-def test_weekend_section_shows_with_data(tmp_path):
-    cfg = {"paths": {"db": str(tmp_path / "t.sqlite"), "db_dump": str(tmp_path / "t.sql")},
-           "timezone_offset_hours": 3}
+def test_weekend_section_shows_with_data(izole_kok):
+    cfg, _ = izole_kok
     con = db.connect(cfg)
     ts = util.iso(util.utcnow())
     con.execute("INSERT INTO weekend_expectation(ts_utc,weekend_gram,frozen_theoretical,"

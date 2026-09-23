@@ -15,6 +15,7 @@
 > | Modüllerin ne yaptığı | `README.md` → "Proje yapısı" |
 > | Nerede kaldık / sırada ne var | `ai/STATE.md` |
 > | Günlük kontrol listesi | `İZLEME.md` |
+> | Birikim V2 sanal portföy ve Vercel paneli | `docs/V2-REHBER.md` |
 > | Ne inşa edildi, hangi iddia çürüdü (anlatı) | `Proje Yardımcısı - Gold Tracking System/ai/PROJE-GUNLUGU.md` |
 >
 > Buradaki fiyat/prim/vergi formülleri hâlâ geçerlidir; eskiyen şey kapsamdır,

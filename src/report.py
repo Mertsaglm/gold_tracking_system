@@ -18,28 +18,31 @@ def weekend_section(con, cfg, days: int = 3) -> list:
 
     Veri yoksa boş liste (rapor sessiz kalır — hafta içi yanlışlıkla görünmez).
     """
-    from datetime import timedelta
-    since = util.iso(util.utcnow() - timedelta(days=days))
-    rows = con.execute(
-        "SELECT ts_utc,expectation_pct FROM weekend_expectation "
-        "WHERE ts_utc>=? ORDER BY ts_utc", (since,)
-    ).fetchall()
+    from collections import defaultdict
+    from .reconcile import comparisons
+    now = util.utcnow()
+    since = now - timedelta(days=days)
+    rows = [r for r in comparisons(con, cfg, now) if datetime.fromisoformat(r['ts']) >= since]
     if not rows:
         return []                     # SESSİZ
-    # gerçekleşen = en yeni GEÇERLİ (hafta içi) prim
-    realized = con.execute(
-        "SELECT prim_pct FROM prim_history WHERE indicative=0 AND weekend=0 "
-        "ORDER BY ts_utc DESC LIMIT 1"
-    ).fetchone()
-    exp_avg = sum(r["expectation_pct"] for r in rows if r["expectation_pct"] is not None) / len(rows)
-    out = ["## Hafta Sonu Beklentisi vs Gerçekleşme", "",
-           f"- Hafta sonu ortalama beklenti (donmuş teoriğe göre): **%{exp_avg:+.2f}** "
-           f"({len(rows)} nokta)"]
-    if realized:
-        out.append(f"- Pazartesi gerçekleşen prim: **%{realized['prim_pct']:+.2f}** · "
-                   f"fark: **{realized['prim_pct'] - exp_avg:+.2f} puan**")
-    else:
-        out.append("- _Gerçekleşme için hafta içi geçerli prim henüz yok._")
+    groups = defaultdict(list)
+    for row in rows: groups[row['expected_day']].append(row)
+    out = ["## Hafta Sonu Beklentisi vs Gerçekleşme", ""]
+    for day, group in sorted(groups.items(), key=lambda item: item[0] or ''):
+        observed = [r for r in group if r['beklenti_pct'] is not None]
+        if not observed:
+            out.append(f"- {day}: beklenti değeri yok (0/{len(group)} nokta).")
+            continue
+        exp_avg = sum(r['beklenti_pct'] for r in observed) / len(observed)
+        out.append(f"- {day} açılışı için ortalama beklenti: **%{exp_avg:+.2f}** ({len(observed)}/{len(group)} nokta)")
+        matched = [r for r in observed if r['valid']]
+        if matched:
+            actual = sum(r['gerceklesen_pct'] for r in matched) / len(matched)
+            difference = sum(r['fark_puan'] for r in matched) / len(matched)
+            out.append(f"- İlk geçerli gerçekleşme: **%{actual:+.2f}** · fark: **{difference:+.2f} puan** "
+                       f"({len(matched)}/{len(observed)} eşleşme; {matched[0]['realized_at']}).")
+        if len(matched) < len(observed):
+            out.append(f"- _Gerçekleşme bekleniyor: {day} için {len(observed)-len(matched)} kaydın geçerli primi yok._")
     out.append("")
     return out
 

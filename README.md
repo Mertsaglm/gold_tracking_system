@@ -9,9 +9,10 @@ Gerçek emir gönderilmez. Alım/satım kararı, miktarı, masrafı ve fiyat kay
 - [2026-09-16: öncelik grupları ve uygulama sonucu](reports/IYILESTIRME-2026-09-16.md)
 - [Kullanım, mimari ve Vercel kurulumu](docs/V2-REHBER.md)
 - [İnceleme, değişiklikler ve doğrulama raporu](reports/REVIZYON-2026-09-15.md)
-- Güncel durum: `ai/STATE.md`. Yerel revizyon hazır; yayın durumu burada tutulur.
+- Güncel kod, üretim ve açık risk durumu: [ai/STATE.md](ai/STATE.md).
 - Kısa karar: `.venv/bin/python -m advisor status`
-- Panel: `cd dashboard` ardından `npm run dev`.
+- Canlı panel: [birikim-paneli.vercel.app](https://birikim-paneli.vercel.app/) (parola gerekli).
+- Yerel panel: proje kökünden `node dashboard/server.mjs` veya `cd dashboard && npm run dev`.
 
 Geçmiş kayıtlar korunur. V1 veri toplama ve ayrıntılı rapor üretimi sürer; V2 aktif
 workflow'larda kısa Telegram özetinin sahibi olur. Önceki modelin ölçülmüş başarısızlıkları,

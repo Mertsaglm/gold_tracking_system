@@ -51,7 +51,8 @@ komut kaynak arşive veya üretim defterine yazmaz. Makbuzdaki
 Tarihli makbuzlar:
 
 - BIST: diğer repoda `../BIST tahmin/reports/portfolio-smoke-bist-2026-09-24.json`,
-  `../BIST tahmin/reports/portfolio-model-research-bist-2026-09-24.json`.
+  `../BIST tahmin/reports/portfolio-model-research-bist-2026-09-24.json` ve
+  güncel yerel SQL ile `../BIST tahmin/reports/portfolio-model-research-bist-2026-10-01-replay.json`.
 - Altın: bu repoda `reports/portfolio-smoke-gold-2026-09-22.json`,
   `reports/portfolio-model-research-gold-2026-09-22.json`.
 
@@ -145,6 +146,13 @@ yüzde puandır. Bu arşiv sonuçları üstünlük göstermiyor. BIST evreni son
 seçilmiştir; arşivin son günü 2026-09-24, üyelik kaydı 2026-09-25'tir.
 Hesaplanabilir maliyetli, bağımsız portföy getiri serisi olmadığından DSR
 hesaplanmadı. Hiçbir model otomatik terfi etmez.
+
+2026-10-01 yeniden çalıştırmasında altın raporu birebir aynı çıktı. BIST yerel
+SQL'si ilk makbuzdan sonra değiştiği için `frame_id` farklılaştı; test satırı
+3944'ten 3948'e çıktı. Yeni BIST makbuzunda göreli Ridge Rank IC 0,0063,
+LightGBM 0,0017; MAE sırasıyla 7,680 ve 7,733 yüzde puandır. 26 katlamanın
+hepsinde eğitim etiketinin bitişi test başlangıcından öncedir. İlk makbuz
+korundu; bu iki farklı veri sürümünün sonucu tek sonuç gibi sunulmaz.
 
 ## T0 ve yayın sınırı
 

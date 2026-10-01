@@ -96,6 +96,10 @@ def test_panel_ayni_surecte_IKI_KEZ_cekilmiyor(monkeypatch):
                         lambda cfg: indicators.Signal("gld", indicators.YOK, "-"))
     monkeypatch.setattr(indicators, "real_deposit_signal",
                         lambda cfg, r: indicators.Signal("mev", indicators.YOK, "-"))
+    # Google Trends de panelin dış girdisidir; soket hatasının yutulmasına güvenme.
+    from src import trends
+    monkeypatch.setattr(trends, "trends_signal",
+                        lambda cfg: indicators.Signal("trends", indicators.YOK, "-"))
     cfg = util.load_config()
     try:
         a = indicators.build_panel(cfg, None)

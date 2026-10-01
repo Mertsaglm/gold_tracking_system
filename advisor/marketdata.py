@@ -119,6 +119,25 @@ def fetch(cfg, symbols, now):
     return quotes
 
 
+def entry_ready(ledger, cfg, quote, symbol, now, book):
+    """İlk gözlem sinyaldir; aynı/eski kotasyonla geriye dönük alım yapılamaz."""
+    if not cfg.get('require_next_quote') or quote.get('kind') == 'historical_assumption':
+        return True
+    from .calendar import IST
+    from .ledger import digest
+    day = now.astimezone(IST).date().isoformat()
+    key = f'entry-intent:{book}:{symbol}:{day}'
+    prior = next((e for e in reversed(ledger.events) if e['kind'] == 'entry_intent' and e['data']['intent_key'] == key), None)
+    if prior:
+        elapsed = (now - datetime.fromisoformat(prior['at'])).total_seconds()
+        if 0 < elapsed <= cfg.get('entry_intent_minutes', 90) * 60:
+            return datetime.fromisoformat(quote['quoted_at']) > datetime.fromisoformat(prior['data']['quoted_at'])
+    ledger.add('entry_intent', key + ':' + digest(quote), now.isoformat(), book=book,
+               symbol=symbol, intent_key=key, quoted_at=quote['quoted_at'],
+               assumption='Sonraki referans kotasyon; gerçek banka/emir defteri dolumu değildir.')
+    return False
+
+
 def price_problem(quote, cfg, now):
     """Fiyat güvenilirliği, piyasanın şu an açık olmasından ayrı bir kuraldır."""
     if not quote:

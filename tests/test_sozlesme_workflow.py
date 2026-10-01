@@ -204,27 +204,20 @@ def test_kosu_iptal_edilemez(wf, ad):
         f"{ad}: cancel-in-progress true → devam eden commit iptal edilebilir")
 
 
-def test_gunluk_rapor_arsivleyiciyle_AYNI_GRUPTA_DEGIL():
-    """KİLİT TEST — 2026-08-11 denetimi, ölçülmüş arıza.
+def test_sql_writers_queue_without_replacing_pending_daily_report():
+    """2026-08-06: tek bekleyen yuva günlük işi iptal etti; aynı grup tek başına yetmez.
 
-    Eskiden ikisi de `repo-commit` grubundaydı ve bu test AYNI olmalarını
-    kilitliyordu; gerekçesi "farklı gruplarda push çakışır"dı. Ölçüm o
-    dengeyi tersine çevirdi:
-
-    GitHub bir concurrency grubunda YALNIZ BİR bekleyen koşu tutar. Günlük
-    rapor sıraya girdikten sonra 15 dk'lık arşiv koşusu gelince BEKLEYENİ
-    DÜŞÜRÜYOR. 2026-08-06'da tam bu oldu: daily `cancelled`, o gün
-    `rapor_2026-08-06.md` üretilmedi, `asof=2026-08-05` tahmini hiç yazılmadı,
-    Telegram'a tek mesaj gitmedi — GÜNÜN TAMAMI kayboldu.
-
-    Push yarışı ise ucuz ve geri alınabilir: `git pull --rebase` + 5 deneme.
-    Yani eski testin koruduğu şey (nadir, kurtarılabilir yarış) uğruna
-    ölçülmüş ve kurtarılamayan bir kayıp göze alınıyordu. Sözleşme
-    tersine çevrildi ve yeni hâli burada kilitleniyor.
+    2026-09-30: GitHub Cloud queue:max çoklu bekleyen destekler. SQL'e yazan
+    yeni V2 telafisi de aynı sırada, hiçbir yazıcı single varsayımına düşemez.
     """
-    assert GUNLUK["concurrency"]["group"] != ARSIV["concurrency"]["group"], (
-        "daily.yml ve archive.yml aynı concurrency grubunda → arşivleyici "
-        "bekleyen günlük raporu iptal edebilir (2026-08-06'da oldu)")
+    portfolio=yaml.safe_load((WF/'portfolio.yml').read_text())
+    writers=[GUNLUK,ARSIV,portfolio]
+    assert {w['concurrency']['group'] for w in writers}=={'repo-commit'}
+    assert all(w['concurrency'].get('queue')=='max' for w in writers)
+    assert all(w['concurrency'].get('cancel-in-progress') is False for w in writers)
+    for w in writers:
+        checkout=next(step for job in w['jobs'].values() for step in job['steps'] if 'actions/checkout@' in step.get('uses',''))
+        assert checkout['with']['ref']=='main'
 
 
 @pytest.mark.parametrize("wf,ad", [(GUNLUK, "daily.yml"), (ARSIV, "archive.yml")])

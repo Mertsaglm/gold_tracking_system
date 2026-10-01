@@ -8,16 +8,17 @@ on:
   workflow_dispatch: {}
   schedule:
     # Dış 15 dk tetikleyici aksarsa ilk taraf yedeği; GitHub cron zaman garantisi vermez.
-    - cron: '17,47 7-13 * * 1-5'
-    - cron: '17 14 * * 1-5'
+    - cron: '17,47 6-19 * * 1-5'
+    - cron: '17 20 * * 1-5'
 
 permissions:
   contents: write
 
 # V2 defterinin tek yazarı bu workflow; V1 veri/rapor arşivi ayrı kalır.
 concurrency:
-  group: advisor-portfolio
+  group: repo-commit
   cancel-in-progress: false
+  queue: max
 
 jobs:
   portfolio:
@@ -50,6 +51,7 @@ jobs:
         if: always()
         run: |
           if [ -d data/advisor ]; then cp -R data/advisor /tmp/advisor-delivery; fi
+          if [ -f data/altin.sql ]; then cp data/altin.sql /tmp/advisor-delivery-altin.sql; fi
       - name: Sonucu kaydet
         if: always()
         id: persist
@@ -87,9 +89,16 @@ jobs:
             git commit -m "advisor: haftalik ozet makbuzu"
             bash ops/push_retry.sh
           fi
+      - name: Veri telafisi sonucunu bildir
+        if: always() && steps.refresh.outcome == 'failure'
+        run: |
+          echo 'Beklenen kapanış tam alınamadı; karar/veri durumu arşivlendi.' >&2
+          exit 1
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: advisor-recovery-${{ github.run_id }}
-          path: /tmp/advisor-delivery/
+          path: |
+            /tmp/advisor-delivery/
+            /tmp/advisor-delivery-altin.sql
           retention-days: 14

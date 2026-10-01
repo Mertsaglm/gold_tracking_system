@@ -20,12 +20,15 @@ permissions:
 concurrency:
   group: repo-commit          # gunluk rapor workflow'uyla ayni grup -> push cakismasi yok
   cancel-in-progress: false
+  queue: max
 
 jobs:
   archive:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-python@v5
         with:

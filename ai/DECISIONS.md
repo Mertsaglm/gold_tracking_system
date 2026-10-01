@@ -6,6 +6,82 @@
 
 ---
 
+## #025 — 2026-10-01 — Ayrı %80 çekirdek/%20 taktik ileri sanal sınav
+
+**Bağlam:** Altın ana hesabı yeni bütçeye henüz yayımlanmadı; model kapıları
+düzenli birikimi de engelliyor. Eski defter değişmeden karşılaştırma gerekli.
+**Seçenekler:** A) Ana hesabı geçmişe dönük yeniden kurmak; B) aynı T0 ve
+maliyetlerle ayrı çekirdek/taktik, nakit ve pasif kontrol kolları açmak.
+**Karar:** B. GRAM çekirdeği %80 katkıyı uygun banka kotasyonunda yatırır;
+%20 taktik net beklenti/risk bütçesine bağlı kalır. Temel ve ons/kur Ridge
+ayrı kol olarak ölçülür; model otomatik terfi etmez. T0 iki piyasada taze veri
+hazır olana kadar `null` kalır.
+**Neden:** Uzun vadeli birikim hedefi işlem sinyalinden bağımsız yürür;
+taktik getirinin pasif yatırıma eklediği değer görülebilir.
+**Tekrar gözden geçir:** Ortak T0 sonrası 63/126 seans maliyet sonrası servet,
+katkısız getiri ve düşüş beraber incelendiğinde.
+**Kanıt:** `docs/PORTFOY-DENEYI-2026-10-01.md`; eski hesap/yayın ayrı kaldı.
+
+---
+
+## #024 — 2026-09-25 — Yerel eğitim makbuzu ve gerçek veriyle kapanış
+
+**Bağlam:** Kullanıcı commit/push istemiyor; eksikleri tamamlamayı ve modelleri
+mevcut iyi/kötü sonuçlarla gerçekten eğitmeyi istedi.
+**Seçenekler:** Eski AL/SAT kararlarını hedef kabul etmek; yalnız yeni canlı
+sonuçları beklemek; bütün geçerli gerçekleşmiş fiyat örnekleriyle şimdi eğitmek.
+**Karar:** Üçüncü yol. Ana Ridge + sabit aday yapılandırmaları offline eğitilir,
+katsayı ve kapsam paketi kaydedilir; eski karar tarihleri ayrıca çapraz kontrol
+edilir. Sonuçlanmamış etiketler, replay başarıları ve başka ufuk kalibrasyonları
+canlı kanıt gibi eklenmez. SMA50 sabit kural olarak kalır. Otomatik terfi yok.
+**Neden:** Eski kararı ezberlemek eski hatayı doğru sayar; yalnız olumlu sonuçları
+seçmek seçilim yanlılığıdır. Eğitim makbuzu arşivdeki toplamı değil gerçek fit
+penceresini gösterir. Takvim/muhasebe/dolum kusurları düzeltilmeden model yarışı
+yorumlanmaz. Yeni hissenin geçmişi, eski kayıtlar korunarak yerelde tamamlanır.
+**Tekrar gözden geçir:** İleriye dönük olgun sonuç, doğru maliyet ve aynı koşullu
+kıyas tutarlı üstünlük gösterirse. Eğitim tamamlandı diye risk artırılmaz.
+**Kanıt:** `docs/YEREL-DENETIM-2026-09-25.md`. Yayın kullanıcı talebiyle bekler.
+
+---
+
+## #023 — 2026-09-25 — Basit rakip ve kontrollü katkı sınavı
+
+**Bağlam:** Kullanıcı beş açık başlığın önerilen sırada uygulanmasını istedi.
+**Seçenekler:** Yeni model aileleri eklemek; sabit basit rakip ve tek-değişken
+karşılaştırmalarla mevcut karmaşıklığı ölçmek.
+**Karar:** SMA50 ayrı sanal defter; sabit kataloglu katkı sınavı; V1 BIST rejimini
+asıl koduyla geçici bellek kopyasında karşılaştırma; TRALT/GRAM için ortak tutar
+ve eksik veri kontrolü. Aday parası toplam servete katılmaz. Sert ortak risk
+sınırı için oran uydurulmaz; pozisyon oluşunca değerlendirme gereği görünür.
+**Neden:** Yöntem değiştirmek üstünlük kanıtı değildir. Önceki son sınav dönemi
+artık görülmüştür; yeni sonuç keşif sayılır. Özellik/kural etkileri ayrı ölçülür.
+**Tekrar gözden geçir:** İleriye dönük yeni veri, yeterli işlem ve maliyet sonrası
+tutarlı fark oluşursa model ailesi, destek/direnç veya ortak sınır yeniden ele alınır.
+**Uygulama ve kanıt:** `docs/KARSILASTIRMA-2026-09-25.md`.
+
+---
+
+## #022 — 2026-09-25 — Sanal servet ve aday yöntem sınavı
+
+**Bağlam:** Kullanıcı 50.000 + aylık 5.000 TL’lik iki ayrı faizsiz sanal hesap ve
+hızlı uyumu yetkilendirdi. Önceki 5.000 TL defteri geriye dönük değiştirilemez.
+
+**Seçenekler:** Ana modeli hemen değiştirmek; küçük sürümlü adayları aynı parayla
+ayrı sınamak; çok sayıda model/LLM oylaması eklemek.
+
+**Karar:** Ayrı hesap kimliği, takvimli gözlem/işlem ayrımı, sonraki kotasyonla alım,
+tarihli BIST30 + sınırlı ek liste, piyasa durumuna bağlı yalnız yeni risk azaltımı,
+üç ayrı aday defteri ve geliştirme/son sınav ayrımı. Otomatik terfi yok.
+
+**Neden:** Kullanıcı servet artışını istiyor; daha fazla işlem ve daha karmaşık model
+tek başına bunu sağlamıyor. İlk arşiv sınavı yeni adaylara güvenmek için yeterli değil.
+
+**Tekrar gözden geçir:** Aynı masraflarla ileriye dönük yeterli sonuç, yeniden
+üretilebilir kıyas ve farklı dönemlerde tutarlılık oluştuğunda. Başarısız adayın
+eşiği geriye dönük gevşetilmez; yeni yöntem yeni kimlik/deney olarak kaydedilir.
+
+---
+
 ## #021 — 2026-09-23 — Okuma paneli Vercel'de, karar ve defter GitHub'da
 
 **Bağlam:** Mert iki sanal hesabı Mac'i açık tutmadan izleyecek. Karar çevrimi
@@ -1391,3 +1467,15 @@ yaratmaya başlarsa.
 
 **Tekrar gözden geçir:** Hangi koşul oluşursa bu karar masaya geri gelir?
 -->
+
+
+## 2026-09-30 — SQL yazarları ortak kayıpsız bekleme kuyruğunda
+
+Karar: daily/archive/portfolio `repo-commit`, `cancel-in-progress: false`,
+`queue: max` kullanır; bekleyen iş başladıktan sonra güncel main alınır.
+Neden: portföy telafisi de SQL yazar; ayrı gruplar veri çatışması üretir, eski
+varsayılan tek bekleyen grup ise günlük işi iptal edebilir. Yeni maksimum kuyruk
+iki sorunu birlikte çözer. Sözleşme bütün SQL yazarlarını sınar. Yayın onay bekler.
+Tekrar gözden geçir: kuyruk baskısı/100 bekleyen sınırı veya tazelik gecikmesi.
+Kaynak (2026-09-30):
+https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency

@@ -32,6 +32,12 @@ gelecek tarihli yenilemede bayt eşliği; iki piyasada yeni alım/stop testi.
 
 ## L-025 — 2026-09-22 — Bir kez doğru olmak, son durumun doğru teslim edildiğini göstermez
 
+**2026-09-25 takip:** Önceki 997/8 makbuzunu son düzenlemelerin ardından koşmuş
+saymak yanlıştı. Tam suite yeniden çalışınca `ai/STATE.md` biçimine bağlı iki
+doküman sözleşmesi düştü. Başlıklar ve `Kim` sütunu düzeltilince tam suite
+yeniden 997 geçti/8 atlandı. Son durum iddiası, son dosya durumunda koşulan
+testin çıktısına dayanmalı.
+
 **Anti-pattern:** Gün içinde geçmiş bir makbuz varsa iyileşmeyi yeniden göndermemek;
 son mevcut fiyatı başka haftanın gerçekleşmesi saymak; fiyatı kaybolan varlığı
 beklenen evrenden de düşürmek. Üçü de eksikliği sessizce başarıya çevirir.
@@ -673,3 +679,73 @@ kontrolü (`git rev-list --count HEAD..origin/main`) yap. Yerel eskiyse önce
 
 **Kural:** Usta bundan sonra somut olarak ne yapacak/soracak?
 -->
+
+
+## 2026-09-25 — Kapsam ve öğrenme sözleşmesi
+
+**Anti-pattern:** Listeyi değiştirmek veri hattını, bütçeyi değiştirmek tüm defter
+okuyucularını otomatik değiştirmez. Yeni hesap yolunun bildirim/nöbetçi/yedek
+simetriği; yeni sembolün tablo senkronu ve ilk geçmiş toplaması ayrıca bağlanmalıdır.
+
+**Kilidi:** `tests/test_advisor_revision.py` eski defter korunumu, sonraki kotasyon,
+farklı vade/para ayrımı ve gelecek etiket sızıntısını davranışla sınar. Eski deftere
+yazma ve ilk kotasyonda alım hataları geri konunca testler kırmızıya döndü.
+**Ölçüm:** MAE net getiri değildir. Örtüşmeyen dönem bağımsızlık garantisi değildir.
+Daha hızlı eğitilen aday arşivde daha kötü çıkabilir; başarısızlık rapordan silinmez.
+
+**Aynı revizyonda yakalanan hata:** Aday hata listesinin sonradan değişmesi,
+mühürlü session_check olayına referans üzerinden sızdı. Ledger.add girdiyi
+derin kopyalar; ayrıca aday hatası ana muhasebenin kaydını durduramaz.
+
+
+## 2026-09-25 — Karşılaştırılmayan karmaşıklık ve sessiz eksik gösterge
+
+Anti-pattern: yakın döneme ağırlık vermeyi, daha fazla özelliği veya ayrı hesapları
+kendiliğinden daha iyi/bağımsız saymak. Kontrollü sınavda altın zaman ağırlığı
+sonucu kötüleştirdi; basit trend BIST'in son bölümünde al-tutun gerisinde kaldı.
+V1 rejim karşılaştırmasında eksik SMA50 arşivi ayrıca görüldü; yalnız geçici bellek
+kopyasında geçmiş fiyatlardan yeniden üretildi, üretim arşivi düzelmiş sayılmadı.
+Kural: basit rakip, sınırlı tek-değişken sınavı ve payda/girdi açıklaması olmadan
+üstünlük iddia etme. İşlem oluşmayan karşılaştırmadaki sıfır fark kanıt değildir.
+
+
+## 2026-09-25 — Çalışan araştırma, tam sınav demek değildir
+
+**Anti-pattern:** Takvim eksikliği nedeniyle işlem yapılamayan dönemi normal
+performans saymak; kayan pencere kullanıp bütün arşivi eğitim sayacı olarak
+basmak; gram kapanışından gün içi stop dolumu uydurmak; çeyrek sınırında bilinen
+önceki değeri unutmak. Bunlar hata fırlatmadan yanlış güven veya eksiklik üretir.
+**Kilit:** `tests/test_advisor_training_audit.py`: eksik yıl sınavı reddeder;
+fit satırı/zarar örneği/gelecek etiket ve kalıcı katsayılar ölçülür; tatilde başlayan
+çeyrek doğru taşınır; altın sonraki referanstan çıkar; sıfır hacimde dolum olmaz.
+Beş koruma bellek içinde kaldırıldığında ilgili testler kırmızıya döndü.
+**Veri dersi:** Endeksin arşiv boşluğu hisse verisinin yanlış olduğunu tek başına
+göstermez. Mevcut birleşik hayalet bar kuralı kullanılmalı; gerçek seanstaki
+sıfır hacimli referans değerlemede korunmalı, işlem üretmemelidir.
+**Yorum:** Aynı portföy sonucu farklı tahminlerden gelebilir. Eğitim katsayılarının
+varlığı veya daha fazla özellik, basit kıyasa üstünlük kanıtı değildir.
+
+
+## 2026-09-30 — Taşıyıcı ağ sınırını da zorla
+
+Socket yasağı curl_cffi'yi engellemez; yakalanan socket hatası da testin yanlışlıkla
+yeşil kalmasını sağlayabilir. requests/curl_cffi girişleri pytest ihlali verir;
+uygulamanın except Exception bloğu bunu yutamaz. Bu kapı, panelin Google Trends
+çağrısındaki eksik mock'u açığa çıkardı. Ağ kuralını iki depoda simetrik zorla.
+
+## 2026-10-01 — Defter testi bağımsız para hesabı değildir
+
+**Anti-pattern:** Tekrar çalışma ve defter hash'i geçti diye işlem tutarının doğru
+olduğunu varsaymak. Gerçek BIST arşiv kopyasındaki taktik alımda `float` lot ×
+fiyat yarım kuruşu aşağı yuvarladı; bağımsız Decimal indirgemesi farkı yakaladı.
+Haftalık kontrol de engellenmiş satışı tamamlandı sayabiliyordu.
+**Kilit:** `scripts/portfolio_smoke.py` altı defteri ayrı para/lot hesabıyla
+mutabık tutar; `tests/test_portfolio_experiments.py` yarım kuruş, eksik üyelik
+ve engelli satışın haftalık tekrarını davranışla sınar.
+**2026-10-01 ek kanıt:** Daha güncel üretim SQL'siyle aynı prova,
+`benchmark:pocket:TOASO` alımında da bir kuruşluk sapma yakaladı. İlk kilit
+yalnız taktik yolu koruyordu; aynı para kuralı karşılaştırma ve eski politika
+yollarında da uygulanmalı. `test_benchmark_pocket_half_cent_reconciles_with_independent_ledger`
+ve `test_legacy_mark_rounds_lot_times_price_before_cents` bu simetriyi korur.
+Temettü alacağı da lot × tutar × net oranı `Decimal` ile hesaplar;
+`test_dividend_receivable_rounds_fractional_lot_value_once` bu yolu kilitler.

@@ -11,7 +11,7 @@ import pandas as pd
 
 
 @contextmanager
-def connection(root, market, database=None):
+def connection(root, market, database=None, *, dump_path=None):
     if database:
         con = sqlite3.connect(Path(database).resolve().as_uri() + "?mode=ro", uri=True)
         con.row_factory = sqlite3.Row
@@ -23,7 +23,7 @@ def connection(root, market, database=None):
     # GitHub'da SQL güncel, yerel binary aylarca eski kalabilir. Daima dump.
     from src import dbdump, util
     cfg = copy.deepcopy(util.load_config())
-    dump = root / "data" / ("bist.sql" if market == "bist" else "altin.sql")
+    dump = Path(dump_path) if dump_path is not None else root / "data" / ("bist.sql" if market == "bist" else "altin.sql")
     if not dump.is_file():
         raise FileNotFoundError(f"Üretim arşivi bulunamadı: {dump.name}")
     with tempfile.TemporaryDirectory(prefix="advisor-history-") as tmp:
@@ -42,7 +42,7 @@ def load(con, market, asof):
             "WHERE b.date<=? ORDER BY b.ticker,b.date", con, params=(asof,))
     else:
         frame = pd.read_sql_query(
-            "SELECT date,gram_teorik close,gram_teorik total_close FROM history_daily "
+            "SELECT date,gram_teorik close,gram_teorik total_close,ons_usd,usdtry FROM history_daily "
             "WHERE date<=? ORDER BY date", con, params=(asof,))
         frame["symbol"] = "GRAM"
         frame["sector"] = "altin"

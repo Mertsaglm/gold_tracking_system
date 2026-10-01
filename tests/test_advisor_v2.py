@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from tests.advisor_legacy import legacy_configuration
+
 from advisor import learning, marketdata, policy, service
 from advisor.ledger import Ledger, cents, fund
 
@@ -20,7 +22,7 @@ NOW = datetime(2026, 9, 15, 10, 30, tzinfo=timezone.utc)
 
 @pytest.fixture
 def advisor_cfg():
-    c = service.configuration(ROOT)
+    c = legacy_configuration(ROOT)
     c.update(market="bist", max_position_pct=20, max_positions=5, initial_try=5000, monthly_try=5000)
     return c
 
@@ -48,7 +50,7 @@ def test_contributions_idempotent_and_month_rollover(tmp_path, advisor_cfg):
 
 def test_closed_session_exits_before_history_model_or_trades(tmp_path, monkeypatch):
     """Mesai dışı workflow_run eski sürümlerde tam hesaplama yapıyordu."""
-    cfg = service.configuration(ROOT)
+    cfg = legacy_configuration(ROOT)
     (tmp_path / "advisor").mkdir()
     (tmp_path / "advisor/config.json").write_text(json.dumps(cfg))
 

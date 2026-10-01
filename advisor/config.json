@@ -1,7 +1,7 @@
 {
   "market": "gold",
-  "start_date": "2026-09-15",
-  "initial_try": 5000,
+  "start_date": "2026-09-25",
+  "initial_try": 50000,
   "monthly_try": 5000,
   "horizon_sessions": 20,
   "max_positions": 1,
@@ -36,7 +36,7 @@
     "gold": "https://altin.doviz.com/isbankasi/gram-altin",
     "commission_reference": "https://www.isbank.com.tr/komisyon-oranlari",
     "terms_reference": "https://www.isbank.com.tr/vadesiz-altin-hesabi",
-    "verified_on": "2026-09-15"
+    "verified_on": "2026-09-25"
   },
   "dashboard_url": "https://birikim-paneli.vercel.app/",
   "telegram": {
@@ -49,13 +49,40 @@
     "İş Bankası gram altın alış/satış referansı Döviz.com üzerinden izlenir; İşCep kişisel fiyatıyla farklı olabilir.",
     "Alımda banka satış fiyatı ve %0,20 KMV; satımda banka alış fiyatı kullanılır.",
     "Miktar 0,01 gram adımıyla yuvarlanır. Geçmiş testte banka makası mevcut olmadığından maliyet varsayımı kullanılır.",
-    "Banka hesabı 995/1000 saflıkta gram altın birimindedir; ons×kur geçmişi banka gram fiyatının ve tarihsel makasının eşdeğeri değildir."
+    "Banka hesabı 995/1000 saflıkta gram altın birimindedir; ons×kur geçmişi banka gram fiyatının ve tarihsel makasının eşdeğeri değildir.",
+    "Yeni sanal alım ilk sinyalden sonraki taze referans kotasyonunu bekler; gerçek emir defteri veya banka dolumu değildir.",
+    "09:00–23:30 gözlem ve 09:00–18:00 yeni alım saatleri simülasyon tercihidir; bankanın altın piyasası kapanış saati iddiası değildir."
   ],
   "max_portfolio_risk_pct": 5,
   "watchdog_grace_minutes": 90,
   "execution_window": {
-    "open": "10:15",
-    "close": "17:45",
-    "half_day_close": "12:15"
+    "open": "09:00",
+    "close": "23:00",
+    "half_day_close": "23:00"
+  },
+  "account_id": "paper-2026-09-25",
+  "candidates_enabled": true,
+  "experiment_start_date": null,
+  "require_next_quote": true,
+  "entry_intent_minutes": 90,
+  "entry_window": {
+    "open": "09:00",
+    "close": "18:00",
+    "half_day_close": "18:00"
+  },
+  "observation_window": {
+    "open": "09:00",
+    "close": "23:30",
+    "half_day_close": "23:30"
+  },
+  "adaptive_risk": {
+    "enabled": true,
+    "target_daily_vol_pct": 1.5
+  },
+  "risk_factors": {
+    "GRAM": {
+      "factor": "gold_direct",
+      "label": "Doğrudan gram altın"
+    }
   }
 }

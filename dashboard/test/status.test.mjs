@@ -36,6 +36,16 @@ test('only read operations are offered by the API',async()=>{
   await handler({method:'POST',headers:{}},res); assert.equal(code,405);
 });
 
+test('new experiment schema accepts old snapshots and validates each separate account',()=>{
+ const old=snapshot('bist');assert.equal(validate(old,'bist'),old);
+ const next=snapshot('bist');
+ next.portfolio_experiments={status:'sanal sınav',accounts:[{id:'core-cash',strategy:{...account(),parts:{core:account(),tactical:account()},diagnostics:[]},diagnostics:[]}],
+   comparison:{arms:[{id:'core-cash',wealth_try:5000,contributed_try:5000,twr_pct:0,max_drawdown_pct:0}]}};
+ assert.equal(validate(next,'bist'),next);
+ next.portfolio_experiments.accounts[0].strategy.cash_try='5000';
+ assert.throws(()=>validate(next,'bist'),/biçimi/);
+});
+
 test('nested malformed data is rejected before the browser can lose both accounts', async()=>{
  for (const damage of [s=>delete s.benchmark, s=>s.news.sources=null, s=>s.strategy.equity_try='5000',
    s=>s.decisions=[{symbol:'AAA',action:'AL',price:100,reasons:null}],s=>s.strategy.positions=[{symbol:'AAA'}],

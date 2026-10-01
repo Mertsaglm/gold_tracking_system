@@ -56,13 +56,14 @@ def weekly(ledger, now):
     baseline=(current['benchmark_try']-base['benchmark_try']-delta
               if current.get('benchmark_try') is not None and base.get('benchmark_try') is not None else None)
     fills=[e['data'] for e in ledger.events if e['kind']=='fill' and e['data']['book']=='strategy' and start<datetime.fromisoformat(e['at'])<=end_at]
+    account_fees=sum(e['data']['amount_cents'] for e in ledger.events if e['kind']=='account_fee' and e['data']['book']=='strategy' and start<datetime.fromisoformat(e['at'])<=end_at)
     navs=[e['data']['nav'] for e in valuations if start<datetime.fromisoformat(e['at'])<=end_at and e['data'].get('nav') is not None]
     peak=before[-1]['data'].get('nav',1) if before else 1;drawdown=0
     for nav in navs:
         peak=max(peak,nav)
         drawdown=min(drawdown,(nav/peak-1)*100)
     return {'ready':True,'from':start.isoformat(),'through':end['at'],'contributions_try':delta,
-            'investment_result_try':result,'fees_try':sum(f['fee_cents'] for f in fills)/100,
+            'investment_result_try':result,'fees_try':(sum(f['fee_cents'] for f in fills)+account_fees)/100,
             'buys':sum(f['side']=='BUY' for f in fills),'sells':sum(f['side']=='SELL' for f in fills),
             'baseline_result_try':baseline,'excess_try':result-baseline if baseline is not None else None,
             'max_drawdown_pct':drawdown,'stale':(now-end_at).total_seconds()>26*3600,

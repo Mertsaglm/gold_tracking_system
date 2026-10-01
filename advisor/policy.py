@@ -10,6 +10,7 @@ from .ledger import cents
 
 
 def fee(cfg, notional, side):
+    notional = float(notional)
     if notional <= 0:
         return 0
     if cfg["market"] == "gold":
@@ -30,7 +31,7 @@ def quantity_for(budget_cents, price, cfg):
     upper = Decimal(str(budget_cents / 100 / price))
     qty = (upper / step).to_integral_value(rounding=ROUND_FLOOR) * step
     while qty > 0:
-        total = float(qty) * price
+        total = qty * Decimal(str(price))
         if cents(total) + fee(cfg, total, "BUY") <= budget_cents:
             return qty
         qty -= step
@@ -41,14 +42,15 @@ def value_account(account, quotes, cfg, now=None):
     from .marketdata import price_problem
     now = now or datetime.now(timezone.utc)
     positions = []
-    value = account["cash_cents"] + account.get('receivable_cents', 0)
+    value = account["cash_cents"] + account.get('receivable_cents', 0) - account.get('fee_liability_cents', 0)
     complete = True
     last_known = value
     for symbol, p in account["positions"].items():
         q = quotes.get(symbol)
         problem = cfg.get('blocked_symbols', {}).get(symbol) or price_problem(q, cfg, now)
         mark = execution_price(q, cfg, "SELL") if q and all(isinstance(q.get(k), (int, float)) and math.isfinite(q[k]) and q[k] > 0 for k in ('bid', 'ask')) and q['ask'] >= q['bid'] else None
-        net = cents(float(p["quantity"]) * mark) - fee(cfg, float(p["quantity"]) * mark, "SELL") if mark else None
+        mark_value = p["quantity"] * Decimal(str(mark)) if mark else None
+        net = cents(mark_value) - fee(cfg, float(mark_value), "SELL") if mark_value else None
         if net is None or problem:
             complete = False
         else:
@@ -62,6 +64,8 @@ def value_account(account, quotes, cfg, now=None):
                           'valuation_problem': problem, 'quoted_at': q.get('quoted_at') if q else None,
                           **{k: p.get(k) for k in ("stop", "target", "deadline", "opened_at")}})
     return {"cash_try": account["cash_cents"] / 100, "contributed_try": account["contributed_cents"] / 100,
+            'account_fees_try': account.get('account_fees_cents', 0) / 100,
+            'fee_liability_try': account.get('fee_liability_cents', 0) / 100,
             'receivable_try': account.get('receivable_cents', 0) / 100,
             "equity_try": value / 100 if complete else None,
             "pnl_try": (value - account["contributed_cents"]) / 100 if complete else None,
@@ -71,6 +75,7 @@ def value_account(account, quotes, cfg, now=None):
 
 
 def decision(row, forecast, model, cfg, quote, position, blocked, now):
+    simple = cfg.get('strategy_kind') == 'sma50' and model.get('kind') == 'sma50'
     symbol = row["symbol"]
     reasons = []
     action, code = "BEKLE", "no_edge"
@@ -111,7 +116,7 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
         close = None
     remaining = ((close * (1 + forecast / 100) / reference - 1) * 100
                  if forecast is not None and reference and close else None)
-    if remaining is None and not position:
+    if remaining is None and not position and (not simple or close is None):
         blocked = blocked or ('Analiz kapanış fiyatı doğrulanamadı.' if close is None else None)
     if blocked:
         action, code = "VERİ BEKLENİYOR", "data_block"
@@ -124,6 +129,9 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
         elif target and sell >= target:
             action, code = "SAT", "target"
             reasons.append("Sanal pozisyon kâr alma seviyesine ulaştı.")
+        elif simple and not analysis_block and row.get('trend50', 0) <= 0:
+            action, code = 'SAT', 'sma50_exit'
+            reasons.append('Son kapanış 50 seans ortalamasının altında veya eşit.')
         elif cfg["market"] == "bist" and position.get("deadline") and today.isoformat() >= position["deadline"]:
             action, code = "SAT", "time_exit"
             reasons.append("Pozisyonun izleme süresi doldu.")
@@ -135,25 +143,38 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
             reasons.append("Satış sınırlarından hiçbiri tetiklenmedi.")
         if analysis_block:
             reasons.append(analysis_block + ' Mevcut stop/hedef izleniyor.')
+    elif simple and model.get('ready'):
+        if not all(isinstance(row.get(k), (float, int)) and math.isfinite(row[k]) for k in ('trend50', 'volatility20')):
+            action, code = 'VERİ BEKLENİYOR', 'simple_inputs_missing'
+            reasons.append('Basit trend girdileri eksik.')
+        elif row['trend50'] > 0:
+            action, code = 'AL', 'sma50_entry'
+            reasons.append('Son kapanış 50 seans ortalamasının üzerinde; sabit kural, getiri tahmini değil.')
+        else:
+            reasons.append('Son kapanış 50 seans ortalamasının altında; nakitte bekle.')
     elif forecast is None or not model.get("ready"):
         reasons.append("Alım için yeterli model verisi yok.")
     else:
         roundtrip = ((buy / sell - 1) * 100 + (fee(cfg, 1000, "BUY") + fee(cfg, 1000, "SELL")) / 1000)
         net = remaining - roundtrip
-        if net >= cfg["min_expected_net_pct"] and row["trend50"] > 0 and row["rsi14"] < 75:
+        reversion = cfg.get('entry_style') == 'reversion'
+        entry_ok = (row.get('zscore20', 0) < -1 and row.get('trend200', -100) > -10 and row.get('daily_jump_pct', 100) < 5) if reversion else row['trend50'] > 0 and row['rsi14'] < 75
+        if net >= cfg["min_expected_net_pct"] and entry_ok:
             action, code = "AL", "cost_adjusted_opportunity"
             reasons.append(f"Modelin {cfg['horizon_sessions']} seanslık beklentisi masrafı aşıyor: net %{net:.1f}.")
-            reasons.append("Fiyat kısa trendin üzerinde; aşırı alım sınırında değil.")
+            reasons.append('Sınırlı geri çekilme adayı; maliyet, stop ve risk sınırları ayrıca uygulanır.' if reversion else "Fiyat kısa trendin üzerinde; aşırı alım sınırında değil.")
         else:
             if net < cfg['min_expected_net_pct']:
                 reasons.append(f"Masraf sonrası beklenti %{net:.1f}; alım için en az %{cfg['min_expected_net_pct']:.1f} gerekiyor.")
-            if row["trend50"] <= 0:
+            if reversion and not entry_ok:
+                reasons.append('Geri çekilme veya uzun trend/ani düşüş sınırı sağlanmadı.')
+            if not reversion and row["trend50"] <= 0:
                 reasons.append("Kısa trend zayıf; yeni para kullanma.")
-            if row["rsi14"] >= 75:
+            if not reversion and row["rsi14"] >= 75:
                 reasons.append("Kısa vadeli yükseliş hızlandı; fiyatı kovalamıyorum.")
     if model.get("ready") and not model.get("approved"):
         reasons.append("Geçmiş testte üstünlük doğrulanmadı; sanal deneme tutarı sınırlı.")
-    if buy and remaining is not None:
+    if buy and (remaining is not None or simple):
         vol = float(row.get('volatility20') or 0)
         volatility = max(vol / 100, .005) if math.isfinite(vol) else .005
         stop_distance = max(buy * volatility * 2.5, buy * 0.02)
@@ -164,20 +185,22 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
         risk_net = buy - stop + buy_fee + fee(cfg, size * stop, "SELL") / 100 / size
         reward_net = target - buy - buy_fee - fee(cfg, size * target, "SELL") / 100 / size
         rr = reward_net / risk_net if risk_net > 0 else 0
-        if action == "AL" and rr < cfg["min_net_reward_risk"]:
+        if action == "AL" and not simple and rr < cfg["min_net_reward_risk"]:
             action, code = "BEKLE", "reward_risk"
             reasons = [f"Olası kazanç riske göre düşük: 1 TL risk için {rr:.2f} TL beklenti; en az {cfg['min_net_reward_risk']:.2f} TL gerekiyor."]
     else:
         stop = target = None
+    if simple:
+        target = None
     if position:
         stop, target = position.get('stop'), position.get('target')
     from .calendar import add_sessions
-    return {"symbol": symbol, "asof": row["date"], "action": action, "code": code,
+    return {"strategy_kind": "sma50" if simple else "ridge", "symbol": symbol, "asof": row["date"], "action": action, "code": code,
             "reasons": reasons[:3], "forecast_pct": forecast, 'remaining_forecast_pct': remaining, "model_id": model.get("id"),
             'horizon_sessions': cfg['horizon_sessions'],
             "stop": stop, "target": target, "price": buy,
             "sector": row.get("sector"), "confidence": "sınırlı" if not model.get("approved") else "orta",
-            "deadline": position.get('deadline') if position else add_sessions(today, cfg['horizon_sessions'], cfg) if cfg["market"] == "bist" else None}
+            "deadline": None if simple else position.get('deadline') if position else add_sessions(today, cfg['horizon_sessions'], cfg) if cfg["market"] == "bist" else None}
 
 
 def execute(ledger, cfg, decisions, quotes, now, book="strategy"):
@@ -187,6 +210,8 @@ def execute(ledger, cfg, decisions, quotes, now, book="strategy"):
     for d in sorted(decisions, key=lambda x: (x["action"] != "SAT", -(x.get("forecast_pct") or 0), x["symbol"])):
         key = f"{book}:{day}:{d['symbol']}:{d['action']}"
         if d["action"] not in {"AL", "SAT"} or key in ledger.keys:
+            continue
+        if cfg.get('execution_phase') in ('closed','valuation') or (d['action']=='AL' and cfg.get('execution_phase','entry')!='entry'):
             continue
         account = ledger.account(book)
         symbol = d["symbol"]
@@ -243,8 +268,10 @@ def execute(ledger, cfg, decisions, quotes, now, book="strategy"):
             step = Decimal('1') if cfg['market']=='bist' else Decimal('0.01')
             price_now = execution_price(quotes[symbol], cfg, side)
             while qty > 0:
-                full_risk = (cents(float(qty)*price_now) + fee(cfg,float(qty)*price_now,'BUY')
-                             - cents(float(qty)*d['stop']) + fee(cfg,float(qty)*d['stop'],'SELL'))
+                entry_value = qty * Decimal(str(price_now))
+                stop_value = qty * Decimal(str(d['stop']))
+                full_risk = (cents(entry_value) + fee(cfg, float(entry_value), 'BUY')
+                             - cents(stop_value) + fee(cfg, float(stop_value), 'SELL'))
                 if full_risk <= allowed_risk:
                     break
                 qty -= step
@@ -252,10 +279,12 @@ def execute(ledger, cfg, decisions, quotes, now, book="strategy"):
                 d.update(action="BEKLE", code="budget", reasons=["Masraflar ve risk sınırı sonrası bütçe en küçük alıma yetmiyor."])
                 continue
         price = execution_price(quotes[symbol], cfg, side)
-        notional = float(qty) * price
-        if side == 'BUY':
-            target_value = float(qty) * d['target']
-            stop_value = float(qty) * d['stop']
+        notional = qty * Decimal(str(price))
+        # Sabit trend kuralı hedef fiyat tahmin etmez; ortak masraf/stop/bütçe
+        # sınırları yukarıda aynen çalışır, yalnız tahmine dayalı R:R uygulanmaz.
+        if side == 'BUY' and not (cfg.get('strategy_kind') == 'sma50' and d.get('strategy_kind') == 'sma50'):
+            target_value = qty * Decimal(str(d['target']))
+            stop_value = qty * Decimal(str(d['stop']))
             cost = cents(notional) + fee(cfg, notional, 'BUY')
             reward = cents(target_value) - fee(cfg, target_value, 'SELL') - cost
             risk_amount = cost - cents(stop_value) + fee(cfg, stop_value, 'SELL')

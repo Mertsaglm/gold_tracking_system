@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .calendar import IST, load, trading_day, window
 from .ledger import Ledger
+from .accounts import state_path
 from .marketdata import price_problem
 
 
@@ -14,13 +15,13 @@ def expected_slot(now, cfg):
         day = cutoff.date() - timedelta(days=offset)
         if not trading_day(day, cfg):
             continue
-        start, end = window(day, cfg)
+        start, end = window(day, cfg, 'observation')
         slot = start.replace(minute=17, second=0, microsecond=0)
         slots = []
         while slot <= end:
             if slot <= cutoff:
                 slots.append(slot)
-            slot += timedelta(hours=1)
+            slot += timedelta(minutes=30 if 'observation_window' in cfg else 60)
         if slots:
             return slots[-1]
     raise ValueError('Beklenen işlem aralığı bulunamadı.')
@@ -32,11 +33,14 @@ def inspect(root, now):
     cfg = configuration(root)
     cfg['calendar'] = load(root)
     due = expected_slot(now, cfg)
+    if not (state_path(root, cfg) / 'events.jsonl').exists() and due.date().isoformat() < cfg['start_date']:
+        return {'ok':True, 'checked_at':now.isoformat(), 'expected_slot':due.isoformat(),
+                'findings':[], 'initializing':True, 'mode':'observation_only'}
     findings = []
     def flag(code, message):
         findings.append({'code': code, 'message': message})
     try:
-        state = root / 'data/advisor'
+        state = state_path(root, cfg)
         s = json.loads((state / 'latest.json').read_text())
         at = datetime.fromisoformat(s['generated_at'])
         if at.tzinfo is None or at > now + timedelta(minutes=1):
@@ -50,7 +54,7 @@ def inspect(root, now):
         ledger = Ledger(path)
         # Mesai dışı early-return kaydı, kaçırılmış gündüz çevrimini asla
         # başarılı gösteremez. Eski arşiv kayıtları alan yoksa gerçek seanstır.
-        checks=[e for e in ledger.events if e['kind']=='session_check' and e['data'].get('in_execution_window', True)]
+        checks=[e for e in ledger.events if e['kind']=='session_check' and e['data'].get('in_observation_window', e['data'].get('in_execution_window', True))]
         check=checks[-1] if checks else None
         if due.date().isoformat()>=cfg['start_date']:
             if check is None or datetime.fromisoformat(check['at'])<due:
@@ -59,7 +63,7 @@ def inspect(root, now):
                 flag('price_coverage','Son işlem penceresinde fiyat kapsamı veya kotasyon zamanı eksik.')
             local_now = now.astimezone(IST)
             if trading_day(local_now.date(), cfg) and local_now.date().isoformat() >= cfg['start_date']:
-                start, end = window(local_now.date(), cfg)
+                start, end = window(local_now.date(), cfg, 'observation')
                 required = min(local_now, end) - timedelta(minutes=45)
                 if required >= start and (check is None or datetime.fromisoformat(check['at']) < required):
                     flag('cycle_gap', 'İşlem penceresinde son V2 çevrimi 45 dakikadan eski.')

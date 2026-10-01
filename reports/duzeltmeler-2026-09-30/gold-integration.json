@@ -1,0 +1,33 @@
+{
+  "market": "gold",
+  "initial_active_events": 0,
+  "cycles": [
+    {
+      "analysis_date": "2026-09-29",
+      "expected": "2026-09-29",
+      "issues": {},
+      "decision_codes": {
+        "no_edge": 1
+      },
+      "equity": 50000.0,
+      "contributed": 50000.0,
+      "candidate_count": 4
+    },
+    {
+      "analysis_date": "2026-09-29",
+      "expected": "2026-09-29",
+      "issues": {},
+      "decision_codes": {
+        "no_edge": 1
+      },
+      "equity": 50000.0,
+      "contributed": 50000.0,
+      "candidate_count": 4
+    }
+  ],
+  "repeat_unchanged": true,
+  "legacy_unchanged": true,
+  "midnight": null,
+  "restore_hash": "87cea1da7f12e047b97bfef0b3adcaa9cda7ae872128db940bab4974222ff5ca",
+  "restore_files": 340
+}

@@ -1,0 +1,51 @@
+{
+  "bist": {
+    "code_hash": "841f75118fa6aff2df856226b06fbc45f6d09647174fc7ca0700d32d6f8666e1",
+    "data_hash": "7600910552333773863",
+    "archive_models_match_cycle": true,
+    "code_data_report_match": true,
+    "old_advisor_files_unchanged": true,
+    "pending_custody": 0,
+    "missing_history_symbols": [],
+    "calendar_missing_blocks": 0,
+    "variants": 17
+  },
+  "gold": {
+    "code_hash": "841f75118fa6aff2df856226b06fbc45f6d09647174fc7ca0700d32d6f8666e1",
+    "data_hash": "10081320150936271241",
+    "archive_models_match_cycle": true,
+    "code_data_report_match": true,
+    "old_advisor_files_unchanged": true,
+    "pending_custody": 0,
+    "missing_history_symbols": [],
+    "calendar_missing_blocks": 0,
+    "variants": 13
+  },
+  "mutation_checks": [
+    {
+      "mutation": "missing-calendar-guard",
+      "caught": true
+    },
+    {
+      "mutation": "all-archive-reported-as-fitted",
+      "caught": true
+    },
+    {
+      "mutation": "holiday-quarter-forgets-prior-mark",
+      "caught": true
+    },
+    {
+      "mutation": "synthetic-gold-intraday-stop",
+      "caught": true
+    },
+    {
+      "mutation": "zero-volume-fill",
+      "caught": true
+    }
+  ],
+  "tests": {
+    "bist": "1442 passed",
+    "gold": "997 passed, 8 skipped",
+    "panel_each": "10 passed"
+  }
+}

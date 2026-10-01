@@ -1,11 +1,24 @@
 # PROJECT.md — Projenin Kimliği
 
-## Güncel kapsam — 2026-09-15
+## İleri sanal sınav kapsamı — 2026-10-01
+
+Ana/önceki altın hesapları korunur. BIST ile ortak ileri T0 sonrasında ayrı
+50.000 TL + aylık 5.000 TL sanal bütçeyle beş kol izlenir. %80 GRAM çekirdeği
+geçerli İş Bankası kotasyonunda düzenli birikimdir; en fazla %20 taktik
+masraf sonrası tahmin ve stop riskiyle sınırlanır. Taktik kârı çekirdek + nakit
+ve çekirdek + pasif altın kollarına göre ölçülür. Ons/kur Ridge yalnız ayrı
+model adayıdır; üstünlük veya otomatik terfi kabul edilmez. Gerçek emir yok;
+ortak T0 henüz açılmadı. Ayrıntı: `docs/PORTFOY-DENEYI-2026-10-01.md`.
+
+## Güncel kapsam — 2026-09-25
 
 Mert'in yeni talebi: BIST ve İş Bankası gram altını için iki ayrı otomatik analiz ve
 sanal portföy, ortak web paneli, kısa ve net Türkçe Telegram kararları. Amaç masrafları
 hesaba katarak birikimin değerini, hisse/gram miktarlarını artıracak fırsatları izlemek.
-Gerçek emir iletimi yok. Bütçe varsayımı her hesapta 5.000 TL başlangıç + aylık 5.000 TL.
+Gerçek emir iletimi yok. Bütçe her hesapta 50.000 TL başlangıç + aylık 5.000 TL; faizsiz nakit.
+Amaç masraf sonrası serveti artırmak; yalnız sanal hesaplar değerlendirilir.
+Yeni bütçe ayrı hesap kimliğindedir. Sınırlı aday kataloğu ayrı defterlerde sınanır;
+hiçbir adayın üstünlüğü peşinen kabul edilmez. Ayrıntı: `docs/REVIZYON-2026-09-25.md`.
 Kullanıcının gerçek varlıkları bilinmediğinden yeni sanal hesaplara aktarılmadı.
 
 `advisor/` güncel karar/defter hattıdır; `src/` eski veri toplama ve araştırma hattıdır.

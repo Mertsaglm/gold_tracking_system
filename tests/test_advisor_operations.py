@@ -6,6 +6,8 @@ import zipfile
 
 import pytest
 
+from tests.advisor_legacy import legacy_configuration
+
 from advisor import recovery, service, watchdog
 from advisor.ledger import Ledger, fund
 
@@ -14,7 +16,7 @@ NOW=datetime(2026,9,16,12,tzinfo=timezone.utc)
 
 
 def archive(root):
-    cfg=service.configuration(ROOT);cfg['telegram']['enabled']=False
+    cfg=legacy_configuration(ROOT);cfg['telegram']['enabled']=False
     (root/'advisor').mkdir();(root/'advisor/config.json').write_text(json.dumps(cfg))
     (root/'holidays_tr.yaml').write_text('tam_gun:\n  "2026": []\n')
     p=root/'data/advisor';p.mkdir(parents=True)

@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
 import requests
+from .ledger import digest
 
 FEEDS = {
     "Federal Reserve": "https://www.federalreserve.gov/feeds/press_all.xml",
@@ -59,9 +60,15 @@ def collect(con, market, now, fetch_external=True):
     items, status = [], []
     if market == "bist":
         since = (now - timedelta(days=7)).isoformat()
-        for r in con.execute("SELECT DISTINCT title,url,published_utc FROM disclosures WHERE published_utc>=? AND published_utc<=? ORDER BY published_utc DESC LIMIT 30", (since, now.isoformat())):
-            items.append({"title": r[0], "url": r[1], "published_at": r[2], "source": "KAP"})
-        status.append({"source": "KAP", "ok": bool(items), "detail": "Üretim arşivindeki tarihli bildirimler" if items else "Son hafta arşivinde bildirim bulunamadı; güncellik doğrulanamadı."})
+        for r in con.execute("SELECT disclosure_id,ticker,title,url,published_utc,category "
+                             "FROM disclosures WHERE published_utc>=? AND published_utc<=? "
+                             "ORDER BY published_utc DESC LIMIT 30", (since, now.isoformat())):
+            items.append({"id": r[0], "asset": r[1], "title": r[2], "url": r[3],
+                          "published_at": r[4], "source": "KAP", "event_type": r[5] or 'unspecified'})
+        status.append({"source": "KAP", "ok": bool(items),
+                       "state": "records_present" if items else "empty_unverified",
+                       "detail": "Üretim arşivindeki tarihli bildirimler" if items else
+                       "Son hafta arşivinde bildirim yok; kaynağın başarılı tarandığı doğrulanamadı."})
     for name, url in FEEDS.items():
         if not fetch_external:
             status.append({"source": name, "ok": False, "detail": "Çevrimdışı inceleme"})
@@ -82,9 +89,11 @@ def collect(con, market, now, fetch_external=True):
                     stamp = stamp.replace(tzinfo=timezone.utc)
                 if now - timedelta(days=7) <= stamp <= now:
                     items.append({"title": title[:250], "url": link,
-                                  "published_at": stamp.isoformat(), "source": name})
+                                  "published_at": stamp.isoformat(), "source": name,
+                                  "asset": "macro", "event_type": "press_release"})
                     accepted += 1
-            status.append({"source": name, "ok": True, "items": accepted})
+            status.append({"source": name, "ok": True, "items": accepted,
+                           "state": "records_present" if accepted else "healthy_no_recent_items"})
         except (requests.RequestException, ET.ParseError, TypeError, ValueError):
             status.append({"source": name, "ok": False, "detail": "Kaynak alınamadı; güncel gündem eksik."})
     upcoming = []
@@ -97,3 +106,17 @@ def collect(con, market, now, fetch_external=True):
             status.append({'source':'Fed takvimi','ok':False,'detail':'Takvim doğrulanamadı.'})
     return {"items": sorted(items, key=lambda x: x["published_at"], reverse=True)[:20], "sources": status, 'upcoming':upcoming,
             "note": "Başlıklar kaynak metnidir; modelin yön tahminine sayısal haber skoru olarak eklenmez."}
+
+
+def attach_first_seen(ledger, agenda, now):
+    """Geriye dönük 'biliniyordu' iddiası kurmadan ilk yerel gözlemi sakla."""
+    seen = {e['key']: e['data'] for e in ledger.events if e['kind'] == 'news_seen'}
+    for item in agenda.get('items', []):
+        identity = {'source': item['source'], 'url': item.get('url'),
+                    'published_at': item['published_at'], 'asset': item.get('asset')}
+        key = 'news-seen:' + digest(identity)
+        if key not in seen:
+            ledger.add('news_seen', key, now.isoformat(), **identity,
+                       first_seen_at=now.isoformat(), event_type=item.get('event_type'))
+            seen[key] = {'first_seen_at': now.isoformat()}
+        item['first_seen_at'] = seen[key]['first_seen_at']

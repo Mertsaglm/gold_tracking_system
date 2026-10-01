@@ -109,6 +109,17 @@ def ag_kapali(monkeypatch):
     monkeypatch.setattr(socket.socket, "connect_ex", _yasak)
     monkeypatch.setattr(socket, "create_connection", _yasak)
     monkeypatch.setattr(socket, "getaddrinfo", _yasak)
+    # curl_cffi Python socket katmanını atlar; ağ yasağı taşıyıcıda da zorlanır.
+    import requests
+    def http_forbidden(*args, **kwargs):
+        pytest.fail('test ağa çıkmaya çalıştı: HTTP taşıyıcısı')
+    monkeypatch.setattr(requests.Session, 'request', http_forbidden)
+    try:
+        from curl_cffi.requests import Session
+    except ImportError:
+        pass
+    else:
+        monkeypatch.setattr(Session, 'request', http_forbidden)
     return _yasak
 
 

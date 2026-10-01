@@ -38,14 +38,14 @@ def refresh(symbols, state, now):
     return result
 
 
-def reconcile(ledger, actions, cfg, now):
+def reconcile(ledger, actions, cfg, now, books=('strategy', 'benchmark', 'shadow_reference', 'shadow_candidate')):
     blocked = {}
     today = now.date().isoformat()
     for a in sorted(actions, key=lambda a: (a['date'], a['ticker'], a['kind'])):
         if not cfg['start_date'] <= a['date'] <= today:
             continue
         symbol = a['ticker']
-        for book in ('strategy', 'benchmark', 'shadow_reference', 'shadow_candidate'):
+        for book in books:
             key = f"corporate:{book}:{symbol}:{a['date']}:{a['kind']}"
             if key in ledger.keys:
                 continue
@@ -64,7 +64,8 @@ def reconcile(ledger, actions, cfg, now):
                            action='split', ratio=a['value'], effective_date=a['date'])
             elif a['kind'] == 'temettu':
                 # Ödeme günü kaynaktan gelmiyor. Alacak ayrı izlenir, harcanabilir nakit sayılmaz.
-                net = cents(float(held['quantity']) * a['value'] * (1 - cfg.get('dividend_tax_rate', .15)))
+                net = cents(held['quantity'] * Decimal(str(a['value'])) *
+                            (Decimal(1) - Decimal(str(cfg.get('dividend_tax_rate', .15)))))
                 ledger.add('dividend_receivable', key, now.isoformat(), book=book, symbol=symbol,
                            amount_cents=net, gross_per_share=a['value'], effective_date=a['date'],
                            note='Net temettü alacağı; ödeme tarihi doğrulanana kadar nakde eklenmez.')

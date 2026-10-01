@@ -1,9 +1,12 @@
 """Hisse başına biriken bütçe; bir eksik kotasyon tüm sepeti durdurmaz."""
+from decimal import Decimal
 from .ledger import cents
 
 
 def step(ledger, cfg, quotes, symbols, now):
     from . import marketdata, policy
+    if cfg.get('execution_phase', 'entry') != 'entry':
+        return
     symbols = sorted(set(symbols))
     if not symbols:
         return
@@ -41,14 +44,18 @@ def step(ledger, cfg, quotes, symbols, now):
         q = quotes.get(symbol)
         if marketdata.usable(q, cfg, now, cfg.get('holidays', ())):
             continue
+        if not marketdata.entry_ready(ledger, cfg, q, symbol, now, 'benchmark'):
+            continue
         px = policy.execution_price(q, cfg, 'BUY')
         qty = policy.quantity_for(min(budget, ledger.account('benchmark')['cash_cents']), px, cfg)
         if not qty:
             continue
         key = f"benchmark:pocket:{symbol}:{len(ledger.events)}"
+        # Yarım kuruşta float çarpımı bir kuruş eksik yazabiliyordu (TOASO, 2026-09-30).
+        notional = qty * Decimal(str(px))
         ledger.add('fill', key, now.isoformat(), book='benchmark', symbol=symbol, side='BUY',
-                   quantity=str(qty), price=px, notional_cents=cents(float(qty) * px),
-                   fee_cents=policy.fee(cfg, float(qty) * px, 'BUY'), quote=q,
+                   quantity=str(qty), price=px, notional_cents=cents(notional),
+                   fee_cents=policy.fee(cfg, float(notional), 'BUY'), quote=q,
                    reason='accumulated_buy_hold', decision_key=key, budget_policy='pockets_v1',
                    stop=None, target=None, deadline=None)
         ledger.account('benchmark')

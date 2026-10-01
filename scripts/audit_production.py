@@ -21,6 +21,7 @@ import tempfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from advisor import capsule, history, learning, notifications, policy, service
 from advisor.calendar import IST, load
+from advisor.accounts import state_path
 from advisor.ledger import Ledger
 
 
@@ -28,7 +29,8 @@ def validate_fixes(root):
     """Güncel motoru gerçek mühürlü girdilerle; tam çevrimi/yedeği kopyada sına."""
     from advisor import engine, recovery
     root = Path(root).resolve()
-    ledger = Ledger(root/'data/advisor/events.jsonl')
+    state = state_path(root, service.configuration(root))
+    ledger = Ledger(state/'events.jsonl')
     def semantic(value):
         if isinstance(value, dict):
             return {k:semantic(v) for k,v in value.items() if k not in ('key','decision_key','horizon_sessions')}
@@ -38,7 +40,7 @@ def validate_fixes(root):
     invalid_reference_displays = []
     for e in ledger.events:
         if e['kind'] != 'decision_capsule':continue
-        payload=json.loads(gzip.decompress((root/'data/advisor'/e['data']['path']).read_bytes()))['payload']
+        payload=json.loads(gzip.decompress((state/e['data']['path']).read_bytes()))['payload']
         c=payload['context']; l=Ledger(Path('/nonexistent-audit-ledger'))
         l.events=list(c['events']);l.keys={r['key'] for r in l.events};l.root_hash=l.events[-1]['hash']
         actual,_=engine.run(l,c['rows'],c['forecasts'],c['model'],c['cfg'],c['quotes'],datetime.fromisoformat(c['now']),c['event_note'])
@@ -59,18 +61,22 @@ def validate_fixes(root):
         # Kod ve ayarlar denetimin çalıştırıldığı checkout'tan, girdiler arşivden.
         local=Path(__file__).resolve().parents[1]
         shutil.copy2(local/'advisor/config.json',work/'advisor/config.json')
+        membership=local/'advisor/universe-history.json'
+        if membership.exists():shutil.copy2(membership,work/'advisor/universe-history.json')
         for name in ('holidays_tr.yaml','config.yaml','universe.yaml'):
             if (root/name).exists():shutil.copy2(root/name,work/name)
-        s=json.loads((root/'data/advisor/latest.json').read_text())
+        s=json.loads((state/'latest.json').read_text())
         now=datetime.fromisoformat(s['generated_at'])
         books=('strategy','benchmark','shadow_reference','shadow_candidate')
         before={book:ledger.account(book) for book in books}
         for _ in range(2):
-            updated=service.cycle(work,now=now,quotes=s['quotes'],offline=True)
-            after=Ledger(work/'data/advisor/events.jsonl')
+            updated=service.cycle(work,now=now,quotes=s['quotes'],offline=True,
+                                  closing_refresh=bool(s.get('monitoring',{}).get('closing_refresh')))
+            assert not updated.get('skipped'), 'validation_cycle_skipped'
+            after=Ledger(state_path(work,service.configuration(work))/'events.jsonl')
             assert {book:after.account(book) for book in books}==before, 'repeated_cycle_changed_accounts'
-        old_model=json.loads((root/'data/advisor/model.json').read_text())
-        new_model=json.loads((work/'data/advisor/model.json').read_text())
+        old_model=json.loads((state/'model.json').read_text())
+        new_model=json.loads((state_path(work,service.configuration(work))/'model.json').read_text())
         numeric_deltas=[]
         def same_model(a,b):
             if isinstance(a,dict):return a.keys()==b.keys() and all(same_model(v,b[k]) for k,v in a.items())
@@ -102,7 +108,7 @@ def money(value):
 
 def independent(events, book):
     """Defter.account çağırmadan katkı, maliyet, nakit, adet ve alacak mutabakatı."""
-    cash = contributed = realized = receivable = 0
+    cash = contributed = realized = receivable = debt = fees = 0
     positions = {}
     for e in events:
         d = e['data']
@@ -111,9 +117,12 @@ def independent(events, book):
         if e['kind'] == 'account_checkpoint':
             a = d['account']
             cash, contributed, realized, receivable = (a[k] for k in ('cash_cents','contributed_cents','realized_cents','receivable_cents'))
-            positions = {s:[Decimal(p['quantity']), p['cost_cents']] for s,p in a['positions'].items()}
+            debt=a.get('fee_liability_cents',0);fees=a.get('account_fees_cents',0)
+            positions = {s:[Decimal(str(p['quantity'])), p['cost_cents']] for s,p in a['positions'].items()}
         elif e['kind'] == 'contribution':
             cash += d['amount_cents']; contributed += d['amount_cents']
+        elif e['kind'] == 'account_fee':
+            debt += d['amount_cents']; fees += d['amount_cents']
         elif e['kind'] == 'fill':
             qty = Decimal(d['quantity']); symbol = d['symbol']
             assert money(qty*Decimal(str(d['price']))) == d['notional_cents'], ('notional', e['key'])
@@ -137,14 +146,40 @@ def independent(events, book):
             if d['action'] == 'split':
                 if d['symbol'] in positions: positions[d['symbol']][0] *= Decimal(str(d['ratio']))
             else: cash += d['net_cents']
+        paid=min(cash,debt);cash-=paid;debt-=paid
+        assert min(cash,debt,receivable)>=0
     return {'cash_cents':cash,'contributed_cents':contributed,'realized_cents':realized,
-            'receivable_cents':receivable,'positions':{s:{'quantity':str(q),'cost_cents':c} for s,(q,c) in positions.items() if q>0}}
+            'receivable_cents':receivable,'fee_liability_cents':debt,'account_fees_cents':fees,'positions':{s:{'quantity':str(q),'cost_cents':c} for s,(q,c) in positions.items() if q>0}}
+
+
+def audit_ledgers(root, replay=False):
+    result = {}
+    for path in sorted((Path(root)/'data/advisor').rglob('events.jsonl')):
+        ledger=Ledger(path)
+        books={'strategy','benchmark'} | {e['data']['book'] for e in ledger.events if 'book' in e['data']}
+        for book in books:
+            expected=ledger.account(book); actual=independent(ledger.events,book)
+            for key in ('cash_cents','contributed_cents','realized_cents','receivable_cents','fee_liability_cents','account_fees_cents'):
+                assert actual[key]==expected.get(key,0),(str(path),book,key)
+            assert actual['positions']=={s:{'quantity':str(p['quantity']),'cost_cents':p['cost_cents']} for s,p in expected['positions'].items()}
+        count=0
+        for event in ledger.events:
+            if event['kind']!='decision_capsule':continue
+            file=path.parent/event['data']['path']
+            envelope=json.loads(gzip.decompress(file.read_bytes()))
+            assert capsule.digest(envelope['payload'])==envelope['hash']==event['data']['id']
+            if replay:assert capsule.reproduce(file)['ok']
+            count+=1
+        result[str(path.relative_to(root))]={'events':len(ledger.events),'hash':ledger.root_hash,
+                                             'books':sorted(books),'capsules':count}
+    return result
 
 
 def audit(root, replay=False):
     root = Path(root).resolve(); cfg = service.configuration(root); cfg['calendar'] = load(root)
-    path = root/'data/advisor/events.jsonl'; ledger = Ledger(path)
-    snapshot = json.loads((root/'data/advisor/latest.json').read_text())
+    state = state_path(root, cfg)
+    path = state/'events.jsonl'; ledger = Ledger(path)
+    snapshot = json.loads((state/'latest.json').read_text())
     events = ledger.events
     result = {'market':cfg['market'], 'through':events[-1]['at'],
               'snapshot_at':snapshot['generated_at'], 'analysis_date':snapshot['analysis_date'],
@@ -152,8 +187,8 @@ def audit(root, replay=False):
               'events':len(events),'kinds':dict(Counter(e['kind'] for e in events)), 'accounts':{}}
     for book in ('strategy','benchmark','shadow_reference','shadow_candidate'):
         a = independent(events,book); expected = ledger.account(book)
-        for key in ('cash_cents','contributed_cents','realized_cents','receivable_cents'):
-            assert a[key] == expected[key], (book,key)
+        for key in ('cash_cents','contributed_cents','realized_cents','receivable_cents','fee_liability_cents','account_fees_cents'):
+            assert a[key] == expected.get(key,0), (book,key)
         assert a['positions'] == {s:{'quantity':str(p['quantity']),'cost_cents':p['cost_cents']} for s,p in expected['positions'].items()}
         result['accounts'][book] = a
     index = next(i for i,e in enumerate(events) if e['hash']==snapshot['health']['ledger_hash'])
@@ -165,7 +200,7 @@ def audit(root, replay=False):
     result['snapshot_accounts_match'] = True
     daily = defaultdict(list)
     for e in events:
-        if e['kind']=='session_check' and e['data'].get('in_execution_window',True):
+        if e['kind']=='session_check' and e['data'].get('in_observation_window',e['data'].get('in_execution_window',True)):
             daily[e['at'][:10]].append(e)
     result['daily_cycles'] = []
     for day, rows in sorted(daily.items()):
@@ -186,7 +221,7 @@ def audit(root, replay=False):
     result['latest_notification_matches_current_state'] = notifications.delivered(ledger,snapshot)
     result['learning'] = {k:snapshot['feedback'][k] for k in ('roundtrips','live_gate_passed','scorecard','evidence')}
     result['models'] = []
-    for file in sorted((root/'data/advisor/models').glob('*.json')):
+    for file in sorted((state/'models').glob('*.json')):
         model=json.loads(file.read_text())
         assert model['label_end']<=model['asof']
         assert all(fold['train_label_end']<fold['test_start'] for fold in model['folds'])
@@ -196,7 +231,7 @@ def audit(root, replay=False):
     verified=0; reproduced=0; runtimes=[]
     for e in events:
         if e['kind']!='decision_capsule':continue
-        file=root/'data/advisor'/e['data']['path'];envelope=json.loads(gzip.decompress(file.read_bytes()))
+        file=state/e['data']['path'];envelope=json.loads(gzip.decompress(file.read_bytes()))
         assert capsule.digest(envelope['payload'])==envelope['hash']==e['data']['id']
         context=envelope['payload']['context']
         assert all(r['date']<=context['now'][:10] for r in context['rows'])
@@ -206,6 +241,7 @@ def audit(root, replay=False):
             if reproduced%15==0:print(f"{cfg['market']}: {reproduced} karar paketi yeniden üretildi",file=sys.stderr,flush=True)
         if envelope['payload']['runtime'] not in runtimes:runtimes.append(envelope['payload']['runtime'])
     result['capsules']={'hash_verified':verified,'archived_code_reproduced':reproduced,'runtimes':runtimes}
+    result['all_ledgers'] = audit_ledgers(root,replay=False)
     with history.connection(root,cfg['market']) as con:
         assert con.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
         result['sql_sha256']=hashlib.sha256((root/'data'/('bist.sql' if cfg['market']=='bist' else 'altin.sql')).read_bytes()).hexdigest()

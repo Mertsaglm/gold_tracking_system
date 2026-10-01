@@ -1,12 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {decisionDetail,weeklyPanel,funnelPanel,riskPanel,evidencePanel} from '../public/insights.js';
+import {decisionDetail,weeklyPanel,funnelPanel,riskPanel,evidencePanel,portfolioExperimentPanel} from '../public/insights.js';
 
 test('decision details show real fees, zero values and escaped history',()=>{
  const html=decisionDetail({stop:95,target:120,detail:{quantity:'2',notional_try:200,fee_try:0,stop_risk_try:10,target_net_try:40,basis:'Sanal işlem'},
   change:{items:[{label:'Gerekçe',before:'<script>bad()</script>',after:'AL'}]}});
  assert.match(html,/200 TL/);assert.match(html,/0 TL/);assert.match(html,/10 TL/);
  assert.ok(!html.includes('<script>'));assert.match(html,/&lt;script&gt;/);
+});
+test('candidate comparison distinguishes pending start from separate funded sleeves',()=>{
+ const waiting=portfolioExperimentPanel({portfolio_experiments:{status:'T0 bekleniyor',accounts:[]}});
+ assert.match(waiting,/T0 bekleniyor/);
+ const html=portfolioExperimentPanel({portfolio_experiments:{status:'sanal sınav',accounts:[
+   {id:'core-ridge',start_date:'2026-10-01',strategy:{parts:{core:{equity_try:40000},tactical:{equity_try:10000}}}}
+ ],comparison:{arms:[{id:'core-ridge',wealth_try:50000,contributed_try:50000,twr_pct:0,
+   max_drawdown_pct:0,trade_count:1,transaction_fees_try:2}],evaluation_status:'ölçüm bekleniyor'}}});
+ assert.match(html,/Çekirdek \+ mevcut Ridge/);
+ assert.match(html,/40.000 TL/);
+ assert.match(html,/10.000 TL/);
+ assert.match(html,/Otomatik terfi yok/);
 });
 test('unknown risk and evidence stay unknown; contributions are separately labelled',()=>{
  const risk=riskPanel({risk:{stop_risk_try:null,stop_risk_pct:null,limit_pct:5,stress:[{fall_pct:10,loss_try:null}],missing:['AAA']}});

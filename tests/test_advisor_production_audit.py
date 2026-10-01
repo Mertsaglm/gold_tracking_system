@@ -8,6 +8,8 @@ import sqlite3
 import pandas as pd
 import pytest
 
+from tests.advisor_legacy import legacy_configuration
+
 from advisor import history, marketdata, notifications, outcomes, policy, service, shadow
 from advisor.ledger import Ledger, fund
 
@@ -16,7 +18,7 @@ NOW = datetime(2026, 9, 22, 10, tzinfo=timezone.utc)
 
 
 def cfg():
-    return {**service.configuration(ROOT), 'market': 'bist'}
+    return {**legacy_configuration(ROOT), 'market': 'bist'}
 
 
 def snapshot(action='BEKLE', code='no_edge', now=NOW):

@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from tests.advisor_legacy import legacy_configuration
+
 from advisor import capsule, corporate, engine, evidence, learning, observations, reporting, service, shadow, simulation, universe
 from advisor.ledger import Ledger, fund
 
@@ -17,7 +19,7 @@ NOW=datetime(2026,9,16,8,tzinfo=timezone.utc)
 
 
 def config():
-    return {**service.configuration(ROOT),'market':'bist','initial_try':5000,'monthly_try':5000}
+    return {**legacy_configuration(ROOT),'market':'bist','initial_try':5000,'monthly_try':5000}
 
 
 def quote(price=100):

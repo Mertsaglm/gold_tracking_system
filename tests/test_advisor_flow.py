@@ -14,6 +14,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from tests.advisor_legacy import legacy_configuration
+
 from advisor import corporate, history, learning, outcomes, policy, service
 from advisor.ledger import Ledger, fund, cents
 
@@ -33,7 +35,7 @@ def frame():
 
 
 def test_complete_cycle_buy_repeat_restart_sell_and_monthly_funding(tmp_path, monkeypatch):
-    cfg=service.configuration(ROOT)
+    cfg=legacy_configuration(ROOT)
     cfg.update(max_position_pct=40,minimum_cash_pct=20,risk_per_trade_pct=2)
     (tmp_path/'advisor').mkdir();(tmp_path/'advisor/config.json').write_text(json.dumps(cfg))
     con=sqlite3.connect(':memory:');con.row_factory=sqlite3.Row
@@ -72,7 +74,7 @@ def test_complete_cycle_buy_repeat_restart_sell_and_monthly_funding(tmp_path, mo
 
 
 def test_price_move_since_analysis_is_not_predicted_twice():
-    cfg={**service.configuration(ROOT),'market':'bist'}
+    cfg={**legacy_configuration(ROOT),'market':'bist'}
     row={'symbol':'AAA','date':'2026-09-14','close':100,'quality_ok':True,'trend50':2,'rsi14':50,'volatility20':1}
     d=policy.decision(row,5,{'ready':True,'approved':False},cfg,fixture_quote(price=106),None,None,NOW)
     assert d['action']=='BEKLE'
@@ -100,7 +102,7 @@ def test_brief_telegram_does_not_hide_fourth_and_fifth_sales():
 
 
 def test_missing_gold_reference_cannot_start_a_position():
-    cfg={**service.configuration(ROOT),'market':'gold'}
+    cfg={**legacy_configuration(ROOT),'market':'gold'}
     q=fixture_quote();q.pop('reference_price')
     row={'symbol':'GRAM','date':'2026-09-14','quality_ok':True,'trend50':2,'rsi14':50,'volatility20':1}
     d=policy.decision(row,20,{'ready':True,'approved':False},cfg,q,None,None,NOW)
@@ -108,7 +110,7 @@ def test_missing_gold_reference_cannot_start_a_position():
 
 
 def test_outcomes_wait_for_maturity_and_do_not_count_the_same_prediction_twice(tmp_path):
-    cfg=service.configuration(ROOT); l=Ledger(tmp_path/'events.jsonl')
+    cfg=legacy_configuration(ROOT); l=Ledger(tmp_path/'events.jsonl')
     f=frame(); asof=f.iloc[-21]['date']; now=datetime.fromisoformat(asof+'T10:30:00+00:00')
     d={'symbol':'AAA','asof':asof,'action':'BEKLE','forecast_pct':20,'model_id':'model'}
     outcomes.record(l,[d],{'AAA':20},now)
@@ -123,7 +125,7 @@ def test_outcomes_wait_for_maturity_and_do_not_count_the_same_prediction_twice(t
 
 
 def test_corporate_split_preserves_wealth_and_dividend_is_not_spendable_cash(tmp_path):
-    cfg=service.configuration(ROOT); l=Ledger(tmp_path/'events.jsonl');fund(l,cfg,'2026-09-15',NOW.isoformat())
+    cfg=legacy_configuration(ROOT); l=Ledger(tmp_path/'events.jsonl');fund(l,cfg,'2026-09-15',NOW.isoformat())
     l.add('fill','buy',NOW.isoformat(),book='strategy',symbol='AAA',side='BUY',quantity='10',price=100,notional_cents=100000,fee_cents=0,stop=90,target=120)
     later=NOW+timedelta(days=1)
     a={'ticker':'AAA','date':'2026-09-16','kind':'bolunme','value':2}
@@ -161,7 +163,7 @@ def test_portfolio_delivery_order_and_single_writer():
 
 def test_wide_spread_blocks_entries_but_does_not_disable_a_protective_exit(tmp_path):
     from advisor import marketdata
-    cfg={**service.configuration(ROOT),'market':'gold'}
+    cfg={**legacy_configuration(ROOT),'market':'gold'}
     q=fixture_quote(price=90);q['ask']=105
     assert marketdata.usable(q,cfg,NOW)
     assert marketdata.usable(q,cfg,NOW,allow_wide_spread=True) is None
@@ -186,7 +188,7 @@ def test_fed_calendar_and_tcmb_timestamp_parsers():
 
 
 def test_short_history_does_not_poison_the_entire_snapshot_with_nan():
-    cfg={**service.configuration(ROOT),'market':'bist'}
+    cfg={**legacy_configuration(ROOT),'market':'bist'}
     row={'symbol':'AAA','date':'2026-09-14','quality_ok':False,'trend50':0,'rsi14':50,'volatility20':float('nan')}
     d=policy.decision(row,None,{'ready':False},cfg,fixture_quote(),None,None,NOW)
     assert d['action']=='VERİ BEKLENİYOR'

@@ -1,85 +1,72 @@
 # Mevcut durum
 
-**Güncelleme:** 2026-09-23
-**Aktif iş:** Denetim düzeltmeleri GitHub ve Vercel'de yayında; ilk yeni üretim çevrimi ve panelde iki hesabın yeni verisi doğrulandı. Cron yedeği ve alıcı teslimi izlenecek.
+**Güncelleme:** 2026-10-01
+**Aktif iş:** Yerel %80 GRAM çekirdek/%20 taktik sanal sınavı kuruldu;
+önceki üretim düzeltmeleriyle birlikte yayın incelemesi bekliyor. T0 kapalıdır.
+Üretim yayını ayrı onay bekliyor; gerçek emir yok.
 
-## Kapsam ve doğrulanmış gerçek
+## 2026-10-01 yeni kapsam ve sınır
 
-- BIST ve banka gram altını ayrı sanal hesaplar; gerçek emir gönderimi yok.
-- 2026-09-15–2026-09-22 üretimi sabit GitHub commit arşivlerinden incelendi.
-- BIST canlı evreni 18 hisse; BIST30'un tamamı değil. Araştırma tabanı 70 hisse.
-- 143 mühürlü karar paketi kendi kod/runtime'ıyla birebir yeniden üretildi.
-- Dört hesabın muhasebesi bağımsız hesapla, yedek dönüşü ve tekrar çevrimiyle sınandı.
-- BIST stratejide 1 alış, 0 satış; altında 0 işlem. Canlı tahmin sonucu henüz yok.
-- Model onayları kapalı, canlı kalibrasyon düzeltmesi sıfır; üstünlük kanıtı yok.
+- Beş ayrı sanal kol aynı 50.000 TL + aylık 5.000 TL ile çalışır; çekirdek
+  model kapısı beklemez, taktik kendi bütçesi/stop riski içindedir.
+- Altın ons/kur Ridge ayrı adaydır; ilk offline 126 test gününde temel
+  Ridge MAE'sini iyileştirmedi. Otomatik terfi yok.
+- Gerçek SQL'nin geçici kopyasında 2026-09-22 kapanışıyla iki kotasyonlu
+  tam çevrim, altı defterin bağımsız mutabakatı, tekrar ve yedek geçti. Bu canlı
+  fiyat veya ortak T0 kanıtı değildir. Makbuz: `docs/PORTFOY-DENEYI-2026-10-01.md`.
+- BIST ile 37 ortak motor modülü eşit; haber ilk görülmesi ileriye dönük
+  mühürlenir. `experiment_start_date` hâlâ `null`.
+- Eksik BIST30/engelli haftalık satış ve yarım kuruş hataları kilitlendi;
+  2026-10-01 suite: BIST 1478, altın 1016 geçti/9 atlandı; panel 12'şer geçti.
+- Güncel üretim SQL'leriyle beşer aday/altışar defter provası geçti; TOASO
+  karşılaştırma yarım kuruşu düzeltilip davranış testine bağlandı.
+- Uzak altın 14:33 UTC: eski hesap 10.000 TL katkı/sıfır işlem; 33 çıktı
+  07:02–14:46 UTC (en büyük boşluk 15,3 dk). Özel BIST Safari'de okundu:
+  14:46:54 başarılı, 29 çıktı 08:02–14:47 UTC (en büyük boşluk 17 dk).
+  İki uzak SQL geçici DB'de incelendi: BIST30 30/30 bar 2026-09-30,
+  altın tarih/banka tick'i 2026-09-30, ons/kur OHLC 2026-09-29. Actions
+  manuel dispatch + planlı yedek gösterir; dış kaynak kimliği açık.
+- Güncel BIST defterinde 7.124, altın defterinde 1.863 olayın hash zinciri ve
+  dörder hesabın bağımsız muhasebesi doğrulandı. BIST ana hesap 55.000 TL,
+  altın ana hesap 10.000 TL nakitte; ikisinde de ana işlem yok.
+- Eski yerel kapsüller (BIST 148, altın 86) sabit ortamda tekrarlandı; altın
+  `.venv` pandas/tzdata kilidine eşitlendi. Güncel üretim kapsülleri açık.
+- Üretim Telegram defterinde BIST için 31, altın için 32 başarılı bildirim
+  makbuzu var. Vercel paneli HTTP 200, yetkisiz durum API'si HTTP 401 verdi;
+  parolalı veri görünümü henüz sınanmadı.
 
-## Tamamlandı — 2026-09-23, üretime yayımlandı
+## Önceki yerel çalışma
 
-- Telegram A→hata→A iyileşmesi, eski görünümü gönderme ve nöbetçi makbuz kontrolü.
-- Eksik hisse geçmişinin paydayı daraltması; yalnız gölge hesaptaki stop takibi.
-- Belirsiz kurumsal işlemde kesin servet/risk bütçesi göstermeme.
-- Model/tahmin vadesini mühürleme; farklı vadeli sonuçları kalibrasyonda ayırma.
-- Geçersiz fiyat/referans ve gelecekteki analiz; dayanaksız hedef/getiri temizliği.
-- Geciken analiz panel/Telegram/nöbetçide görünür; fiyat korumaları değişmedi.
-- Altın eski hattında yanlış gün mutabakatı, importta bayrak sıfırlama ve YOK hatası.
-- Altın testlerinde otomatik ağ/üretim DB/log koruması; sızan test izole edildi.
-- Ortak motor iki depoda eş; regresyon testleri ve gerçek veri karşılaştırması hazır.
-- Kanıt: `reports/URETIM-DENETIMI-2026-09-22.md` ve aynı adlı JSON ekleri.
-- Komut: `python scripts/audit_production.py --root /tmp/sabit-kopya --output /tmp/denetim.json --replay --validate-fixes`.
-- 2026-09-22 denetiminde üretim defteri/SQL değiştirilmedi. 2026-09-23'te düzeltmeler iki `main` dalına normal push ile yayımlandı; ilk yeni altın çevrimi eksik 2026-09-22 kapanışını SQL'e ekledi.
-
-## Açık sınırlar
-
-- Denetim başında altın SQL'i 2026-09-21 kapanışındaydı. 2026-09-23 10:45 UTC
-  çevriminde yeni kod 2026-09-22 barını SQL'e ekledi; altın analiz tarihi 2026-09-22 oldu.
-  Gelecek eksik kapanışlarda yeni alım kapanır, mevcut stop açık kalır.
-- İki portföy workflow'una 30 dakika nominal GitHub cron yedeği, nöbetçiye 45 dakika
-  çevrim boşluğu gözlemi eklendi. Kod üretimde; cron yedeğinin gerçekten tetiklenmesi
-  ve 45 dakika uyarısı henüz gözlenmedi. GitHub zaman garantisi yok.
-- Eski altın mutabakatının 303 yanlış tamamlandı bayrağı kopyada düzeltildi.
-  Üretimde yeni uzlaştırıcı çalışana kadar eski bayraklar ve eski raporlar geçersizdir.
-- 2026-09-16/17/18'de günde bir seans çevrimi; 2026-09-21/22'de yaklaşık 15 dakika.
-  GitHub gerçek tetik türü workflow_dispatch. Bu Mac'te kurulu advisor LaunchAgent yok.
-  Eski hafızanın yerel 10 dakika runner iddiası doğrulanmadı; haricî çağıranın güvencesi bilinmiyor.
-- Haricî 15 dakika dispatch çağırıcısının kimliği hâlâ doğrulanmadı; yedek bunu bağımlılık
-  olmaktan çıkarır fakat 15 dakika SLA'sı vermez.
-- Telegram dışa aktarımları revizyon sonrasını kapsamıyor; alıcı ekranı doğrulanamadı.
-- Gerçek satış/stop/aylık katkı henüz yaşanmadı; yalnız kontrollü test kanıtı var.
-- Altın bağımsız prim ve FRED kaynak sorunları sürüyor; eski rapor V2 öğrenme kanıtı değil.
-- Kişisel tarife/ödeme belgesi, tarihsel banka makası ve BIST tarihsel üyelik verisi yok.
-- Saklama/MKK dönemsel ücretleri sanal defterde yok; maliyet notunda açık.
-- Panel `https://birikim-paneli.vercel.app/` adresinde iki hesabı gösterdi.
-  Vercel production deployment'ı Ready; yeni sürümde parolasız API 401.
-  Parola sonrası BIST 18/18, altın 1/1 fiyatla ve ikisi de 2026-09-22 analiz
-  tarihiyle açıldı; altın tarihi GitHub arşiviyle eşleşti.
-- İlk yeni çevrim: BIST `f71f923`, altın `2493e06`; her iki `run_status.json`
-  `ok=true`, `skipped=false`. Altın workflow'unda yenileme, çevrim, arşiv ve bildirim
-  adımları başarılı. Telegram alıcı ekranı bağımsız doğrulanmadı.
+2026-09-25 ve 2026-09-30 kapsamı/kanıtları: `ai/archive/STATE-2026-10-01-prior-work.md`.
 
 ## Sıradaki 3 İş
 
-1. İlk GitHub cron yedeğini ve 45 dakika nöbetçi uyarısını üretimde gözle.
-   DoD: tetik türü ve zaman aralığı arşivde görülür; gerçek boşluk uyarısı yalnız gözlemdir.
-2. Güncel Telegram alıcı kaydını arşiv ve makbuzla eşleştir.
-   DoD: gönderim sonucu alıcı kaydı ve repo makbuzunda aynı çevrime bağlanır.
-3. İlk olgunlaşan tahmin sonucunu mühürlü karar kapsülüyle eşleştir.
-   DoD: vade, tahmin hatası ve sonuç hesabı gerçek veriden yeniden üretilebilir.
+1. 👤 İki depodaki `codex/portfolio-research` dalı için üretim yayın kararını ver.
+   DoD: üretim kapsamı ve geri dönüş adımı açıkça onaylanır.
+2. Yayın onayıyla yayımla; taze GRAM/BIST çevrimi, Telegram
+   bildirimi, parolalı panel verisi ve yedeği denetle.
+   DoD: beş kol/ana hesap ayrı, tekrar ve yedek eş.
+3. Taze veri ve iki başarılı çevrimden sonra ortak gelecek T0'ı aç.
+   DoD: 20/63/126 seans takvimi ve hesap hash'leri kayıtlı.
 
-## TAKVİM & SENDE KALANLAR
+## TAKVİM
 
-| Tarih | Kim | İş | DoD | Durum |
-|---|---|---|---|---|
-| 2026-09-22 | 🤖 | Üretim denetimi ve yerel düzeltme | Test ve gerçek arşiv kanıtı | Tamam |
-| 2026-09-23 | 🤖 | Yerel düzeltmelerin commit/push/yayını | İlk yeni çevrim ve Vercel Ready | Tamam |
-| 2026-09-23 | 👤 | Panel projesine GitHub erişimi | Canlı panelde iki hesap görünür | Tamam |
-| 2026-09-23 | 🤖 | Yeni sürümde parola sonrası panel kontrolü | İki hesap 2026-09-22 analizini gösterir | Tamam |
-| Veri bulunduğunda | 👤 | Üyelik/ödeme/masraf kanıtı | Belgeli içe alma/mutabakat | Bekliyor |
+| Tarih | İş | Kim | Durum |
+|---|---|:--:|---|
+| 2026-09-25 | Yerel düzeltme/eğitim/yeniden sınav | 🤖 | Tamam |
+| 2026-09-30 | Üretim sonrası yerel düzeltme ve yayın hazırlığı | 🤖 | Tamam; yayın bekliyor |
+| 2026-11-25 | GC=F roll etkisi ve bağımsız prim/FRED kapsamı incelemesi | 🤖 | Bekliyor |
 
-## Backlog
+## SENDE KALANLAR
 
-- Kapsül büyümesini ve arşiv saklama maliyetini izle; geçmiş karar kanıtını kaybetme.
-- Grup 4: panelden ayar, gerçek işlem günlüğü, etkileşimli senaryo ekranı.
-- 2026-11-25: altın GC=F referansında roll etkisini ayrıca ölç.
-- Önceki durumun tam kopyası: `ai/archive/STATE-2026-09-22-before-production-audit.md`.
-- 2026-09-23 açık risk aksiyonu: `reports/ACIK-RISKLER-2026-09-23.md`.
-- Ayrıntılı eski çalışmalar: `docs/IYILESTIRME-2026-09-16.md`; V1 ölçümleri korunur.
+- 👤 Üretim yayını için ayrı açık onay; commit/push 2026-10-01 kullanıcı talebiyle yetkilendirildi.
+- Yayın yetkisi verilirse ilk gerçek güncel çevrimde taze veri ve eski defter eşliği doğrulanır.
+
+## Backlog / açık dış bağımlılıklar ve sınırlar
+
+- Tarihsel banka kotasyonu/emir sırası, kişisel tarife ve MKK ücretleri.
+- Geçmişte bilinen üyelik/fiyat sürümü, temettü ödeme günü, revizyon geçmişli TÜFE.
+- Dış 15 dakika tetikleyicisi ve alıcıya Telegram tesliminin bağımsız kanıtı.
+- 2027 tahmini takvim kayıtlarını yıl başlamadan resmi kaynakla doğrulama.
+- Aday kapsüllerinin büyümesini gözle; geçmiş kanıtı silmeden saklama politikası.
+- Önceki arşiv: `ai/archive/STATE-2026-09-25-before-wealth-revision.md`.

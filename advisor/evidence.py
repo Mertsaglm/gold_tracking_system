@@ -10,6 +10,16 @@ def interval(values, minimum=24):
     n = len(values)
     mean = statistics.mean(values) if n else None
     se = statistics.stdev(values) / math.sqrt(n) if n > 1 else None
+    # Örtüşmeyen dönemler de bağımlı olabilir. Bartlett/HAC hata payı
+    # klasik hata payını yalnız genişletebilir; küçük örneklem garantisi yok.
+    if n > 2:
+        centered = [v - mean for v in values]
+        variance = sum(v*v for v in centered) / n
+        lag = min(n-1, max(1, int(n ** (1/3))))
+        for k in range(1, lag+1):
+            covariance = sum(centered[i]*centered[i-k] for i in range(k,n)) / n
+            variance += 2*(1-k/(lag+1))*covariance
+        se = max(se, math.sqrt(max(0, variance) / n))
     # Küçük örneklemde normal 1.96 katsayısından daha muhafazakâr t yaklaşımı.
     z = 1.96
     critical = z + (z**3 + z)/(4*(n-1)) + (5*z**5+16*z**3+3*z)/(96*(n-1)**2) if n > 1 else None
@@ -17,7 +27,7 @@ def interval(values, minimum=24):
     return {'periods':n,'mean_excess_pct':mean,'lower_95_pct':lower,
             'upper_95_pct':mean+critical*se if se is not None else None,
             'minimum_periods':minimum,'approved':n>=minimum and lower is not None and lower>0,
-            'method':'Örtüşmeyen dönemlerde eşleştirilmiş fark; yaklaşık t güven aralığı.'}
+            'method':'Örtüşmeyen eşleştirilmiş dönemler; yaklaşık t ve HAC hata payının geniş olanı. Örtüşmeme bağımsızlık garantisi değildir.'}
 
 
 def live(ledger, cfg):
@@ -39,5 +49,5 @@ def live(ledger, cfg):
         start=(day,d)
     result=interval([p['excess_pct'] for p in periods],cfg['learning'].get('min_live_periods',24))
     result['series']=periods
-    result['status']='bağımsız sanal kanıt yeterli' if result['approved'] else 'bağımsız sanal kanıt yetersiz'
+    result['status']='sanal kıyas eşiği geçti; ek doğrulama gerekli' if result['approved'] else 'sanal üstünlük kanıtı yetersiz'
     return result

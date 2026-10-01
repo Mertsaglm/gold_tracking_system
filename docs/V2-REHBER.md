@@ -13,7 +13,7 @@ kanıtlanmamış bir LLM gerekçesi V2'de sayısal fiyat veya işlem miktarı ü
 
 ## Bütçe ve karar
 
-`advisor/config.json` içindeki başlangıç varsayımı her hesap için 5.000 TL,
+`advisor/config.json` içindeki başlangıç varsayımı (2026-09-25) her hesap için 50.000 TL,
 sonraki her ay 5.000 TL katkıdır. “Kredi” borç olarak modellenmez. Kullanıcının
 gerçek hisseleri, gramları veya toplam serveti bu hesaplara aktarılmamıştır.
 Yeni ay katkısı bir kez yazılır; sistemin koşmadığı aylar nakit olarak tamamlanır.
@@ -42,8 +42,11 @@ Altın aylık katkısı yalnız yeni fırsat varsa kullanılır; ay sonu zorunlu
 - Altında gün içi GC=F × USD/TRY referansı da aranır. Böylece son analizden sonra
   gerçekleşmiş fiyat değişimi gelecek kazanç olarak ikinci kez sayılmaz.
 - Banka makası genişken yeni alış yapılmaz; doğrulanmış fiyatta koruyucu satış
-  sadece geniş makas nedeniyle engellenmez. İşlem penceresi hafta içi
-  10:15–17:45 İstanbul saatidir. Tatiller ve eski/gelecek zaman damgaları elenir.
+  sadece geniş makas nedeniyle engellenmez. Yeni alım, koruyucu satış ve fiyat
+  gözlemi ayrı saatlerdir; `advisor/config.json` içindeki üç pencere kullanılır.
+  BIST yeni alımı 17:45’te, koruyucu işlem 18:00’de biter; gözlem 20:00’ye sürer.
+  Altın 09:00–18:00 yeni alım, 23:00’e kadar koruyucu işlem ve 23:30’a kadar
+  gözlem kullanır. Bunlar sistem tercihleridir. Tatiller ve eski/gelecek damgalar elenir.
 - Komisyon, BSMV, KMV, kayma ve varsayılan borsa payı yapılandırmada ve panelde
   açıklanır. Kişisel ekstre tarifesi doğrulanmış değildir.
 - Bölünme miktarı/seviyeleri düzeltir. Geç gelen ve geçmiş işlemlerle çelişen
@@ -51,7 +54,7 @@ Altın aylık katkısı yalnız yeni fırsat varsa kullanılır; ay sonu zorunlu
   kaynağı bulunmadığından nakit olarak harcanmaz. Kanıt referanslı ödeme dosyasıyla nakit mutabakatı yapılabilir; otomatik ödeme kaynağı yoktur.
 
 Portföy değeri, eldeki varlıkların satış masrafı düşülmüş değeri + nakit + bilinen
-alacaklardır. Eksik veya bayat fiyat varsa değerleme `null` olur; sıfır zarar gibi gösterilmez.
+alacaklar eksi tahakkuk etmiş hesap ücretleridir. Eksik veya bayat fiyat varsa değerleme `null` olur; sıfır zarar gibi gösterilmez.
 Yeni katkı kazanç sayılmaz. Al-tut hesabı aynı katkıları, fiyat referansını ve
 masrafları kullanır; tam lota yetmeyen payı nakitte bırakır. Mevduat faizi eklenmez.
 
@@ -113,10 +116,10 @@ güncel değilse yerel analiz de eski olur. Bayat veri panelde belirtilir.
 | Dosya | İşlev |
 |---|---|
 | `advisor/config.json` | Bütçe, risk, fiyat ve model kuralları |
-| `data/advisor/events.jsonl` | Katkı, fiyat, karar, sanal işlem, sonuç ve bildirim olayları |
+| `data/advisor/accounts/<account_id>/events.jsonl` | Katkı, fiyat, karar, sanal işlem, sonuç ve bildirim olayları |
 | `data/advisor/latest.json` | Panelin okuyacağı son hesap ve analiz görünümü |
-| `data/advisor/model.json` | Tekrarlanabilir model önbelleği |
-| `data/advisor/models/` | Önceki model sürümleri |
+| `data/advisor/accounts/<account_id>/model.json` | Tekrarlanabilir model önbelleği |
+| `data/advisor/accounts/<account_id>/models/` | Önceki model sürümleri |
 | `data/advisor/run_status.json` | Son koşu tamamlandı mı? |
 | `reports/revizyon-denetimi-2026-09-15.json` | Dosya/DB/Telegram envanteri; satır satır semantik denetim iddiası değildir |
 | `reports/karar-sonuclari-2026-09-15.json` | Eski kararların sonraki fiyat hareketi |
@@ -128,8 +131,8 @@ kurulumdaki varsayımı değiştirirken eski hesabı silmeden arşivle.
 
 ## Otomatik çalışma
 
-`portfolio.yml`, hafta içi 10:17–17:17 TR arasında nominal 30 dakika yedek
-zamanlamayla, elle/dışarıdan dispatch ile ve günlük veri workflow'u bitince
+`portfolio.yml`, yapılandırılmış gözlem saatlerini kapsayan nominal 30 dakika
+yedek zamanlamayla, elle/dışarıdan dispatch ile ve günlük veri workflow'u bitince
 çalışır. Dışarıdan gelen 15 dakikalık dispatch'in sahibi doğrulanmadı.
 GitHub cron kesin zaman veya kesintisiz fiyat akışı sağlamaz; stop da
 yalnız koşunun gördüğü fiyatla simüle edilir. Aradaki fiyat hareketi doldurulmaz.
@@ -218,8 +221,8 @@ Sonuçlar: [uygulama raporu](../reports/IYILESTIRME-2026-09-16.md).
 
 - Önceki işlem gününün kapanışı eksikse yeni alım durur; güncel, geçerli fiyatla mevcut stop/hedef izlenir.
   Eski fiyat güncel portföy değerine ve yeni işlem bütçesine girmez.
-- Takvim YAML olarak okunur. Yarım gün 12:15 kapanışı sistemin ihtiyatlı işlem
-  penceresidir; resmî piyasa kapanışı iddiası değildir. Vade seans sayısıyla ilerler.
+- Takvim YAML olarak okunur. BIST yarım günde yeni alım 12:15, koruyucu işlem 12:30
+  sınırını kullanır; kapanış sonrası yalnız gözlem yapılır. Vade seans sayısıyla ilerler.
 - Toplam stop riski `max_portfolio_risk_pct` ile sınırlanır. Eksik değerlemede
   risk artırılmaz. Ortak düşüş senaryoları stop dolum garantisi vermez.
 - Al-tut hesabında varlık başına kalan nakit sonraki katkıyla birleşir;
@@ -306,3 +309,49 @@ Bu geliştirmede gerçek ödeme veya kişisel masraf gözlemi içe alınmadı.
 `python scripts/advisor_manifest.py --peer ../gold_tracking_system` iki gerçek
 kopyayı da karşılaştırır. `--write --peer ...` yalnız iki kopya eşitse manifesti
 bilinçli günceller. Projeye özgü kurallar `advisor/config.json` içinde kalır.
+
+
+## 2026-09-25 hesap ve öğrenme revizyonu
+
+Yeni bütçe `account_id` altında ayrı defter açar. Eski kök defter korunur; panelin
+sabit `data/advisor/latest.json` adresi yeni hesabın görünümünü yayımlar. Bildirim,
+nöbetçi, ücret mutabakatı ve yedek geri dönüşü aynı aktif hesabı kullanır.
+İlk alım adayı sonraki taze kotasyonu bekler; koşullar o anda yeniden sınanır.
+Referans kotasyon gerçek banka/emir defteri dolumu değildir.
+
+`advisor/candidates.py` içindeki sürümlü katalog, yakın döneme ağırlık veren
+20/5 seans ve sınırlı geri çekilme adaylarını ayrı defterlerde izler. Bütçeler
+ana hesaba eklenmez. Her aday kendi sonucu ile kalibre olur; otomatik model terfisi
+yoktur. Model parametrelerinin güncellenmesi, yeni strateji keşfi veya kâr kanıtı değildir.
+
+BIST saklama tarifesi günlük brüt kıymet değerlerinin çeyrek ortalaması yaklaşımıyla
+uygulanır. Nakit yetmezse ücret yükümlülüğü kalır. Eksik günler ücretsiz sayılmaz,
+bekleyen dönem olarak gösterilir. MKK ve kişisel ücretler tam modellenmiş değildir.
+
+Yalnız kapanmış etiketlerle, geliştirme bölümünde seçip son bölümde sınamak için:
+
+```bash
+python -m advisor experiment --start 2025-09-01 --end 2026-09-24 --output /tmp/aday-sinavi.json
+```
+
+Bu komut üretim defterine yazmaz. Varsayımsal günlük dolum, güncel evren ve sonradan
+düzeltilmiş seri nedeniyle sonucu canlı üstünlük kanıtı olarak onaylamaz. Araştırma
+20 seansta bir eğitim kullanır; ileriye dönük adaylar her yeni kapanışta eğitilir.
+Getiriler nominal TL’dir; faizsiz nakit kullanılır, enflasyon düşülmüş değildir.
+Ayrıntılar ve başarısız sınavlar: [revizyon raporu](REVIZYON-2026-09-25.md).
+
+BIST günlük veri workflow’u geç biterse `--closing-refresh` aynı işlem gününde
+gözlem saatinden sonra da yalnız değerleme yapabilir; bu kipte dolum yasaktır.
+Aday kolundaki hata ana defterin kaydını engellemez; açık hata olarak raporlanır.
+
+
+## 2026-09-25 — Basit rakip ve katkı ölçümü
+
+Ana kontrolün yanında SMA50, yakın dönem 20/5 seans ve geri çekilme hesapları
+vardır. SMA50 getiri tahmini/MAE üretmez; aynı para ve masrafla işlem kuralını sınar.
+`python -m advisor compare-methods --start 2025-09-01 --end 2026-09-24 --output /tmp/method-comparison.json`
+komutu sabit yöntem/özellik/evren/rejim karşılaştırmalarını geçici defterlerde çalıştırır.
+Geçmiş son bölüm yeniden kullanıldığı için sonuç keşiftir; otomatik terfi yoktur.
+Ortak altın ilişkisi paneli yalnız iki ana hesabı toplar; TRALT ile GRAM değerlerini
+ayrı gösterir. Etiketli tutar ölçülmüş korelasyon değildir; sert ortak sınır yoktur.
+Ayrıntı ve sonuçlar: [beş başlığın kaydı](KARSILASTIRMA-2026-09-25.md).

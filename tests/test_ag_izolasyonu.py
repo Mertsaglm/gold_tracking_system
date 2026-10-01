@@ -7,9 +7,9 @@ karnenin geçerlilik şartı. `ozellikler.py`'nin modül docstring'i kuralı yaz
 bu yüzden reddedildi). Dolayısıyla canlı yol da çıkmamalı.
 
 Mock'lamak bu iddiayı KANITLAMAZ: mock yalnız bildiğin çağrıyı yakalar. Burada
-`socket.socket` kapatılıyor — requests, urllib, yfinance, pytrends hepsi onun
-üstünde. Yeni bir ağ çağrısı eklenirse hangi kütüphaneyle olursa olsun test
-`AgKapaliHatasi` ile düşer.
+Python socket bağlantıları ve requests/curl_cffi taşıyıcıları kapatılır.
+Yeni HTTP çağrısı pytest hatasıyla düşer; kaynak katmanı hatayı yakalayıp
+boş veri döndürerek testi yeşile çeviremez.
 
 İkinci koruma: ağ **hangi modüllerde** olduğu da kilitli. `karar.py`'ye bir
 `import requests` girmesi tek satırlık bir değişikliktir ve hiçbir davranış
@@ -249,3 +249,20 @@ def test_ag_dusunce_gostergeler_veri_yok_diyor(monkeypatch, ag_susturuldu):
     assert s.label == indicators.YOK and s.score is None
     d = indicators.dxy_signal(cfg)
     assert d.label == indicators.YOK
+
+
+def test_http_curl_yasagi_kaynak_hatasi_olarak_yutulamaz():
+    """2026-09-30: socket yasağını atlayan curl gerçek Yahoo'ya çıkabiliyordu."""
+    import pytest
+    import requests
+    with pytest.raises(pytest.fail.Exception, match='HTTP taşıyıcısı'):
+        try:
+            requests.get('https://example.com')
+        except Exception:
+            pass
+    from curl_cffi.requests import Session
+    with pytest.raises(pytest.fail.Exception, match='HTTP taşıyıcısı'):
+        try:
+            Session().get('https://example.com')
+        except Exception:
+            pass

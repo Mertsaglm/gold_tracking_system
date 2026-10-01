@@ -6,6 +6,15 @@ import tempfile
 import zipfile
 
 from .ledger import Ledger
+from .accounts import state_path
+
+
+def validate_ledgers(root):
+    for path in (Path(root) / 'data/advisor').rglob('events.jsonl'):
+        ledger = Ledger(path)
+        books = {'strategy','benchmark'} | {e['data']['book'] for e in ledger.events if isinstance(e['data'].get('book'), str)}
+        for book in books:
+            ledger.account(book)
 
 
 def backup(root, output):
@@ -17,9 +26,9 @@ def backup(root, output):
     files += list((root / 'advisor').glob('*.json'))
     files += [p for p in (root / 'data').glob('*.sql')]
     files += [root / name for name in ('config.yaml','holidays_tr.yaml','universe.yaml','requirements-runtime.txt') if (root/name).exists()]
-    if not (root / 'data/advisor/events.jsonl').exists():
+    if not (state_path(root) / 'events.jsonl').exists():
         raise ValueError('Yedeklenecek defter yok.')
-    Ledger(root / 'data/advisor/events.jsonl').account()
+    validate_ledgers(root)
     manifest = {}
     with zipfile.ZipFile(output, 'x', compression=zipfile.ZIP_DEFLATED) as z:
         for p in sorted(files):
@@ -53,7 +62,10 @@ def restore(archive, destination):
         p = destination / name
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(data)
-    ledger = Ledger(destination / 'data/advisor/events.jsonl')
+    if not (state_path(destination) / 'events.jsonl').is_file():
+        raise ValueError('Yedekte aktif hesabın defteri eksik.')
+    ledger = Ledger(state_path(destination) / 'events.jsonl')
+    validate_ledgers(destination)
     accounts = {book: ledger.account(book) for book in ('strategy','benchmark','shadow_reference','shadow_candidate')}
     return {'ledger_hash': ledger.root_hash, 'accounts': accounts, 'files': len(payloads)}
 

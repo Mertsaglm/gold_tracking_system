@@ -6,6 +6,7 @@ ikinci işlem üretemez. Geçmiş satır değiştirilirse defter açılmaz.
 from __future__ import annotations
 
 import hashlib
+import copy
 import json
 import os
 from contextlib import contextmanager
@@ -68,7 +69,8 @@ class Ledger:
     def add(self, kind, key, at, **payload):
         if key in self.keys:
             return False
-        row = {"kind": kind, "key": key, "at": at, "data": payload, "previous": self.root_hash}
+        # Çağıranın daha sonra liste/dict değiştirmesi mühürlü geçmişi bozamaz.
+        row = {"kind": kind, "key": key, "at": at, "data": copy.deepcopy(payload), "previous": self.root_hash}
         row["hash"] = digest(row)
         self.events.append(row)
         self.keys.add(key)
@@ -90,6 +92,8 @@ class Ledger:
         contributed = 0
         realized = 0
         receivable = 0
+        fee_liability = 0
+        account_fees = 0
         positions = {}
         fills = []
         for event in self.events:
@@ -103,11 +107,18 @@ class Ledger:
                 account = copy.deepcopy(d['account'])
                 cash,contributed,realized,receivable = (account[k] for k in ('cash_cents','contributed_cents','realized_cents','receivable_cents'))
                 positions,fills=account['positions'],account['fills']
+                fee_liability = account.get('fee_liability_cents', 0)
+                account_fees = account.get('account_fees_cents', 0)
                 for p in positions.values():p['quantity']=Decimal(str(p['quantity']))
                 if min(cash,contributed,receivable)<0:raise ValueError('Başlangıç kopyasında negatif bakiye.')
             elif event["kind"] == "contribution":
                 cash += d["amount_cents"]
                 contributed += d["amount_cents"]
+            elif event['kind'] == 'account_fee':
+                if type(d['amount_cents']) is not int or d['amount_cents'] < 0:
+                    raise ValueError('Geçersiz hesap ücreti.')
+                fee_liability += d['amount_cents']
+                account_fees += d['amount_cents']
             elif event["kind"] == "fill":
                 qty = Decimal(d["quantity"])
                 if qty <= 0 or d["notional_cents"] <= 0 or d["fee_cents"] < 0:
@@ -155,8 +166,12 @@ class Ledger:
                     raise ValueError('Temettü ödemesi alacakla eşleşmiyor.')
                 receivable -= d['amount_cents']
                 cash += d['amount_cents']
+            paid = min(cash, fee_liability)
+            cash -= paid
+            fee_liability -= paid
         return {"cash_cents": cash, "contributed_cents": contributed,
                 "realized_cents": realized, 'receivable_cents': receivable,
+                'fee_liability_cents': fee_liability, 'account_fees_cents': account_fees,
                 "positions": {k: v for k, v in positions.items() if v["quantity"] > 0}, "fills": fills}
 
 

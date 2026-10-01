@@ -10,8 +10,8 @@ import copy
 import tempfile
 from collections import Counter
 
-from . import learning, policy, benchmark, evidence, universe, engine, capsule
-from .calendar import IST, trading_day
+from . import learning, policy, benchmark, evidence, universe, engine, capsule, risk, costs
+from .calendar import IST, trading_day, require_coverage
 from .ledger import Ledger, fund
 
 
@@ -23,9 +23,12 @@ def quote(symbol, price, now, cfg, tradable=True):
             'tradable':tradable}
 
 
-def simulate(frame, cfg, start, end, *, membership=None, scenario=None):
+def simulate(frame, cfg, start, end, *, membership=None, scenario=None, research=False):
     from .service import feedback, benchmark_nav
     cfg=copy.deepcopy(cfg);scenario=scenario or {};cfg['start_date']=start
+    require_coverage(start, end, cfg)
+    cfg['execution_phase'] = 'entry'
+    original_cash,original_positions=cfg['minimum_cash_pct'],cfg['max_positions']
     factor=float(scenario.get('cost_multiplier',1))
     if factor<1:raise ValueError('Maliyet stresi tabandan küçük olamaz.')
     for k in ('commission_rate','commission_min_try','exchange_fee_rate','slippage_bps','gold_buy_tax_rate'):
@@ -36,7 +39,7 @@ def simulate(frame, cfg, start, end, *, membership=None, scenario=None):
     dates=sorted(d for d in frame.date.unique() if start<=d<=end and trading_day(d,cfg))
     if not dates:raise ValueError('Simülasyon aralığında işlem günü yok.')
     membership=universe.validate(membership or [])
-    model={};last_train=-10000;series=[];blocks=[];universe_missing=0;decision_counts=Counter();forecast_range=[]
+    model={};last_train=-10000;series=[];blocks=[];universe_missing=0;decision_counts=Counter();forecast_range=[];custody={};regime_observations=[]
     with tempfile.TemporaryDirectory(prefix='advisor-simulation-') as tmp:
         ledger=Ledger(Path(tmp)/'events.jsonl')
         for i, day in enumerate(dates):
@@ -45,14 +48,14 @@ def simulate(frame, cfg, start, end, *, membership=None, scenario=None):
             fund(ledger,cfg,day,now.isoformat())
             if previous.empty:continue
             asof=str(previous.date.max())
-            if i-last_train>=cfg['horizon_sessions']:
-                model,features=learning.train(previous,cfg,asof)
+            if i-last_train>=cfg.get('research_retrain_sessions', cfg['horizon_sessions']):
+                model,features=learning.train(previous,cfg,asof, evaluate=False, prepared_features=feature_cache) if research else learning.train(previous,cfg,asof)
                 last_train=i
             else:
                 # Yalnız geriye bakan özellikler kullanılır; gelecek etiketleri karara girmez.
                 features=feature_cache[feature_cache.date<day]
             latest=features.groupby('symbol').tail(1)
-            live_symbols=universe.members(membership,day) if membership else set(latest[latest.in_live==1].symbol)
+            live_symbols=universe.members(membership,day) if membership else set(frame.attrs.get('live_symbols', latest[latest.in_live==1].symbol))
             if membership and not live_symbols:universe_missing+=1
             owned=set(ledger.account()['positions'])|set(ledger.account('benchmark')['positions'])
             rows=latest[latest.symbol.isin(live_symbols|owned)]
@@ -67,17 +70,34 @@ def simulate(frame, cfg, start, end, *, membership=None, scenario=None):
                 if price is None or price<=0:continue
                 if day==scenario.get('gap_day'):price*=1-float(scenario.get('gap_down_pct',10))/100
                 q=quote(symbol,price,now,cfg,tradable=not (symbol in scenario.get('untradable_symbols',[]) and day in scenario.get('untradable_days',[])))
+                if cfg['market'] == 'bist' and not (r.get('volume', 0) > 0):
+                    q['tradable'] = False
                 if day in scenario.get('stale_days',[]):q['quoted_at']=day+'T00:00:00+00:00'
                 quotes[symbol]=q
             forecasts={}
-            if model.get('ready'):
-                valid=rows.dropna(subset=learning.FEATURES)
+            if model.get('ready') and model.get('kind') != 'sma50':
+                valid=rows.dropna(subset=model.get('features', learning.FEATURES))
                 forecasts=dict(zip(valid.symbol,learning.predict(model,valid)))
             cfg['live_gate_passed']=evidence.live(ledger,cfg)['approved']
             cfg['allowed_entry_symbols']=sorted(live_symbols)
             pre_view=policy.value_account(ledger.account(),quotes,cfg,now)
             drawdown=feedback(ledger,pre_view).get('drawdown_pct')
             cfg['risk_multiplier']=.25 if drawdown is not None and drawdown<=-cfg['learning']['max_live_drawdown_pct'] else 1
+            mode=cfg.get('research_regime','v2')
+            if mode == 'v1':
+                record=scenario.get('regimes',{}).get(asof)
+                if not record or record.get('date') != asof or asof >= day:
+                    raise ValueError('V1 rejim girdisi eksik veya geleceğe ait: '+asof)
+                cfg['risk_multiplier'] *= min(1., max(0., record['size_multiplier']))
+                cfg['minimum_cash_pct']=max(original_cash,record['cash_pct'])
+                cfg['max_positions']=min(original_positions,record['max_positions'])
+                expected=record.get('breadth_istenen_n',0)
+                regime_observations.append({'date':day,'asof':asof,'label':record['label'],
+                    'complete':bool(expected and record.get('breadth_n',0)/expected>=.8 and record.get('xu100_vs_sma200_pct') is not None)})
+            elif mode == 'v2':
+                cfg['risk_multiplier'] *= risk.control(rows, {'drawdown_pct':drawdown}, cfg)['multiplier']
+            elif mode != 'none':
+                raise ValueError('Bilinmeyen rejim sınavı.')
             decisions,_=engine.run(ledger,capsule.clean(rows.to_dict('records')),forecasts,model,cfg,quotes,now)
             for d in decisions:
                 decision_counts[d['code']]+=1
@@ -87,6 +107,10 @@ def simulate(frame, cfg, start, end, *, membership=None, scenario=None):
             # Aynı günlük barda stop ve hedef görüldüyse iyimser sırayı seçme.
             intraday=now.replace(hour=11,minute=45)
             for symbol,p in list(ledger.account()['positions'].items()):
+                # Gram arşivinde gerçek gün içi high/low yok. Tam stop/hedef
+                # dolumu uydurma; sonraki gözlenen referansta engine karar versin.
+                if cfg['market'] == 'gold':
+                    continue
                 bar=bars.get(symbol);q=quotes.get(symbol)
                 if not bar or not q or q.get('tradable') is False:continue
                 low=policy.execution_price(quote(symbol,bar['low'],intraday,cfg),cfg,'SELL')
@@ -103,12 +127,14 @@ def simulate(frame, cfg, start, end, *, membership=None, scenario=None):
                     policy.execute(ledger,cfg,[{'symbol':symbol,'action':'SAT','code':reason}],{symbol:exitq},intraday)
             close_at=now.replace(hour=12 if day in cfg.get('calendar',{}).get('half_days',[]) else 17,minute=30)
             marks={s:quote(s,r['close'],close_at,cfg) for s,r in bars.items()}
+            custody=costs.accrue(ledger,cfg,marks,close_at)
             strategy=policy.value_account(ledger.account(),marks,cfg,close_at)
             baseline=policy.value_account(ledger.account('benchmark'),marks,cfg,close_at)
             f=feedback(ledger,strategy);bnav=benchmark_nav(ledger,baseline)
             row={'date':day,'equity_try':strategy['equity_try'],'benchmark_try':baseline['equity_try'],
                  'contributed_try':strategy['contributed_try'],'nav':f['nav'],'benchmark_nav':bnav,
-                 'drawdown_pct':f['drawdown_pct'],'cash_try':strategy['cash_try']}
+                 'drawdown_pct':f['drawdown_pct'],'cash_try':strategy['cash_try'],
+                 'invested_pct':sum(p['value_try'] for p in strategy['positions'])/strategy['equity_try']*100 if strategy['equity_try'] and strategy['valuation_complete'] else None}
             series.append(row)
             if f['nav'] is not None:
                 ledger.add('valuation','valuation:'+day,close_at.isoformat(),**row)
@@ -116,11 +142,14 @@ def simulate(frame, cfg, start, end, *, membership=None, scenario=None):
         return {'start':start,'end':end,'scenario':scenario,'series':series,
                 'fills':strategy['fills'],'benchmark_fills':baseline['fills'],'blocks':blocks,
                 'cash_try':strategy['cash_cents']/100,'contributed_try':strategy['contributed_cents']/100,
-                'fees_try':sum(f['fee_cents'] for f in strategy['fills'])/100,
+                'fees_try':(sum(f['fee_cents'] for f in strategy['fills'])+strategy.get('account_fees_cents',0))/100,
+                'custody':custody,'regime_observations':regime_observations,
                 'max_drawdown_pct':min([r['drawdown_pct'] for r in series if r['drawdown_pct'] is not None],default=None),
                 'evidence':evidence.live(ledger,cfg),'universe_missing_sessions':universe_missing,
+                'missing_history_symbols':sorted(set(frame.attrs.get('live_symbols', []))-set(frame.symbol)),
                 'decision_counts':dict(decision_counts),'forecast_range_pct':[min(forecast_range),max(forecast_range)] if forecast_range else None,
                 'limitations':['Günlük bar yolu varsayımsal; iki sınır birlikte görülürse stop önce işlenir.',
+                    'Altında gün içi OHLC yok; stop/hedef yalnız sonraki günlük referansta sınanır, eşik fiyatından dolum varsayılmaz.',
                     'Banka makası/kayma tarihsel kotasyon değildir; maliyet varsayımıdır.',
                     'Sonradan düzeltilmiş fiyatlar ve ödeme tarihi eksik kurumsal işlemler gerçek tarihi lot/nakit akışından farklı olabilir.',
                     'Tarihli üyelik kaynağı kullanıldı; boş tarihlerde alım yok.' if membership else 'Tarihsel evren yok: güncel evren varsayımı; üstünlük kanıtı olarak kullanılamaz.'],

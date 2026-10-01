@@ -1,0 +1,497 @@
+{
+  "market": "gold",
+  "through": "2026-09-30T14:31:59.375168+00:00",
+  "snapshot_at": "2026-09-30T14:31:59.375168+00:00",
+  "analysis_date": "2026-09-29",
+  "ledger_sha256": "a6aa48b79edd35e5007fb5b13728db8f7a869c665edb5fc63e40906b75cdc1bc",
+  "ledger_hash": "87cea1da7f12e047b97bfef0b3adcaa9cda7ae872128db940bab4974222ff5ca",
+  "events": 21,
+  "kinds": {
+    "account_opened": 1,
+    "contribution": 2,
+    "model_review": 1,
+    "quote_snapshot": 1,
+    "universe_snapshot": 1,
+    "cost_policy": 1,
+    "shadow_forecast": 1,
+    "account_checkpoint": 2,
+    "shadow_books_opened": 1,
+    "shadow_valuation": 1,
+    "decision_capsule": 2,
+    "forecast": 1,
+    "decision": 1,
+    "benchmark_policy_started": 1,
+    "entry_intent": 1,
+    "valuation": 1,
+    "session_check": 1,
+    "candidate_check": 1
+  },
+  "accounts": {
+    "strategy": {
+      "cash_cents": 5000000,
+      "contributed_cents": 5000000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "fee_liability_cents": 0,
+      "account_fees_cents": 0,
+      "positions": {}
+    },
+    "benchmark": {
+      "cash_cents": 5000000,
+      "contributed_cents": 5000000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "fee_liability_cents": 0,
+      "account_fees_cents": 0,
+      "positions": {}
+    },
+    "shadow_reference": {
+      "cash_cents": 5000000,
+      "contributed_cents": 5000000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "fee_liability_cents": 0,
+      "account_fees_cents": 0,
+      "positions": {}
+    },
+    "shadow_candidate": {
+      "cash_cents": 5000000,
+      "contributed_cents": 5000000,
+      "realized_cents": 0,
+      "receivable_cents": 0,
+      "fee_liability_cents": 0,
+      "account_fees_cents": 0,
+      "positions": {}
+    }
+  },
+  "snapshot_accounts_match": true,
+  "daily_cycles": [
+    {
+      "date": "2026-09-30",
+      "count": 1,
+      "first": "2026-09-30T14:31:59.375168+00:00",
+      "last": "2026-09-30T14:31:59.375168+00:00",
+      "max_gap_minutes": 0,
+      "full_quote_cycles": 1
+    }
+  ],
+  "decisions": {
+    "no_edge": 1
+  },
+  "fills": [],
+  "last_notification": null,
+  "latest_notification_matches_current_state": false,
+  "learning": {
+    "roundtrips": 0,
+    "live_gate_passed": false,
+    "scorecard": {
+      "correction_pct": 0.0,
+      "independent_periods": 0,
+      "mean_error_pct": null,
+      "missed_upside_count": 0,
+      "note": "Hata, tahmin eksi düzeltilmiş toplam getiri serisinin değişimidir; net banka getirisi değildir. Kaçan yükseliş, net işlem kârı değildir.",
+      "recent": [],
+      "resolved_forecasts": 0
+    },
+    "evidence": {
+      "approved": false,
+      "lower_95_pct": null,
+      "mean_excess_pct": null,
+      "method": "Örtüşmeyen eşleştirilmiş dönemler; yaklaşık t ve HAC hata payının geniş olanı. Örtüşmeme bağımsızlık garantisi değildir.",
+      "minimum_periods": 24,
+      "periods": 0,
+      "series": [],
+      "status": "sanal üstünlük kanıtı yetersiz",
+      "upper_95_pct": null
+    }
+  },
+  "models": [
+    {
+      "id": "fa377c60fb785300",
+      "asof": "2026-09-29",
+      "training_dates": 2388,
+      "training_rows": 2388,
+      "approved": false,
+      "periods": 95,
+      "lower_95_pct": -2.0620942947823684
+    }
+  ],
+  "capsules": {
+    "hash_verified": 2,
+    "archived_code_reproduced": 0,
+    "runtimes": [
+      {
+        "PyYAML": "6.0.3",
+        "numpy": "2.5.1",
+        "pandas": "2.3.3",
+        "requests": "2.34.2"
+      }
+    ]
+  },
+  "all_ledgers": {
+    "data/advisor/accounts/paper-2026-09-25/candidates/recent-20-v1/events.jsonl": {
+      "events": 9,
+      "hash": "93affa253c9b3a2f361484cbf8ce7c14f292fcaed37729116c0cd84de08004b0",
+      "books": [
+        "benchmark",
+        "strategy"
+      ],
+      "capsules": 2
+    },
+    "data/advisor/accounts/paper-2026-09-25/candidates/recent-5-v1/events.jsonl": {
+      "events": 9,
+      "hash": "9ff6ac22b02fa94b311df4e5abdf9e38a98b3381854d27d8e101eb31db9a1fa1",
+      "books": [
+        "benchmark",
+        "strategy"
+      ],
+      "capsules": 2
+    },
+    "data/advisor/accounts/paper-2026-09-25/candidates/reversion-5-v1/events.jsonl": {
+      "events": 9,
+      "hash": "e816f03e5316b728632b6a4ab84d76b7bac1cf8e28f3284d8157a9eab6d606de",
+      "books": [
+        "benchmark",
+        "strategy"
+      ],
+      "capsules": 2
+    },
+    "data/advisor/accounts/paper-2026-09-25/candidates/sma50-v1/events.jsonl": {
+      "events": 8,
+      "hash": "afc8d088554b4582f6e4c6cb7d6e1ff3d67b18e1fad499acd770c9db8f80e3ee",
+      "books": [
+        "benchmark",
+        "strategy"
+      ],
+      "capsules": 2
+    },
+    "data/advisor/accounts/paper-2026-09-25/events.jsonl": {
+      "events": 21,
+      "hash": "87cea1da7f12e047b97bfef0b3adcaa9cda7ae872128db940bab4974222ff5ca",
+      "books": [
+        "benchmark",
+        "shadow_candidate",
+        "shadow_reference",
+        "strategy"
+      ],
+      "capsules": 2
+    },
+    "data/advisor/events.jsonl": {
+      "events": 1662,
+      "hash": "0401a92c0dbc014011b4c4b22c16450b769185825de48783617eacf569b50558",
+      "books": [
+        "benchmark",
+        "shadow_candidate",
+        "shadow_reference",
+        "strategy"
+      ],
+      "capsules": 255
+    }
+  },
+  "sql_sha256": "a8b6a4c69233c5d1e72f74fbc8336286bb2f4ed9375631ef1b30caaab061348e",
+  "history": {
+    "rows": 2607,
+    "last_date": "2026-09-29",
+    "live_symbols": [
+      "GRAM"
+    ],
+    "latest_by_live_symbol": {
+      "GRAM": "2026-09-29"
+    }
+  },
+  "legacy_reconciliation": {
+    "rows": 410,
+    "valid_matches": 95,
+    "invalid_completed_flags": 0,
+    "after_revision": [
+      {
+        "ts": "2026-09-18T22:29:56.135812+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T00:34:06.938904+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T05:07:39.707659+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T09:32:35.328238+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T13:26:51.933034+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T16:43:32.143881+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T18:58:21.809396+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T21:24:11.438410+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-19T23:22:30.624288+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T01:26:36.613713+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T06:49:00.122286+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T12:05:32.052397+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T16:08:07.263919+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.47689452441439517,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T18:48:53.005635+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.5024030542601476,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-20T21:15:31.352634+00:00",
+        "expected_day": "2026-09-21",
+        "realized_at": null,
+        "beklenti_pct": -0.4872230390585486,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-25T23:36:26.950254+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.4710520718784972,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-26T02:02:17.758249+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.4710520718784972,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-26T07:44:02.612553+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.4710520718784972,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-26T12:29:52.379045+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.4710520718784972,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-26T16:42:50.171932+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.4710520718784972,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-26T19:26:47.650331+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.4710520718784972,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-26T22:08:39.796866+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.4710520718784972,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-27T00:38:16.349319+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.4710520718784972,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-27T05:50:01.399628+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.49485145998132696,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-27T11:39:28.353860+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.49485145998132696,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-27T15:49:17.584489+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.4710520718784972,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      },
+      {
+        "ts": "2026-09-27T19:37:37.697661+00:00",
+        "expected_day": "2026-09-28",
+        "realized_at": null,
+        "beklenti_pct": -0.5371299468708512,
+        "gerceklesen_pct": null,
+        "fark_puan": null,
+        "recorded_reconciled": false,
+        "valid": false
+      }
+    ]
+  },
+  "fix_validation": {
+    "current_engine_capsules": 2,
+    "current_engine_decisions": 2,
+    "comparison_excludes": [
+      "key",
+      "decision_key",
+      "horizon_sessions"
+    ],
+    "invalid_reference_displays_corrected": [],
+    "full_cycle_runs": 2,
+    "all_four_accounts_unchanged": true,
+    "retrained_model_parameters_and_evaluation_match": true,
+    "model_comparison_absolute_tolerance": 1e-10,
+    "model_maximum_absolute_difference": 0.0,
+    "analysis_issues_visible": {},
+    "backup_restore_all_accounts_match": true,
+    "backup_files": 340
+  }
+}

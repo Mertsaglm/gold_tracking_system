@@ -25161,7 +25161,7 @@ INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-10-18', '/ho
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-10-19', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-10-19.md', '2026-10-19T20:43:06.972272+00:00');
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-10-20', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-10-20.md', '2026-10-20T19:34:49.345381+00:00');
 
--- history_daily: 2621 satır
+-- history_daily: 2622 satır
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-04', 1075.0999755859375, 2.9233, 101.04464458553299, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-05', 1078.4000244140625, 2.9475, 102.19385094467796, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-06', 1091.9000244140625, 2.9803, 104.62462649067037, 'GC=F');
@@ -27783,6 +27783,7 @@ INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_sour
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-10-15', 4170.10009765625, 49.3929, 6622.19656143153, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-10-16', 4181.10009765625, 49.4204, 6643.361467108106, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-10-19', 4160.10009765625, 49.4463, 6613.458642628024, 'GC=F');
+INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-10-20', 4138.2001953125, 49.5523, 6592.746491227746, 'GC=F');
 
 -- gld_tonnage: 100 satır
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-07', 981.1081828606455);

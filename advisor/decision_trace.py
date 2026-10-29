@@ -16,13 +16,17 @@ def describe(row, forecast, decision, quote, cfg, now):
                        'status': 'değerlendirilmedi' if passed is None else 'geçti' if passed else 'kaldı',
                        'note': note})
 
-    from .marketdata import usable
+    from .marketdata import price_problem, usable
     quote_problem = usable(quote, cfg, now, cfg.get('holidays', ()),
                            allow_wide_spread=decision.get('action') in ('SAT', 'TUT'))
     analysis_date = cfg.get('expected_analysis_date')
     fresh = bool(row.get('quality_ok')) and (not analysis_date or row.get('date') == analysis_date)
-    add('veri', row.get('date'), analysis_date, fresh and quote_problem is None,
-        quote_problem or (None if fresh else 'Analiz kapanışı eksik veya geçersiz.'))
+    data_problem = price_problem(quote, cfg, now) if decision.get('code')=='spread_limit' else quote_problem
+    add('veri', row.get('date'), analysis_date, fresh and data_problem is None,
+        data_problem or (None if fresh else 'Analiz kapanışı eksik veya geçersiz.'))
+    if decision.get('code') == 'spread_limit':
+        spread = (quote['ask'] / quote['bid'] - 1) * 100
+        add('makas', round(spread, 6), cfg['max_spread_pct'], False, quote_problem)
     add('tahmin', forecast, None, forecast is not None if fresh else None)
     if not fresh or quote_problem or forecast is None or not quote:
         for name in ('maliyet', 'trend', 'rsi', 'kazanc_risk', 'butce', 'dolum'):

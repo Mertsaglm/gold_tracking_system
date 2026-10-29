@@ -8,8 +8,40 @@ from html.parser import HTMLParser
 from zoneinfo import ZoneInfo
 
 import requests
+import time
 
 IST = ZoneInfo("Europe/Istanbul")
+
+
+class SourceError(ValueError):
+    """Kaynak tanısı; yanıt gövdesi, URL parametresi ve kimlik bilgisi içermez."""
+    def __init__(self, stage, kind, status=None):
+        self.stage, self.kind, self.status = stage, kind, status
+        super().__init__(f'{stage}: {kind}' + (f' (HTTP {status})' if status else ''))
+
+
+def spread_problem(quote, cfg):
+    from decimal import Decimal
+    spread = (Decimal(str(quote['ask'])) / Decimal(str(quote['bid'])) - 1) * 100
+    if spread - Decimal(str(cfg['max_spread_pct'])) > Decimal('0.000000001'):
+        return 'Banka makası bugün fazla geniş.'
+    return None
+
+
+def fetch_page(url):
+    # En fazla üç GET. Kalıcı 4xx ve HTML doğrulama hatası tekrar edilmez.
+    for attempt in range(3):
+        try:
+            response = requests.get(url, timeout=(5, 10))
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as exc:
+            status = getattr(getattr(exc, 'response', None), 'status_code', None)
+            temporary = (isinstance(exc, (requests.Timeout, requests.ConnectionError))
+                         or status in (429, 500, 502, 503, 504))
+            if not temporary or attempt == 2:
+                raise SourceError('http', type(exc).__name__, status) from None
+            time.sleep(.5 * (attempt + 1))
 
 
 def tr_number(value):
@@ -95,11 +127,20 @@ def parse_stocks(html, now, url, symbols):
 def fetch(cfg, symbols, now):
     market = cfg["market"]
     url = cfg["sources"]["stocks" if market == "bist" else "gold"]
-    r = requests.get(url, timeout=(8, 20))
-    r.raise_for_status()
-    if market == 'bist':
-        return parse_stocks(r.text, now, url, symbols)
-    quotes = parse_gold(r.text, now, url)
+    html = fetch_page(url)
+    try:
+        if market == 'bist':
+            return parse_stocks(html, now, url, symbols)
+        quotes = parse_gold(html, now, url)
+    except (ValueError, KeyError, IndexError) as exc:
+        # Parser'ın kendi sabit hata mesajları güvenlidir; ham sayfa saklanmaz.
+        known = {'Sayfada İş Bankası ürün kimliği doğrulanamadı.',
+                 'Altın kotasyonu saat damgası yok.',
+                 'İş Yatırım sayfa zaman damgası bulunamadı.',
+                 'İş Yatırım hisse tablosu bulunamadı.',
+                 'İstenen hisseler fiyat tablosunda yok.'}
+        kind = str(exc) if str(exc) in known else type(exc).__name__
+        raise SourceError('stocks_parser' if market == 'bist' else 'gold_parser', kind) from None
     try:
         import yfinance as yf
         legs = {}
@@ -173,8 +214,6 @@ def usable(quote, cfg, now, holidays=(), *, allow_wide_spread=False):
     if quote.get('tradable') is False:
         return 'Bu kotasyonda işlem gerçekleşmesi doğrulanamadı.'
     # Eşiğe tam eşit makas, float yuvarlamasıyla yanlışlıkla üstünde sayılmasın.
-    from decimal import Decimal
-    spread = (Decimal(str(quote['ask'])) / Decimal(str(quote['bid'])) - 1) * 100
-    if not allow_wide_spread and spread - Decimal(str(cfg['max_spread_pct'])) > Decimal('0.000000001'):
-        return 'Banka makası bugün fazla geniş.'
+    if not allow_wide_spread:
+        return spread_problem(quote, cfg)
     return None

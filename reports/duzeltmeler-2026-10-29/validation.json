@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-29",
+  "local_full_suite": {
+    "passed": 1026,
+    "skipped": 9,
+    "command": ".venv/bin/python -m pytest -q",
+    "seconds": 39.6
+  },
+  "after_failure_rescue_change": {
+    "passed": 56,
+    "skipped": 0,
+    "command": ".venv/bin/python -m pytest tests/test_advisor_free_operations.py tests/test_advisor_contracts.py tests/test_dokuman_tutarliligi.py -q"
+  },
+  "shared_modules_equal": 37,
+  "diff_check": "passed",
+  "production_acceptance": false,
+  "production_data_note": "No current live acceptance; historical frozen gold input replays."
+}

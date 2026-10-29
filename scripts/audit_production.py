@@ -25,6 +25,29 @@ from advisor.accounts import state_path
 from advisor.ledger import Ledger
 
 
+def spread_reclassification_only(old, new):
+    """Tarihsel veri alarmının yalnız makas tanısına dönüşmesini kabul et."""
+    changed={k for k in old.keys()|new.keys() if old.get(k)!=new.get(k)}
+    if not (old.get('action')=='VERİ BEKLENİYOR' and old.get('code')=='data_block'
+            and new.get('action')=='BEKLE' and new.get('code')=='spread_limit'
+            and changed <= {'action','code','decisive_code','checks','failed_checks'}):
+        return False
+    before=old.get('checks',[]);after=new.get('checks',[])
+    if not before or len(after)!=len(before)+1:
+        return False
+    data=before[0];spread=after[1]
+    if not (data.get('check')=='veri' and data.get('status')=='kaldı'
+            and data.get('note')=='Banka makası bugün fazla geniş.'
+            and spread.get('check')=='makas' and spread.get('status')=='kaldı'
+            and spread.get('note')==data['note']
+            and isinstance(spread.get('observed'),(int,float))
+            and isinstance(spread.get('threshold'),(int,float))
+            and spread['observed']>spread['threshold']):
+        return False
+    return (after[0]=={**data,'status':'geçti','note':None}
+            and after[2:]==before[1:] and new.get('failed_checks')==['makas'])
+
+
 def validate_fixes(root):
     """Güncel motoru gerçek mühürlü girdilerle; tam çevrimi/yedeği kopyada sına."""
     from advisor import engine, recovery
@@ -38,9 +61,10 @@ def validate_fixes(root):
         return value
     checked = decisions = 0
     invalid_reference_displays = []
+    spread_reclassifications = []
     for e in ledger.events:
         if e['kind'] != 'decision_capsule':continue
-        payload=json.loads(gzip.decompress((state/e['data']['path']).read_bytes()))['payload']
+        payload=capsule.read(state/e['data']['path'])
         c=payload['context']; l=Ledger(Path('/nonexistent-audit-ledger'))
         l.events=list(c['events']);l.keys={r['key'] for r in l.events};l.root_hash=l.events[-1]['hash']
         actual,_=engine.run(l,c['rows'],c['forecasts'],c['model'],c['cfg'],c['quotes'],datetime.fromisoformat(c['now']),c['event_note'])
@@ -48,7 +72,9 @@ def validate_fixes(root):
         for old, new in zip(payload['expected'], actual):
             old,new=semantic(old),semantic(new)
             changed={k for k in old.keys()|new.keys() if old.get(k)!=new.get(k)}
-            if changed:
+            if changed and spread_reclassification_only(old,new):
+                spread_reclassifications.append({'at':c['now'],'symbol':new['symbol'],'fields':sorted(changed)})
+            elif changed:
                 # Eksik referansla eskiden basılan hayali kalan getiri/hedef temizlenir;
                 # gerçekleşen karar, emir ve maliyetin değişmesine izin verilmez.
                 assert old['action']==new['action']=='VERİ BEKLENİYOR' and new['remaining_forecast_pct'] is None
@@ -94,6 +120,7 @@ def validate_fixes(root):
         return {'current_engine_capsules':checked,'current_engine_decisions':decisions,
                 'comparison_excludes':['key','decision_key','horizon_sessions'],
                 'invalid_reference_displays_corrected':invalid_reference_displays,
+                'spread_reclassifications':spread_reclassifications,
                 'full_cycle_runs':2,'all_four_accounts_unchanged':True,
                 'retrained_model_parameters_and_evaluation_match':True,
                 'model_comparison_absolute_tolerance':1e-10,

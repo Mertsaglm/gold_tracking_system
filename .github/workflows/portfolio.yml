@@ -50,7 +50,7 @@ jobs:
       - name: Arşivi koru
         if: always()
         run: |
-          if [ -d data/advisor ]; then cp -R data/advisor /tmp/advisor-delivery; fi
+          if [ -d data/advisor ]; then python -c "import shutil; shutil.copytree('data/advisor', '/tmp/advisor-delivery', ignore=shutil.ignore_patterns('capsules'))"; fi
           if [ -f data/altin.sql ]; then cp data/altin.sql /tmp/advisor-delivery-altin.sql; fi
       - name: Sonucu kaydet
         if: always()
@@ -101,4 +101,4 @@ jobs:
           path: |
             /tmp/advisor-delivery/
             /tmp/advisor-delivery-altin.sql
-          retention-days: 14
+          retention-days: 3

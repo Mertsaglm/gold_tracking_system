@@ -96,7 +96,8 @@ def monitoring_snapshot(now, cfg):
             'entry_window': cfg.get('entry_window', cfg.get('execution_window', {})),
             'observation_window': cfg.get('observation_window', cfg.get('execution_window', {})),
             'calendar': cfg.get('calendar', {'available':False,'years':[],'full_days':[],'half_days':[]}), 'checked_on': local.date().isoformat(),
-            'note': 'Gözlem saati ile yeni işlem saati ayrıdır; referans fiyat anlık emir defteri değildir.'}
+            'cycle_interval_minutes': cfg.get('cycle_interval_minutes',30),
+            'note': f"Nominal gözlem aralığı {cfg.get('cycle_interval_minutes',30)} dakika; GitHub zaman garantisi vermez. Referans fiyat anlık emir defteri değildir."}
 
 
 def last_closed_session(now, cfg):

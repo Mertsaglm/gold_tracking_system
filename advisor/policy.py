@@ -121,6 +121,11 @@ def decision(row, forecast, model, cfg, quote, position, blocked, now):
     if blocked:
         action, code = "VERİ BEKLENİYOR", "data_block"
         reasons.append(blocked)
+        # Aynı geçerli kotasyonun pahalı olması işletim/veri arızası değildir.
+        from .marketdata import spread_problem
+        if (not position and not analysis_block and price_problem(quote, cfg, now) is None
+                and reference_valid and blocked == spread_problem(quote, cfg)):
+            action, code = 'BEKLE', 'spread_limit'
     elif position:
         stop, target = position.get("stop"), position.get("target")
         if stop and sell <= stop:
@@ -220,7 +225,12 @@ def execute(ledger, cfg, decisions, quotes, now, book="strategy"):
         from .marketdata import usable
         invalid = usable(quotes[symbol], cfg, now, cfg.get("holidays", ()), allow_wide_spread=d['action']=='SAT')
         if invalid:
-            d.update(action="VERİ BEKLENİYOR", code="quote_block", reasons=[invalid])
+            from .marketdata import price_problem, spread_problem
+            if (d['action']=='AL' and price_problem(quotes[symbol],cfg,now) is None
+                    and invalid == spread_problem(quotes[symbol],cfg)):
+                d.update(action='BEKLE', code='spread_limit', reasons=[invalid])
+            else:
+                d.update(action="VERİ BEKLENİYOR", code="quote_block", reasons=[invalid])
             continue
         if d["action"] == "SAT":
             if symbol not in account["positions"]:

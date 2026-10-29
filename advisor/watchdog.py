@@ -21,7 +21,7 @@ def expected_slot(now, cfg):
         while slot <= end:
             if slot <= cutoff:
                 slots.append(slot)
-            slot += timedelta(minutes=30 if 'observation_window' in cfg else 60)
+            slot += timedelta(minutes=cfg.get('cycle_interval_minutes',30 if 'observation_window' in cfg else 60))
         if slots:
             return slots[-1]
     raise ValueError('Beklenen işlem aralığı bulunamadı.')
@@ -64,9 +64,10 @@ def inspect(root, now):
             local_now = now.astimezone(IST)
             if trading_day(local_now.date(), cfg) and local_now.date().isoformat() >= cfg['start_date']:
                 start, end = window(local_now.date(), cfg, 'observation')
-                required = min(local_now, end) - timedelta(minutes=45)
+                gap = cfg.get('watchdog_max_gap_minutes',45)
+                required = min(local_now, end) - timedelta(minutes=gap)
                 if required >= start and (check is None or datetime.fromisoformat(check['at']) < required):
-                    flag('cycle_gap', 'İşlem penceresinde son V2 çevrimi 45 dakikadan eski.')
+                    flag('cycle_gap', f'İşlem penceresinde son V2 çevrimi {gap} dakikadan eski.')
             if check and not check['data'].get('corporate_ok',True):
                 flag('corporate_uncertain','Kurumsal işlem kaynağı/mutabakatı doğrulanamadı.')
             if check and check['data']['decisions']<check['data']['expected_quotes']:

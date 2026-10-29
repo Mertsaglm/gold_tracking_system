@@ -131,21 +131,27 @@ kurulumdaki varsayımı değiştirirken eski hesabı silmeden arşivle.
 
 ## Otomatik çalışma
 
-`portfolio.yml`, yapılandırılmış gözlem saatlerini kapsayan nominal 30 dakika
-yedek zamanlamayla, elle/dışarıdan dispatch ile ve günlük veri workflow'u bitince
-çalışır. Dışarıdan gelen 15 dakikalık dispatch'in sahibi doğrulanmadı.
+BIST `portfolio.yml` hafta içi nominal saatlik (10:17–19:17 TR), günlük veri
+workflow'u bitince ve `manual_run=true` ile elle çalışır. Sahibi doğrulanmamış
+eski girdisiz dış dispatch runner başlamadan elenir. Altın nominal 30 dakika
+yedek zamanlamasını ve mevcut dispatch hattını korur. Bu yerel yapılandırma
+2026-10-29 düzeltme paketindedir; üretime uygulanma durumu STATE'tedir.
 GitHub cron kesin zaman veya kesintisiz fiyat akışı sağlamaz; stop da
 yalnız koşunun gördüğü fiyatla simüle edilir. Aradaki fiyat hareketi doldurulmaz.
 
 Altında önce `python -m src.advisor_refresh` önceki tamamlanmış GC=F kapanışını
 geçici DB'de doğrular; başarılıysa SQL dump'ını atomik yeniler. Kaynak eksikse
-SQL değişmez, yeni sanal alım kapanır. BIST SQL'i yalnız salt okunur.
+SQL değişmez, yeni sanal alım kapanır. BIST kapanış telafisi ayrı veri adımında
+SQL'i yenileyebilir; karar motoru SQL'i salt okunur açar.
 
 Sıra: beklenen kapanışı doğrula → fiyat/gündem → karar/defter → GitHub'a kaydet →
 Telegram özeti → bildirim makbuzunu kaydet. V2 defterinin tek yazarı bu workflow'dur.
-V1 günlük raporu üretmeye devam eder; `ADVISOR_V2=1` ile uzun normal Telegram
+BIST V1 günlük işi `--analistsiz` ile ücretli LLM çağırmadan veri/rapor üretir.
+Eski nöbetçi aynı modda bütün canlı evrenin kapanışını izler; V1 tahmin yokluğu
+bu modda arıza değildir. `ADVISOR_V2=1` ile uzun normal Telegram
 raporunun yerini V2 özeti alır. BIST hata uyarıları ve altın arşiv alarm hattı korunur.
-Push denemeleri tükenirse koşu kırmızı olur; kurtarma artifact'i 14 gün tutulur.
+Push denemeleri tükenirse koşu kırmızı olur; iki depoda operasyon kurtarma artifact'i
+3 gün tutulur; bütün defter/model dosyaları korunur, replay kapsülleri dahil değildir.
 Telegram ağı başarı cevabını kaybederse sonraki denemede mükerrer mesaj ihtimali
 vardır; Telegram API'siyle tam “bir kez teslim” garantisi verilemez.
 
@@ -251,16 +257,23 @@ python scripts/advisor_manifest.py
 ```
 
 `watchdog` gözlemdir, hesabı onarmaz veya durdurmaz. Ayrı Actions işi kaçırılan
-seans kontrolünü, 45 dakikayı aşan gerçek çevrim boşluğunu, hata/eksik fiyatı
-ve teslim makbuzunu inceler; sorun exit 1'dir.
-`advisor-recovery.yml` ayrı yedeği geçici dizinde doğrular; artifact 90 gün tutulur.
+seans kontrolünü, gerçek çevrim boşluğunu (BIST 90, altın 45 dakika), hata/eksik
+fiyatı ve teslim makbuzunu inceler; sorun exit 1'dir. BIST gözcüsü günde iki kez
+çalışır; bu yüzden alarm hemen gelmeyebilir.
+`advisor-recovery.yml` Pazartesi/Çarşamba/Cuma operasyon yedeğini geçici dizinde
+doğrular; artifact 3 gün tutulur. `--operational` muhasebe/model/SQL durumunu
+saklar, replay kapsüllerini kapsamaz; tam kapsül geçmişi Git'te korunur.
+Kapsüller dahil yerel tam yedek için varsayılan `advisor backup` kullanılır.
 Arşiv hesap verisi içerir; paylaşım için hazırlanmış bir dosya değildir.
 `recovery-check` mevcut verinin üstüne yazmaz. Yedek adı daha önce varsa reddedilir.
 
 Her yeni karar koşusu girdi, ayar, model, defter başlangıcı, kullanılan Python kodu
 ve bağımlılık sürümlerini `data/advisor/capsules/` altında mühürler. `reproduce`
 arşivlenmiş kodu geçici dizinde çalıştırır; güvenilir kendi karar paketlerinde
-kullanılır. Bağımlılık ortamı farklıysa aynı sonucu üretmiş sayılmaz.
+kullanılır. Yeni v2 kapsüller ortak defter parçaları ve kod dosyasına hash ile
+başvurur; kapsülü taşırken `capsules/ledger/` ve `capsules/sources/` da taşınmalıdır.
+Eski bağımsız v1 kapsüller okunmaya devam eder. Bağımlılık ortamı farklıysa
+aynı sonucu üretmiş sayılmaz.
 
 Tam portföy `simulate` komutu, zaman sıralı eğitim ve ortak karar/muhasebe motorunu
 kullanır. Günlük bar içinde stop ve hedef görülürse stop önce varsayılır; açılış

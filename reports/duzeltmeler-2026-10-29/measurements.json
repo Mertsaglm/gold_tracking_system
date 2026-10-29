@@ -1,0 +1,22 @@
+{
+  "old_replay": {
+    "ok": true,
+    "id": "8310d269399613d6cad04b48aca01aa9c4a0be8a68ba0d39ce6172b96141e086",
+    "decisions": 1,
+    "code_hash": "9ccd585960a9bba8fa828046031c4bdb50d7ce5870a169d65ec32e9f965103ce"
+  },
+  "production_decisions": 1,
+  "new_fills": 0,
+  "differences": [
+    {
+      "symbol": "GRAM",
+      "old_action": "VERİ BEKLENİYOR",
+      "old_code": "data_block",
+      "new_action": "BEKLE",
+      "new_code": "spread_limit"
+    }
+  ],
+  "five_full_capsules_bytes": 3188194,
+  "five_shared_capsules_bytes": 700672,
+  "input_sha256_unchanged": true
+}

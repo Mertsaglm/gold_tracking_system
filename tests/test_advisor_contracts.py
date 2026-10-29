@@ -49,7 +49,14 @@ def test_portfolio_has_a_scheduled_fallback_and_observer_remains_read_only():
     assert portfolio['concurrency']['cancel-in-progress'] is False
     watchdog=yaml.safe_load((ROOT/'.github/workflows/advisor-watchdog.yml').read_text())
     observer=watchdog.get('on',watchdog.get(True))
-    assert len(observer['schedule']) == 1 and '13,43' in observer['schedule'][0]['cron']
+    assert len(observer['schedule']) == 1
+    if json.loads((ROOT/'advisor/config.json').read_text()).get('cycle_interval_minutes') == 60:
+        assert observer['schedule'][0]['cron'] == '43 10,17 * * 1-5'
+        assert triggers['schedule'][0]['cron'] == '17 7-16 * * 1-5'
+        assert triggers['workflow_dispatch']['inputs']['manual_run']['default'] is False
+        assert 'inputs.manual_run' in portfolio['jobs']['portfolio']['if']
+    else:
+        assert '13,43' in observer['schedule'][0]['cron']
     assert watchdog['permissions']['contents'] == 'read'
     if (ROOT/'src/advisor_refresh.py').exists():
         steps=portfolio['jobs']['portfolio']['steps']

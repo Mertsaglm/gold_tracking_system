@@ -25,6 +25,7 @@ def main():
     p.add_argument('--start')
     p.add_argument('--end')
     p.add_argument('--scenario', type=Path)
+    p.add_argument('--operational', action='store_true', help='Kapsül geçmişi hariç işletim yedeği; tam arşiv değildir.')
     args = p.parse_args()
     cfg = service.configuration(args.root)
     state = state_path(args.root, cfg)
@@ -113,7 +114,7 @@ def main():
         if args.command == 'backup':
             if not args.output:
                 p.error('backup için --output gerekli.')
-            value = backup(args.root, args.output)
+            value = backup(args.root, args.output, operational=args.operational)
         else:
             if not args.input:
                 p.error('recovery-check için --input gerekli.')

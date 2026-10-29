@@ -218,7 +218,8 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                 quotes = {} if offline else marketdata.fetch(cfg, symbols, now)
             except Exception as exc:
                 quotes = {}
-                errors.append("Banka fiyat kaynağı alınamadı: " + type(exc).__name__)
+                diagnosis = str(exc) if isinstance(exc, marketdata.SourceError) else type(exc).__name__
+                errors.append("Banka fiyat kaynağı alınamadı: " + diagnosis)
         # Eksik yeni kotasyon geçmiş fiyatla işlem gerçekleştiremez.
         ledger.add("quote_snapshot", "quotes:" + digest(quotes), now.isoformat(), quotes=quotes)
         action_health = {}
@@ -321,6 +322,7 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                    decisions=len(decisions),corporate_ok=not blocked_symbols,errors=list(errors),
                    analysis_issues=analysis_issues,
                    data_blocked_symbols=[d['symbol'] for d in decisions if d['action']=='VERİ BEKLENİYOR'],
+                   entry_blocked_symbols=[d['symbol'] for d in decisions if d.get('code')=='spread_limit'],
                    in_execution_window=current_phase in ('entry', 'protection'), in_observation_window=True)
         snapshot = {"schema_version": 2, "market": cfg["market"], "generated_at": now.isoformat(),
                     "analysis_date": data_date, "mode": "paper", "strategy": strategy, "benchmark": benchmark,

@@ -17,11 +17,15 @@ def validate_ledgers(root):
             ledger.account(book)
 
 
-def backup(root, output):
+def backup(root, output, *, operational=False):
     root, output = Path(root), Path(output)
     if output.exists():
         raise ValueError('Mevcut yedek üzerine yazılmaz.')
     files = [p for p in (root / 'data/advisor').rglob('*') if p.is_file() and p.suffix in {'.json', '.jsonl', '.gz'}]
+    if operational:
+        # Eski replay kanıtları Git arşivinde korunur. Günlük dış yedek aktif
+        # muhasebe/model/veri durumunu geri getirir; bütün kapsül arşivi değildir.
+        files = [p for p in files if 'capsules' not in p.relative_to(root/'data/advisor').parts]
     files += [p for p in (root / 'advisor').glob('*.py')]
     files += list((root / 'advisor').glob('*.json'))
     files += [p for p in (root / 'data').glob('*.sql')]
@@ -36,8 +40,13 @@ def backup(root, output):
             data = p.read_bytes()
             manifest[name] = hashlib.sha256(data).hexdigest()
             z.writestr(name, data)
+        info = json.dumps({'scope':'operational' if operational else 'full',
+                           'capsules_included':not operational},sort_keys=True).encode()
+        manifest['backup-info.json']=hashlib.sha256(info).hexdigest()
+        z.writestr('backup-info.json',info)
         z.writestr('manifest.json', json.dumps(manifest, sort_keys=True))
-    return {'files': len(manifest), 'archive': str(output)}
+    return {'files': len(manifest), 'archive': str(output),
+            'scope':'operational' if operational else 'full','bytes':output.stat().st_size}
 
 
 def restore(archive, destination):

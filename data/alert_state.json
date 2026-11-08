@@ -6,14 +6,16 @@
     "prim_sapma": "2026-08-14T15:35:03.799664+00:00"
   },
   "daily": {
-    "2026-11-07": 1
+    "2026-11-08": 0
   },
   "saglik": {
-    "ardisik_hata": 0,
+    "ardisik_hata": 1,
     "son_basari_utc": "2026-11-07T00:25:02.876907+00:00",
     "gunluk_adimlar": {
       "utc": "2026-11-07T19:36:30.649164+00:00",
       "hatalar": {}
-    }
+    },
+    "son_hata_utc": "2026-11-08T01:13:43.211401+00:00",
+    "son_hata": "weekend_expectation: ReadTimeout: HTTPSConnectionPool(host='api.telegram.org', port=443): Read timed out. (read timeout=35)"
   }
 }

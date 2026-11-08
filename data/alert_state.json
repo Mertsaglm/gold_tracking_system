@@ -2,20 +2,18 @@
   "last_sent": {
     "makas": "2026-09-13T22:13:22.401009+00:00",
     "gunluk_hareket": "2026-11-04T09:57:33.327792+00:00",
-    "weekend_expectation": "2026-11-07T00:25:02.876907+00:00",
+    "weekend_expectation": "2026-11-08T07:27:44.918999+00:00",
     "prim_sapma": "2026-08-14T15:35:03.799664+00:00"
   },
   "daily": {
-    "2026-11-08": 0
+    "2026-11-08": 1
   },
   "saglik": {
-    "ardisik_hata": 1,
-    "son_basari_utc": "2026-11-07T00:25:02.876907+00:00",
+    "ardisik_hata": 0,
+    "son_basari_utc": "2026-11-08T07:27:44.918999+00:00",
     "gunluk_adimlar": {
       "utc": "2026-11-07T19:36:30.649164+00:00",
       "hatalar": {}
-    },
-    "son_hata_utc": "2026-11-08T01:13:43.211401+00:00",
-    "son_hata": "weekend_expectation: ReadTimeout: HTTPSConnectionPool(host='api.telegram.org', port=443): Read timed out. (read timeout=35)"
+    }
   }
 }

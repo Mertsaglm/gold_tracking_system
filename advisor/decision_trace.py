@@ -19,6 +19,9 @@ def describe(row, forecast, decision, quote, cfg, now):
     from .marketdata import price_problem, usable
     quote_problem = usable(quote, cfg, now, cfg.get('holidays', ()),
                            allow_wide_spread=decision.get('action') in ('SAT', 'TUT'))
+    if cfg.get('execution_phase') == 'valuation':
+        quote_problem = price_problem(quote, cfg, now)
+    quote_problem = cfg.get('blocked_symbols', {}).get(symbol, quote_problem)
     analysis_date = cfg.get('expected_analysis_date')
     fresh = bool(row.get('quality_ok')) and (not analysis_date or row.get('date') == analysis_date)
     data_problem = price_problem(quote, cfg, now) if decision.get('code')=='spread_limit' else quote_problem

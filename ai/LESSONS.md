@@ -14,6 +14,28 @@
 
 ---
 
+## L-028 — 2026-10-29 — Tam replay ve operasyon yedeği farklı kapsamlardır
+
+Tekrar edilen defter/kod büyümeyi katlar. Ortak mühürlü parçalar eski kapsülleri
+bozmadan saklanabilir; okuyucular ve yedekleme birlikte sınanmalıdır. Operasyon
+yedeği kapsülleri dışarıda bırakıyorsa kapsamı açıkça etiketlenmeli, tam geçmiş
+seçeneği ve eski kanıt korunmalıdır. Daha küçük ZIP, tek başına tam kurtarma
+kanıtı değildir; manifest, muhasebe ve eski/yeni replay davranışı ayrı sınanır.
+
+## L-027 — 2026-10-28 — Maliyet engeli veri arızası değildir
+
+**Olay:** Geçerli GRAM kotasyonu geniş makas nedeniyle alımı durdurdu;
+`advisor/service.py:323` bütün veri bekleme kararlarını aynı kümeye koyunca
+`advisor/watchdog.py:76` maliyet engelini veri arızasına çevirdi. Ekim aktif
+defterinin 59 engelli kararının 57'si makas, 2'si kaynak yokluğuydu. Gerçek
+arşiv kopyasıyla alarm tekrarlandı: `docs/HATA-DENETIMI-2026-10-28.md`.
+
+**Ders:** Karar kapısı ile işletim alarmı ayrı sınıf kodları taşımalı; gerçek
+veri hatası görünür kalırken normal işlem maliyeti alarm gürültüsü üretmemeli.
+Alım eşiği ve koruyucu çıkış gevşetilmez. 2026-10-29: yerel düzeltme ve tetikleyici testleri geçti; üretim yayını bekliyor.
+
+---
+
 ## L-026 — 2026-09-23 — Üretici yeşilken tüketici eksik kapanışla karar verebilir
 
 **Anti-pattern:** Akşam işi bugünün yarım barını doğru biçimde dışlıyor, fakat
@@ -749,3 +771,11 @@ yollarında da uygulanmalı. `test_benchmark_pocket_half_cent_reconciles_with_in
 ve `test_legacy_mark_rounds_lot_times_price_before_cents` bu simetriyi korur.
 Temettü alacağı da lot × tutar × net oranı `Decimal` ile hesaplar;
 `test_dividend_receivable_rounds_fractional_lot_value_once` bu yolu kilitler.
+
+## L-029 — 2026-11-17 — Karar tanısı aynı zaman kapısını kullanmalı
+
+Kapanış değerlemesinde motor fiyat güvenilirliğini kontrol ederken tanı katmanı
+tekrar işlem saati kontrolü yapıyordu; sağlam veri yanlışlıkla sorunlu görünüyordu.
+`advisor/decision_trace.py` motorla aynı valuation kuralını kullanır.
+`tests/test_advisor_trace_regression.py` bayat kotasyonun reddini ve dolum
+üretilmemesini birlikte korur. Bu değişiklik canlı yayın kanıtı değildir.

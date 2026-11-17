@@ -1,5 +1,8 @@
 # Altın Takip
 
+[İşletim, yayın ve sonraki adımlar](docs/ISLETIM-2026-11-18.md)
+
+
 Yerel eğitim ve son tamamlanma denetimi (2026-09-25): [rapor](docs/YEREL-DENETIM-2026-09-25.md). Commit/push/deploy yapılmadı.
 
 ## Birikim V2 — 2026-09-15 revizyonu

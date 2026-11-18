@@ -779,3 +779,10 @@ tekrar işlem saati kontrolü yapıyordu; sağlam veri yanlışlıkla sorunlu g�
 `advisor/decision_trace.py` motorla aynı valuation kuralını kullanır.
 `tests/test_advisor_trace_regression.py` bayat kotasyonun reddini ve dolum
 üretilmemesini birlikte korur. Bu değişiklik canlı yayın kanıtı değildir.
+
+## 2026-11-18 · Kapanış ve seans içi gözlem
+
+18 Kasım BIST defterinde tek çevrim 19.32'deki kapanış değerlemesiydi.
+Eski nöbetçi 21.36 kesitinde aynı defter için sağlıklı sonucu verdi.
+İşlem penceresi tamamlandığında o pencerenin içinde gerçekleşmiş en az bir
+çevrimi ayrıca ara. Saatlik eksikleri ayrıca GitHub ve defter zamanlarından say.

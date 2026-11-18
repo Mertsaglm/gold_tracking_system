@@ -61,6 +61,14 @@ def inspect(root, now):
                 flag('missed_cycle','Beklenen işlem penceresindeki V2 koşusu arşivde yok.')
             elif check['data']['valid_quotes']<check['data']['expected_quotes']:
                 flag('price_coverage','Son işlem penceresinde fiyat kapsamı veya kotasyon zamanı eksik.')
+            # Kapanış değerlemesi, gün içinde pozisyonların izlenmiş olduğunu göstermez.
+            opening, closing = window(due.date(), cfg)
+            if now >= closing and not any(
+                e['data'].get('in_execution_window', True)
+                and opening <= datetime.fromisoformat(e['at']) < closing
+                for e in reversed(checks)
+            ):
+                flag('no_execution_cycle', f'{due.date()}: işlem saatlerinde arşivlenmiş V2 çevrimi yok.')
             local_now = now.astimezone(IST)
             if trading_day(local_now.date(), cfg) and local_now.date().isoformat() >= cfg['start_date']:
                 start, end = window(local_now.date(), cfg, 'observation')

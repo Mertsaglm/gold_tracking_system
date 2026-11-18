@@ -71,3 +71,25 @@ def test_watchdog_observes_a_daytime_gap_without_blocking_the_producer(tmp_path)
     assert any(f['code'] == 'cycle_gap' for f in late['findings'])
     after_close = watchdog.inspect(tmp_path, NOW + timedelta(hours=4))
     assert any(f['code'] == 'cycle_gap' for f in after_close['findings'])
+
+
+@pytest.mark.parametrize('daytime_check', [False, True])
+def test_closing_valuation_cannot_substitute_for_execution_window(tmp_path, daytime_check):
+    ledger = archive(tmp_path)
+    day = '2026-09-17'
+    config_path = tmp_path / 'advisor/config.json'
+    cfg = json.loads(config_path.read_text())
+    cfg.update(execution_window={'open': '10:15', 'close': '18:00'},
+               observation_window={'open': '10:15', 'close': '20:00'})
+    config_path.write_text(json.dumps(cfg))
+    close = datetime.fromisoformat(day + 'T19:32:00+03:00')
+    evening = close + timedelta(hours=2)
+    fields = dict(valid_quotes=1, expected_quotes=1, decisions=1, in_observation_window=True)
+    if daytime_check:
+        ledger.add('session_check', 'real-session', day + 'T11:20:00+03:00',
+                   in_execution_window=True, **fields)
+    ledger.add('session_check', 'valuation-only', close.isoformat(),
+               in_execution_window=False, **fields)
+    ledger.save()
+    findings = watchdog.inspect(tmp_path, evening)['findings']
+    assert any(f['code'] == 'no_execution_cycle' for f in findings) == (not daytime_check)

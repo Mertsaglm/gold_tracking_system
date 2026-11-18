@@ -1,11 +1,19 @@
 # Mevcut durum
 
-**Güncelleme:** 2026-11-18 (kanıt kesiti: 2026-11-17)
-**Aktif iş:** GitHub, Gmail, Telegram ve güncel SQL denetlendi. İki kod
-hatası 2026-11-18 yayın paketinde giderildi. Canlı kabul ayrı doğrulanır.
-Sıfır ek ödeme, eski defter korunumu ve ortak T0 kapısı geçerli.
+**Güncelleme:** 2026-11-18 akşamı (İstanbul).
+BIST kapanış arşivi güncel. Seans içinde BIST çevrimi eksik kaldı.
+Altının akşam veri boşluğundan sonra taze banka fiyatı doğrulandı.
 
 ## Tamamlananlar
+
+- 18 Kasım BIST: 73/73 hisse, USD/TRY ve dört endeks 18 Kasım kapanışına ulaştı.
+  19.32 değerlemesinde 33/33 fiyat, Telegram makbuzu 277. İşlem aralığında
+  sıfır çevrim; 32 girdisiz dispatch tasarım gereği atlandı. Geçmişe işlem yazılmadı.
+- Altın: 18.34 nöbetçisi 45 dakikayı aşan arayı bildirdi. 21.41 telafi çevrimi
+  taze GRAM fiyatı ve BEKLE kararı üretti. İki FRED serisinde zaman aşımı var.
+- Kapanışın eksik seansı gizlemesini önleyen ortak nöbetçi kontrolü ve
+  regresyon testleri eklendi. BIST zamanlamasının kalıcı çözümü açık.
+
 
 - BIST USDTRY 2026-10-22'de donmuştu: tarihsel tek bozuk satır tüm batch'i
   reddediyordu. Sağlam satırlar ilerler, retler ayrı görünür; güncel eksik
@@ -21,7 +29,7 @@ Sıfır ek ödeme, eski defter korunumu ve ortak T0 kapısı geçerli.
 
 ## Açık bulgular ve kanıt sınırı
 
-- İlk canlı çevrimde USDTRY ve kapanış değerlemesi doğrulanacak.
+- 18 Kasım kapanışında USDTRY ve değerleme doğrulandı; seans içi ritim açık.
 - Altın 2026-11-17 sabah kaynak kimliği hatası, ardından toparlanma doğrulandı;
   başarısız yanıtın gövdesi yok, kök neden DOĞRULANMADI. Kontrol gevşetilmedi.
 - Altın dış tetikleyicide 14:45–15:58 UTC boşluğu; nöbetçi doğru alarm üretti.
@@ -35,9 +43,9 @@ Sıfır ek ödeme, eski defter korunumu ve ortak T0 kapısı geçerli.
 
 ## Sıradaki 3 İş
 
-1. Yayın sonrası ilk sağlıklı çevrimi doğrula.
-   DoD: yalnız ilgili kod/test/manifest; eski SQL ve özel dökümler yok;
-   gerçek koşuda taze kur/kapanış, doğru tanı, defter ve Telegram makbuzu.
+1. 19 Kasım açılışından itibaren BIST gerçek işlem çevrimini ve altın sürekliliğini izle.
+   DoD: işlem penceresindeki zaman damgalı geçerli fiyat/karar, 90/45 dk
+   boşluk kontrolü ve kapanış makbuzu; saatlik dış tetikleyici ayarı doğrulanmalı.
 2. Dış scheduler ve kaynak kesintisini bağımsız izle; arşiv büyümesini çöz.
    DoD: tetikleyici saatleri ile runner saatleri ayrılmış, kaynak hata sınıfı
    doğrulanmış; saklama değişikliğinde eski kanıtın geri dönüşü korunmuş.

@@ -368,3 +368,17 @@ Geçmiş son bölüm yeniden kullanıldığı için sonuç keşiftir; otomatik t
 Ortak altın ilişkisi paneli yalnız iki ana hesabı toplar; TRALT ile GRAM değerlerini
 ayrı gösterir. Etiketli tutar ölçülmüş korelasyon değildir; sert ortak sınır yoktur.
 Ayrıntı ve sonuçlar: [beş başlığın kaydı](KARSILASTIRMA-2026-09-25.md).
+
+## GitHub içinde gecikme telafisi · 19 Kasım 2026
+
+`.github/workflows/cloud-recovery.yml` planlı denetimde ve ilgili gözcü
+tamamlandığında çalışır. Altın arşivleyicisinin tamamlanması da denetimi
+tetikler. Denetim kendi deposunun geçici GitHub belirtecini kullanır.
+Gerekirse var olan günlük iş veya portföy işi main üzerinde başlatılır.
+Karar, defter ve Telegram makbuzunun yazarı mevcut portföy işidir.
+
+Akşam önce tarihli rapor aranır (BIST 20.50, altın 19.50 İstanbul).
+Rapor varsa açık gözlem penceresinde BIST için 60, altın için 45 dakika
+eşiği uygulanır. Bekleyen, çalışan, son 10 dakikada başlayan veya o aralıkta
+GitHub botunun başlattığı iş ikinci kez istenmez. GitHub zamanlaması gecikebilir;
+Actions hizmeti veya kotası kesilirse aynı platformdaki telafi de gecikir.

@@ -35,9 +35,16 @@ def missing_cycle(now, cfg, status):
     slot = opening + ((now - opening) // interval) * interval
     if now < opening + timedelta(minutes=15):
         return None
+    since = max(opening, now - interval)
+    if cfg['market'] == 'gold':
+        _, execution_close = calendar.window(day, cfg)
+        if now > execution_close:
+            # Son işlem saati içindeki çevrim, ilk kapanış değerlemesinin yerine geçmez.
+            since = max(since, execution_close + timedelta(microseconds=1))
+            slot = max(slot, execution_close)
     if status and status.get('ok') is True and status.get('skipped') is False:
         at = datetime.fromisoformat(status['at'])
-        if max(opening, now - interval) <= at <= now:
+        if since <= at <= now:
             return None
     return slot
 

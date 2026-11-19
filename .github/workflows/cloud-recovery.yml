@@ -3,7 +3,7 @@ on:
   schedule:
     - cron: '7 17-20 * * *'
   workflow_run:
-    workflows: ['Altin arsivleyici + bildirim', 'V2 portfoy nobetcisi']
+    workflows: ['V2 portfoy nobetcisi']
     branches: [main]
     types: [completed]
   workflow_dispatch: {}

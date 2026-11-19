@@ -36,6 +36,15 @@ def test_gold_evening_gap_and_following_fresh_receipt():
     assert recovery.missing_cycle(at('2026-11-18T23:49'), cfg, stale) is None
 
 
+def test_gold_protection_cycle_does_not_replace_closing_valuation():
+    cfg = config('gold')
+    cfg['execution_window'] = {'open': '09:00', 'close': '23:00'}
+    now = at('2026-11-18T23:08')
+    status = {'ok': True, 'skipped': False, 'at': at('2026-11-18T22:57').isoformat()}
+    assert recovery.missing_cycle(now, cfg, status) == at('2026-11-18T23:00')
+    assert recovery.missing_cycle(now, cfg, dict(status, at=at('2026-11-18T23:06').isoformat())) is None
+
+
 def test_recovery_dispatch_and_duplicates(monkeypatch):
     now, slot = at('2026-11-18T21:36'), at('2026-11-18T20:50')
     prior = []

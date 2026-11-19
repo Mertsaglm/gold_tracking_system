@@ -1,0 +1,40 @@
+name: Eksik piyasa işini tamamla
+on:
+  schedule:
+    - cron: '7 17-20 * * *'
+  workflow_run:
+    workflows: ['Altin arsivleyici + bildirim', 'V2 portfoy nobetcisi']
+    branches: [main]
+    types: [completed]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: cloud-recovery
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /scripts/cloud_recovery.py
+            /advisor/__init__.py
+            /advisor/calendar.py
+            /advisor/config.json
+            /holidays_tr.yaml
+      - run: python3 -m pip install --disable-pip-version-check --target "$RUNNER_TEMP/calendar-deps" PyYAML==6.0.3
+      - name: Eksik günlük işi veya çevrimi denetle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: PYTHONPATH="$RUNNER_TEMP/calendar-deps:." python3 -m scripts.cloud_recovery

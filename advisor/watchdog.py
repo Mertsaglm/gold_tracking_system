@@ -118,9 +118,13 @@ def inspect(root, now):
         if s['health']['ledger_hash'] not in {e['hash'] for e in ledger.events}:
             flag('snapshot_ledger', 'Panel görünümü arşivdeki defterle eşleşmiyor.')
         if cfg['telegram']['enabled']:
-            from .notifications import delivered
-            if not delivered(ledger, s):
-                flag('notification_missing', 'Son kararın Telegram makbuzu arşivde yok.')
+            from .notifications import closing_day, delivered
+            require_closing = s.get('monitoring', {}).get('closing_report_expected', False)
+            if not delivered(ledger, s, require_closing=require_closing):
+                if require_closing and closing_day(s, at):
+                    flag('closing_report_missing', 'Gün sonu Telegram raporu makbuzu arşivde yok.')
+                else:
+                    flag('notification_missing', 'Son kararın Telegram makbuzu arşivde yok.')
         evidence = cycle_evidence(s, ledger)
     except (OSError, ValueError, KeyError, TypeError):
         flag('archive_invalid', 'V2 arşivi okunamadı veya bütünlüğü doğrulanamadı.')

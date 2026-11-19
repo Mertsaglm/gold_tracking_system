@@ -21,7 +21,7 @@
     "ledger.py": "7fd1a60ba4e6c65ea4921c4614f524aea189477e036783b4e21b3d494da41fbc",
     "marketdata.py": "c211d13b3d892cb1507a4f5d035166b7a74c4a474ba605cb79cef1617becd668",
     "news.py": "547725115fbfd95d6a1e483385eb49801479022022857ee8055ecce82bd97798",
-    "notifications.py": "77d88693c054721e8f0d4a70535b6e6ea71932ce44e242388c73ccf2998b11cd",
+    "notifications.py": "61cba007669e813be496454939e16ad9fc58fd3dd1d7cc0e37cc4cac4b0f3aed",
     "observations.py": "362f96d5dec34eeadcd36412dad9e00ff78522ba5be680336e4beb0df5a7173e",
     "outcomes.py": "0e764e3ec6d50731aa5700930a33622eaeda47ee8cfda71e882e507f0d0c18ae",
     "policy.py": "f973ba437b5378bd416c9e1458faf44b3c0be01f401cb1fbe7d72e4a8b4d74eb",
@@ -31,12 +31,12 @@
     "research.py": "781a7f7fd6ddc0a1b8459d43ab543dcf16e1258abddbdb68fbcb9fd238889a3f",
     "review.py": "a90ef1c08a918d349f5b5718921e87daefff6718bddf48c68208796356c1f5ac",
     "risk.py": "405d04596eda9c1850b7a614afac1a70a2f5747d28215b69dfe1c4486c80d600",
-    "service.py": "addce970cc6148a28105dc5e1fcc564e662505c79b8ad701f4a77f0f3f6f3fa7",
+    "service.py": "19a6039d1d7925b073f94d5e742b4c3fdf396733736672694a206dc43631992c",
     "shadow.py": "b4174fac23ac8979aff2ca7c9013a5fa78ca5051c98b71e303bf7b26bfa1277f",
     "simulation.py": "ce25e399d8ea1e53cc214614df22cb8ae009a68600a0d45b911304a62d377e0d",
     "specialized.py": "569ca9b146b800942e28618c37b7ed766cba1de05b7015759d73c9305632aab4",
     "training.py": "52cdba0e1e8730c5f87d3eaa0f5965be8a4f4cbb326456c103383799851b8e1b",
     "universe.py": "2c02a902a102b5fc625a953c6ac8083f7a56c50d4e85328c1025ef86cfcfeb8c",
-    "watchdog.py": "44ce0db1fc157df326452d72838f2c4b4db7418ba4e48fc80220b24adf650572"
+    "watchdog.py": "0c778c6f0e34b6bcedfd0b819009f613afcf21054baa6ad52bad91dfaf56022c"
   }
 }

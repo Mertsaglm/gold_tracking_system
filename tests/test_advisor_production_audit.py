@@ -181,6 +181,19 @@ def test_watchdog_evidence_counts_persisted_forecasts_and_matches_delivery_time(
     assert proof['telegram']['exact_cycle'] is False
 
 
+def test_pre_release_valuation_keeps_its_legacy_notification_receipt(tmp_path):
+    s = snapshot(now=NOW.replace(hour=16))
+    s['analysis_date'] = NOW.date().isoformat()
+    s['monitoring'] = {'phase': 'valuation'}
+    s['health']['expected_analysis_date'] = s['analysis_date']
+    at = datetime.fromisoformat(s['generated_at'])
+    ledger = Ledger(tmp_path/'events.jsonl')
+    ledger.add('notification', 'notification:legacy', at.isoformat(),
+               state_key=notifications.notification_key(s, at), message_id=282, snapshot_at=s['generated_at'])
+    assert notifications.delivered(ledger, s, require_closing=False)
+    assert not notifications.delivered(ledger, s)
+
+
 def test_relative_candidate_is_insensitive_to_unmatured_peer_label(monkeypatch):
     from advisor import learning, specialized
 

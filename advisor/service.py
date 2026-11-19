@@ -335,7 +335,9 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                     'risk': portfolio_risk.summary(ledger.account(), quotes, cfg, now),
                     'weekly': reporting.weekly(ledger, now), 'funnel': reporting.funnel(decisions),
                     'reproduction': receipt, 'cost_observations': observations.summary(ledger),
-                    'account_id': cfg.get('account_id', 'legacy'), 'monitoring': dict(monitoring_snapshot(now, cfg), phase=current_phase, closing_refresh=closing_refresh),
+                    'account_id': cfg.get('account_id', 'legacy'),
+                    'monitoring': dict(monitoring_snapshot(now, cfg), phase=current_phase,
+                                       closing_refresh=closing_refresh, closing_report_expected=True),
                     'risk_control': risk_control, 'custody': custody, 'risk_factors': cfg.get('risk_factors', {}),
                     "budget": budget_signature, 'cost_notes': cfg.get('cost_notes', []), "costs": {k: cfg[k] for k in ("commission_rate", "commission_min_try", "commission_bsmv_rate", "exchange_fee_rate", "gold_buy_tax_rate", "slippage_bps")}}
         from .filter_diagnostics import summarize as summarize_filters

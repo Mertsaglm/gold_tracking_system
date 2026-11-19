@@ -52,7 +52,7 @@ def summary(snapshot, url="", max_characters=1000):
     return "\n".join(lines)[:max_characters]
 
 
-def _closing_day(snapshot, now):
+def closing_day(snapshot, now):
     monitoring = snapshot.get('monitoring', {})
     health = snapshot['health']
     if monitoring.get('phase') != 'valuation':
@@ -138,11 +138,11 @@ def notification_key(snapshot, now):
     return digest(state)
 
 
-def delivered(ledger, snapshot):
+def delivered(ledger, snapshot, *, require_closing=True):
     """Son GÖNDERİLEN durumla karşılaştır; A→hata→A iyileşmesi kaybolmasın."""
     at = datetime.fromisoformat(snapshot['generated_at'])
-    report_day = _closing_day(snapshot, at)
-    if report_day:
+    report_day = closing_day(snapshot, at)
+    if report_day and require_closing:
         previous = next((e['data'] for e in reversed(ledger.events)
                          if e['kind'] == 'notification' and e['data'].get('report_day') == report_day), None)
         # Bir eksik kapanış bildirildiyse sonradan toparlanan kapanışı da ilet.
@@ -187,7 +187,7 @@ def publish(root, cfg, snapshot, ledger, now):
     event_key = notification_key(snapshot, at)
     if delivered(ledger, snapshot):
         return False
-    report_day = _closing_day(snapshot, at)
+    report_day = closing_day(snapshot, at)
     url, limit = cfg.get('dashboard_url', ''), cfg['telegram']['max_characters']
     text = (_closing_summary(snapshot, ledger, report_day, url, limit) if report_day
             else summary(snapshot, url, limit))

@@ -11,6 +11,12 @@
 
 ---
 
+## L-030 — 2026-11-19 — Karar makbuzu kapanış raporu değildir
+
+Gün içi durum tekrar etmese bile gün sonu raporu ayrı kimlikle teslim
+edilmeli. Gerçekleşen işlemleri olay defterinden say ve Telegram makbuzunu
+yeniden denemelerde kullanılabilecek şekilde sakla.
+
 ## L-028 — 2026-10-29 — Tam replay ve operasyon yedeği farklı kapsamlardır
 
 Tekrar edilen defter/kod büyümeyi katlar. Ortak mühürlü parçalar eski kapsülleri

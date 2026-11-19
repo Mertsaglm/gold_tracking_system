@@ -58,6 +58,16 @@ def test_recovery_dispatch_and_duplicates(monkeypatch):
     assert recovery.recently_requested([dict(run, event='schedule', created_at='2026-11-18T18:34:00Z')], now, slot)
 
 
+def test_failed_recovery_can_be_retried_once_after_cooldown():
+    now, slot = at('2026-11-18T21:36'), at('2026-11-18T20:50')
+    failed = dict(created_at='2026-11-18T18:00:00Z', status='completed', conclusion='failure',
+                  event='workflow_dispatch', actor={'login': 'github-actions[bot]'})
+    second = dict(failed, created_at='2026-11-18T18:15:00Z', conclusion='timed_out')
+    assert not recovery.recently_requested([failed], now, slot)
+    assert recovery.recently_requested([second, failed], now, slot)
+    assert recovery.recently_requested([dict(failed, created_at='2026-11-18T18:30:00Z')], now, slot)
+
+
 def test_missing_report_has_priority_over_portfolio(monkeypatch, tmp_path):
     import shutil
     root = Path(__file__).resolve().parents[1]

@@ -74,6 +74,131 @@ def test_data_warning_is_a_notification_state_change():
     assert notifications.notification_key(s, NOW) != original
 
 
+@pytest.mark.parametrize('market', ['bist', 'gold'])
+def test_daily_close_reports_real_fills_even_if_the_decisions_did_not_change(tmp_path, monkeypatch, market):
+    monkeypatch.setenv('TELEGRAM_BOT_TOKEN', 'test')
+    monkeypatch.setenv('TELEGRAM_CHAT_ID', 'test')
+    ledger = Ledger(tmp_path/'events.jsonl')
+    cfg_market = {**cfg(), 'market': market}
+    sent = []
+
+    class Response:
+        status_code = 200
+
+        def json(self):
+            return {'ok': True, 'result': {'message_id': len(sent)}}
+
+    def post(*args, **kwargs):
+        sent.append(kwargs['json']['text'])
+        return Response()
+
+    monkeypatch.setattr(notifications.requests, 'post', post)
+    s = snapshot()
+    s['market'] = market
+    assert notifications.publish(tmp_path, cfg_market, s, ledger, NOW)
+    ledger.add('fill', 'fill:example', NOW.isoformat(), book='strategy', symbol='AAA',
+               side='SELL', price=50., reason='target')
+    ledger.add('session_check', 'check:example', NOW.isoformat(), in_execution_window=True,
+               expected_quotes=2, valid_quotes=1, decisions=2, errors=[])
+    close = NOW.replace(hour=16 if market == 'bist' else 20, minute=17)
+    s.update(generated_at=close.isoformat(), analysis_date=NOW.date().isoformat(),
+             monitoring={'phase': 'valuation', 'closing_refresh': market == 'bist'})
+    s['health'].update(expected_analysis_date=NOW.date().isoformat(), expected_quotes=2, quote_coverage=2)
+    assert notifications.publish(tmp_path, cfg_market, s, ledger, close)
+    assert 'GÜN SONU' in sent[-1]
+    assert '0/1 çalışan işlem çevrimi' in sent[-1]
+    assert 'Strateji gerçekleşen: 0 AL, 1 SAT.' in sent[-1]
+    assert 'SAT AAA · 50.00 TL · kâr hedefi' in sent[-1]
+    assert not notifications.publish(tmp_path, cfg_market, s, ledger, close + timedelta(minutes=2))
+    assert ledger.events[-1]['data']['report_day'] == NOW.date().isoformat()
+    next_close = close + timedelta(days=1)
+    next_day = next_close.date().isoformat()
+    s.update(generated_at=next_close.isoformat(), analysis_date=next_day)
+    s['health'].update(expected_analysis_date=next_day, quote_coverage=1)
+    assert notifications.publish(tmp_path, cfg_market, s, ledger, next_close)
+    assert 'Uyarı: kapanış' in sent[-1]
+    s['health']['quote_coverage'] = 2
+    assert notifications.publish(tmp_path, cfg_market, s, ledger, next_close + timedelta(minutes=2))
+    assert 'Uyarı: kapanış' not in sent[-1]
+    assert not notifications.publish(tmp_path, cfg_market, s, ledger, next_close + timedelta(minutes=3))
+
+
+def test_telegram_retries_connect_timeout_without_duplicate_receipt(tmp_path, monkeypatch):
+    monkeypatch.setenv('TELEGRAM_BOT_TOKEN', 'test')
+    monkeypatch.setenv('TELEGRAM_CHAT_ID', 'test')
+    sleeps = []
+    monkeypatch.setattr(notifications, 'sleep', sleeps.append)
+
+    class Response:
+        status_code = 200
+
+        def json(self):
+            return {'ok': True, 'result': {'message_id': 123}}
+
+    def post(*args, **kwargs):
+        if len(sleeps) < 2:
+            raise notifications.requests.ConnectTimeout('secret URL')
+        return Response()
+
+    monkeypatch.setattr(notifications.requests, 'post', post)
+    ledger = Ledger(tmp_path/'events.jsonl')
+    assert notifications.publish(tmp_path, cfg(), snapshot(), ledger, NOW)
+    assert sleeps == [1, 2]
+    assert [e['data']['message_id'] for e in ledger.events] == [123]
+
+
+def test_telegram_does_not_resend_during_a_read_timeout(tmp_path, monkeypatch):
+    monkeypatch.setenv('TELEGRAM_BOT_TOKEN', 'test')
+    monkeypatch.setenv('TELEGRAM_CHAT_ID', 'test')
+    attempts = []
+
+    def post(*args, **kwargs):
+        attempts.append(1)
+        raise notifications.requests.ReadTimeout('secret URL')
+
+    monkeypatch.setattr(notifications.requests, 'post', post)
+    ledger = Ledger(tmp_path/'events.jsonl')
+    with pytest.raises(RuntimeError, match=r'^Telegram teslimi doğrulanamadı \(ReadTimeout\)\.$'):
+        notifications.publish(tmp_path, cfg(), snapshot(), ledger, NOW)
+    assert len(attempts) == 1 and not ledger.events
+
+
+def test_watchdog_evidence_counts_persisted_forecasts_and_matches_delivery_time(tmp_path):
+    from advisor.watchdog import cycle_evidence
+
+    s = snapshot()
+    s['decisions'][0]['forecast_pct'] = 2.5
+    s['quotes'] = {'AAA': {'source': 'İş Yatırım'}}
+    ledger = Ledger(tmp_path/'events.jsonl')
+    ledger.add('forecast', 'forecast:aaa', NOW.isoformat(),
+               symbol='AAA', asof=s['analysis_date'])
+    ledger.add('notification', 'notification:old', NOW.isoformat(),
+               message_id=23, snapshot_at=(NOW - timedelta(hours=1)).isoformat())
+    proof = cycle_evidence(s, ledger)
+    assert proof['quote_sources'] == ['İş Yatırım']
+    assert proof['forecast_symbols'] == proof['archived_forecast_symbols'] == 1
+    assert proof['telegram']['message_id'] == 23
+    assert proof['telegram']['exact_cycle'] is False
+
+
+def test_relative_candidate_is_insensitive_to_unmatured_peer_label(monkeypatch):
+    from advisor import learning, specialized
+
+    dates = pd.bdate_range('2023-01-02', periods=504).strftime('%Y-%m-%d')
+    base = pd.DataFrame({'symbol': 'AAA', 'date': dates, 'label_end': dates,
+                         'forward_pct': 1.0, 'quality_ok': True})
+    future = base.assign(symbol='BBB', label_end='2030-01-01', forward_pct=1000.)
+    for name in learning.ADAPTIVE_FEATURES:
+        base[name] = future[name] = 0.
+
+    def fit(rows, *args):
+        assert rows.forward_pct.eq(0).all()
+        return {'weights': [0], 'features': [], 'mean': [], 'scale': [], 'intercept': 0}
+
+    monkeypatch.setattr(learning, 'fit', fit)
+    assert specialized.fit_candidate(pd.concat([base, future]), 'bist', 20, dates[-1])['ready']
+
+
 def test_history_keeps_the_expected_universe_even_when_a_symbol_has_no_bars():
     con = sqlite3.connect(':memory:')
     con.executescript('CREATE TABLE universe(ticker,sector,in_live);'

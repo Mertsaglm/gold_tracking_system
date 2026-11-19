@@ -244,7 +244,7 @@ def _risk_limited_budget(account, symbol, cfg, buy, stop, desired_try, risk_limi
     return 0
 
 
-def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now):
+def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now, *, review_daily=False):
     account = ledger.account('tactical')
     actions = []
     # Koruyucu stop haftalık seçimin dışında, gözlem boyunca işler.
@@ -259,8 +259,7 @@ def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now):
     exited_today = {f['symbol'] for f in account['fills'] if f['side'] == 'SELL' and
                     datetime.fromisoformat(f['at']).astimezone(IST).date() == now.astimezone(IST).date()}
     day = now.astimezone(IST).date().isoformat()
-    week = _week(day)
-    key = 'tactical-rebalance:' + week
+    key = 'tactical-rebalance:' + (day if review_daily else _week(day))
     if key in ledger.keys or cfg.get('execution_phase') != 'entry':
         return actions
     if cfg['market'] == 'gold':
@@ -325,6 +324,9 @@ def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now):
         keep.add(symbol)
         sector_counts[sector] = sector_counts.get(sector, 0) + 1
     for symbol in sorted(held - keep):
+        if review_daily and symbol in cfg['allowed_entry_symbols'] and net.get(symbol) is None:
+            # Fiyat koruması yukarıda çalışır. Eksik model girdisi bir satış sinyali değildir.
+            continue
         q = quotes.get(symbol)
         if q:
             actions.append(_trade(ledger, cfg, quotes, now, 'tactical', symbol, 'SELL',

@@ -6,6 +6,11 @@ Altının akşam veri boşluğundan sonra taze banka fiyatı doğrulandı.
 
 ## Tamamlananlar
 
+- 2026-11-19 yayın paketi: ayrı kapanış Telegram makbuzu, ağ ve bulut
+  telafisi, nöbetçi fiyat/tahmin/defter kanıtı ve nedensel göreli hedef.
+  Ana motor Ridge. Eski defterler ve araştırma kolları korunuyor.
+  Üretim kabulü için yayın sonrası gerçek otomatik çevrim bekleniyor.
+
 - 2026-11-19: BIST 10.17 çevriminde 33/33 fiyat ve karar; altın 11.01
   çevriminde taze GRAM fiyatı. GitHub kaynak verisi panel şemasından geçti.
   İki arşivde de aktif kararla eşleşen Telegram makbuzu doğrulandı.

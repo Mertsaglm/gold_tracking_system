@@ -32,9 +32,11 @@ def prepared(features, market, horizon):
 
 
 def fit_candidate(features, market, horizon, asof):
-    f, names = prepared(features[features.date <= asof], market, horizon)
+    # Bağıl hedefin paydasına da yalnız cutoff'ta olgunlaşmış getiriler girer.
+    # Eksik seansı olan bir hissenin label_end'i aynı sinyal tarihinde daha geç olabilir.
+    mature = features[(features.date <= asof) & (features.label_end <= asof) & features.quality_ok]
+    f, names = prepared(mature, market, horizon)
     valid = f.dropna(subset=names + ['forward_pct', 'label_end'])
-    valid = valid[(valid.label_end <= asof) & valid.quality_ok]
     if valid.date.nunique() < 504:
         return {'ready': False, 'reason': '504 tamamlanmış eğitim seansı henüz yok.',
                 'training_dates': int(valid.date.nunique())}

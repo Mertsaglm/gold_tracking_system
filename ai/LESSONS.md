@@ -14,6 +14,13 @@
 
 ---
 
+## L-030 — 2026-11-19 — Karar makbuzu kapanış raporu değildir
+
+Gün içi BEKLE değişmediyse durum mesajını bastırmak yararlıdır. Aynı kural
+gün sonu raporunu sessizce eleyebilir. Kapanışa İstanbul işlem günü
+kimliği ver, gerçekleşmeleri defterden say ve eksik kapanış toparlanırsa
+güncel raporu ilet. Çevrim başarı durumu Telegram teslimini kanıtlamaz.
+
 ## L-028 — 2026-10-29 — Tam replay ve operasyon yedeği farklı kapsamlardır
 
 Tekrar edilen defter/kod büyümeyi katlar. Ortak mühürlü parçalar eski kapsülleri

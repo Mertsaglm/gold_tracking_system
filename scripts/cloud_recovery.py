@@ -43,14 +43,18 @@ def missing_cycle(now, cfg, status):
 
 
 def recently_requested(runs, now, slot):
+    failed_recoveries = 0
     for run in runs:
         at = datetime.fromisoformat(run['created_at'].replace('Z', '+00:00'))
         if run['status'] != 'completed' or at >= now - timedelta(minutes=10):
             return True
         if (at >= slot and run['event'] == 'workflow_dispatch'
                 and run['actor']['login'] == 'github-actions[bot]'):
-            return True
-    return False
+            if run.get('conclusion') not in ('failure', 'timed_out', 'cancelled'):
+                return True
+            failed_recoveries += 1
+    # Aynı zaman aralığında ilk telafi başarısızsa bir kez daha dene.
+    return failed_recoveries >= 2
 
 
 def api(path, *, raw=False, missing_ok=False, payload=None):

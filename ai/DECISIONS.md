@@ -6,6 +6,53 @@
 
 ---
 
+## #028 — 2026-11-19 — Pozisyonu yeni bilgiyle yeniden değerlendir
+
+**Karar:** Piyasalar ayrı sanal hesaplardır. Pasif kıyas otomatik işler,
+taktik adaylar ayrı defterde sınanır. Tahmin ölçümü ve pozisyonun çıkış
+kuralı ayrıdır. Gün sonu Telegram raporu, gün içi durum mesajından bağımsız
+makbuz alır ve gerçekleşmeleri olay defterinden sayar.
+**Neden:** Güncel tahmin, gerçekleşmiş işlem ve mesaj makbuzu farklı
+kanıtlardır. Eldeki fiyat yeniden değerlendirme gerektirebilir.
+**Tekrar gözden geçir:** Zaman sıralı ekonomik kıyas, maliyet sonrası servet
+ve düşüş sınavı ve düzenli otomatik işletim birlikte kanıtlandığında.
+
+---
+
+## #027 — 2026-10-29 — Sıfır ek ödeme ile kontrollü işletim
+
+**Bağlam:** Ücretsiz Actions dakika/depolama hakkı tükenmiş; Mert ek ödeme
+yapamayacağını açıkça belirtti. Geçerli geniş makas da yanlış veri alarmı üretiyordu.
+**Karar:** Ücretli LLM/servis veya limit artışı yok. BIST nominal saatlik,
+girdisiz dış dispatch kapalı; V1 LLM kapalı, veri nöbeti açık. Gold ritmi korunur.
+Geniş makas ayrı BEKLE kodudur; %3 alım eşiği ve stop çıkışı korunur.
+Yeni kapsüllerde mühürlü ortak nesneler kullanılır; eski kanıtlar değiştirilmez.
+Harici operasyon yedeği haftada üç kez, artifact saklama 3 gündür; kapsüller
+Git'te kalır. Varsayılan tam yedek seçeneği korunur.
+**Neden:** Aynı geçmişi her çevrim ve yedekte tekrar saklamak büyümeyi katlıyor.
+Saatlik gözlem ücretsiz bütçeyi azaltır ama stop tepkisi de daha seyrektir.
+**Tekrar gözden geçir:** Üretim dakika/depolama ölçümü kotaya yaklaşırsa,
+veri gecikmesi kabul edilemezse veya bağımsız tam geçmiş yedeği gerekirse.
+Yerel kanıt üretim kabulü değildir; ayrıntı `docs/DUZELTMELER-2026-10-29.md`.
+
+---
+
+## #026 — 2026-10-02 — AI talimatlarında bağlam ve kritik sınırlar
+
+**Bağlam:** Mert, BIST'teki sadeleştirmeyi altın projesi için de istedi.
+**Karar:** Genel düşünme/karar/süre tarifleri ve zorunlu sohbet kalıpları kaldırılır;
+projeye özgü hafıza, komutlar, kullanıcıya bağlı işler ve kritik sınırlar korunur.
+Kök/paket AGENTS ve köprüleri eşit kalır; Gemini köprüsü ayrı öncelik taşımaz.
+V1 kapsam kesitleri arşivlenir; paket PROJECT/STATE güncel kök kayıtlara yönlendirir.
+Karar/ders olayları silinmez, ilgili konuya göre okunur. Yeni proje scriptinin kodu
+ve ürettiği eski süre ifadesi bu Markdown revizyonunun dışındadır.
+**Neden:** Aynı bilginin birden fazla güncel kaynak gibi okunmasını ve gereksiz
+workflow yükünü azaltır; V1 gram ölçütü ile V2 servet kıyası karışmaz.
+**Tekrar gözden geçir:** Eksik bağlam nedeniyle bir proje sınırı yeniden ihlal
+edilirse yalnız o bilgi eklenir; tohumlama kodu ayrı iş olarak ele alınır.
+
+---
+
 ## #025 — 2026-10-01 — Ayrı %80 çekirdek/%20 taktik ileri sanal sınav
 
 **Bağlam:** Altın ana hesabı yeni bütçeye henüz yayımlanmadı; model kapıları

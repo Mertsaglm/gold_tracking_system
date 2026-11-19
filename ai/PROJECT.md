@@ -1,5 +1,16 @@
 # PROJECT.md — Projenin Kimliği
 
+## Revizyon hedefi — 2026-11-19
+
+BIST ve İş Bankası gram altını için iki ayrı otomatik sanal hesap. Her piyasa
+50.000 TL ile başlar ve ayda 5.000 TL katkı alır. Hedef, banka maliyetlerinden
+sonra serveti uygun AL/SAT kararlarıyla artırmak. Pasif kol aynı parayla
+otomatik işler. Yeni modeller ayrı defterde otomatik ölçülür. Açık pozisyon
+yeni fiyat, risk veya sinyal değişince yeniden değerlendirilir. Tahminin
+ölçüm ufku, zorunlu pozisyon süresi olarak kullanılmaz. Yaklaşık saatlik
+bulut gözlemi ve kısa gün sonu Telegram raporu, bilgisayar kapalıyken de
+çalışmalıdır. Gerçek emir, elle rutin tetikleme ve ek harcama kapsam dışıdır.
+
 ## İleri sanal sınav kapsamı — 2026-10-01
 
 Ana/önceki altın hesapları korunur. BIST ile ortak ileri T0 sonrasında ayrı

@@ -27,6 +27,34 @@ def expected_slot(now, cfg):
     raise ValueError('Beklenen işlem aralığı bulunamadı.')
 
 
+def cycle_evidence(snapshot, ledger):
+    """En son karar ile kalıcı fiyat, tahmin ve Telegram kayıtlarını gösterir."""
+    at = snapshot['generated_at']
+    day = snapshot.get('analysis_date')
+    decisions = snapshot.get('decisions', ())
+    forecast_symbols = {d['symbol'] for d in decisions if d.get('forecast_pct') is not None}
+    model_id = snapshot.get('learning', {}).get('id')
+    archived = [e['data'] for e in ledger.events if e['kind'] == 'forecast'
+                and day is not None and e['data']['asof'] == day and e['data']['symbol'] in forecast_symbols]
+    delivery = next((e['data'] for e in reversed(ledger.events) if e['kind'] == 'notification'
+                     and type(e['data'].get('message_id')) is int), None)
+    quotes = list(snapshot.get('quotes', {}).values())
+    return {
+        'cycle_at': at, 'analysis_date': day,
+        'quote_sources': sorted({q['source'] for q in quotes if q.get('source')}),
+        'quote_coverage': snapshot['health'].get('quote_coverage'),
+        'expected_quotes': snapshot['health'].get('expected_quotes'),
+        'model_id': model_id,
+        'forecast_symbols': len(forecast_symbols),
+        'archived_forecast_symbols': len({d['symbol'] for d in archived}),
+        'matching_model_forecast_symbols': len({d['symbol'] for d in archived if d.get('model_id') == model_id})
+        if model_id else 0,
+        'ledger_hash': snapshot['health']['ledger_hash'],
+        'telegram': {**{k: delivery.get(k) for k in ('message_id', 'snapshot_at', 'report_day')},
+                     'exact_cycle': delivery.get('snapshot_at') == at} if delivery else None,
+    }
+
+
 def inspect(root, now):
     from .service import configuration
     root = Path(root)
@@ -37,6 +65,7 @@ def inspect(root, now):
         return {'ok':True, 'checked_at':now.isoformat(), 'expected_slot':due.isoformat(),
                 'findings':[], 'initializing':True, 'mode':'observation_only'}
     findings = []
+    evidence = None
     def flag(code, message):
         findings.append({'code': code, 'message': message})
     try:
@@ -92,9 +121,10 @@ def inspect(root, now):
             from .notifications import delivered
             if not delivered(ledger, s):
                 flag('notification_missing', 'Son kararın Telegram makbuzu arşivde yok.')
+        evidence = cycle_evidence(s, ledger)
     except (OSError, ValueError, KeyError, TypeError):
         flag('archive_invalid', 'V2 arşivi okunamadı veya bütünlüğü doğrulanamadı.')
     if str(now.astimezone(IST).year) not in cfg['calendar']['years']:
         flag('calendar_missing', 'Bu yılın işlem takvimi eksik.')
     return {'ok': not findings, 'checked_at': now.isoformat(), 'expected_slot': due.isoformat(),
-            'findings': findings, 'mode': 'observation_only'}
+            'findings': findings, 'mode': 'observation_only', 'evidence': evidence}

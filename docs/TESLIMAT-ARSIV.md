@@ -1,5 +1,7 @@
 # TESLIMAT ARŞİVİ — İnşa Dönemi (Faz 1-7)
 
+> İnşa dönemi kanıt kaydı. Güncel sanal karar ve kabul için [V2 kullanım rehberi](V2-REHBER.md) ve [24 Kasım denetimi](DENETIM-2026-11-24.md).
+
 **Dönem:** 2026-07-07 → 2026-07-21 · **Sonuç:** sistem GitHub Actions'ta otonom çalışıyor.
 
 Bu dosya inşa döneminin **kanıt kaydıdır**: her fazda ne ölçüldü, hangi iddia doğrulandı,

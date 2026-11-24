@@ -21,9 +21,18 @@ TAKVİM'deki tarihi gelmiş, bekleyen `Kim=👤` işleri hatırlat; tarihsiz iş
 ilgili konu gündeme geldiğinde ele al. Kullanıcının yanıtına göre durumu,
 erteleme tarihini ve gerekçesini kaydet.
 
+Yeni oturumda STATE'teki son doğrulama kesitini güncel üretim olarak
+varsayma. GitHub koşusu, kaynak tarihi ve defter makbuzunu yeniden kontrol et.
+Bağımsız ileri deneyleri ortak T0'dan ayrı takip et.
+
 İki piyasayı etkileyen bir işte diğer deponun STATE kaydını da güncelle.
 Yerel test, üretim yayını, ilk canlı makbuz ve T0 durumunu tarihli
 kanıta bağlantı vererek kaydet.
+
+Oturum ve belge bağlantıları için [proje haritasını](docs/PROJE-ICINDEKILER.md)
+kullan. Tarihli belgelerde ölçümün tarihini ve veri kesitini koru. Göreli
+bağlantılar depo içinde kalır. Ortak kod veya doküman taşınırsa iki
+depoda `python3 scripts/check_doc_links.py` çalıştır.
 
 ## 3. Projeyi ve kullanıcıyı anlama
 

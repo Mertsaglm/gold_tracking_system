@@ -1,5 +1,4 @@
 # archive/
 
-STATE.md şiştiğinde eski içerik buraya taşınır: `STATE-YYYY-MM.md`.
-Usta bu klasörü yalnızca geçmişe dair özel bir soru gelirse okur —
-normal oturumlarda bağlamı şişirmemek için okumaz.
+Eski hafıza kesitleri burada tutulur; güncel kayıtlar proje kökündeki `ai/` içindedir.
+Arşive ilgili işin geçmişi gerektiğinde başvurulur; her oturumda tamamı okunmaz.

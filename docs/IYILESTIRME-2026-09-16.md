@@ -1,5 +1,9 @@
 # Öncelik ve uygulama planı — 2026-09-16
 
+> **Tarihsel kesit:** Bu belgedeki ölçüm ve yayın durumu yazıldığı tarihin kesitidir.
+> Güncel üretim ve açık işler için [ai/STATE.md](../ai/STATE.md) ile
+> [2026-10-01 deney durumuna](PORTFOY-DENEYI-2026-10-01.md) bakın.
+
 Kullanıcı dört gruptan ilk üçünün uygulanmasını istedi. Önceki rapordaki 25 ve
 26 numaralı bakım önerileri tek maddede birleştirildi; toplam 25 madde korundu.
 Sıralama: sessiz yanlış para hesabı > yanlış başarı ölçümü > anlaşılabilirlik >

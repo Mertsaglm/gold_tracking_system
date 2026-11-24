@@ -73,7 +73,7 @@ def test_workflow_dosyalari_yerinde():
     zırh GitHub'da hiçbir yerde koşmuyordu.
     """
     assert sorted(p.name for p in WF.glob("*.yml")) == [
-        "advisor-recovery.yml", "advisor-watchdog.yml", "archive.yml", "cloud-recovery.yml", "daily.yml", "portfolio.yml", "test.yml"]
+        "advisor-recovery.yml", "advisor-watchdog.yml", "archive.yml", "cloud-recovery.yml", "daily.yml", "docs-links.yml", "portfolio.yml", "test.yml"]
 
 
 # ------------------------------------------------------------ daily.yml sırası

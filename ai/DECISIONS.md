@@ -1,8 +1,66 @@
 # DECISIONS.md — Karar Günlüğü (ADR)
 
+Güncel oturum devri ve doğrulama kesiti [STATE](STATE.md) dosyasındadır.
+
 > Önemli kararların tarihli gerekçeleri; en yeni kayıt üsttedir. Güncel kapsam
 > PROJECT, işletim durumu STATE dosyasındadır. Eski V1 kararları V2'ye otomatik
 > uygulanmaz; #007 gram karnesini, #016 ve sonrası ayrı sanal defteri tanımlar.
+
+---
+
+## #034 — 2026-11-25 — T0 sözleşmesi ve gün içi ölçüm
+
+Yeni sözleşmede ekonomik kod özeti, bildirim, raporlama ve nöbetçi
+modüllerinden ayrıldı. İlk tam build özeti kayıtlıdır. Önceki sözleşme
+karşılaştırması kendi kapsamını kullanır. Davranış testi iki depoda eş.
+
+Gündüz %4 uygunluğu, V2 kapanış teslimi ve teorik gramın arşiv günü ayrı
+ölçülür. 24 Kasım gündüzündeki geçerli fiyatlar ortak gelecekteki açılış
+için tek başına canlı kabul sayılmaz. Altının yön hipotezini yeni veride
+güncellemeden önce basit drift ve sıfır referansları birlikte ölçülür.
+[Ek denetim](../docs/TAHMIN-DENETIMI-2026-11-25.md)
+
+---
+
+## #033 — 2026-11-25 — Gram tahmini ve banka katkı zamanlaması
+
+Ortak yerel araştırma, teorik gramın doğrudan ve ayrı ons/kur
+tahminlerini sıfır getiriyle aynı günlerde ölçer. Bayat veya teorik
+kotasyon ekonomik banka sonucu üretmez. Katkı zamanlamasının ayrı
+deneyinde bankanın iki fiyatı, vergi, sonraki farklı kotasyon ve
+bekleme sınırı kullanılır.
+
+**Gerekçe.** Sıfır tahmin üç ufukta önde ve 20 seans affine
+kalibrasyon hatayı büyüttü. Ayrı özellikli kur bacağı sıfır tabanı
+geçti. Ons hatası teorik grama taşındı. Dar makası beklemenin replay'i
+yalnız tek farklı katkı tarihi üretti. İleri banka deneyi açık kalır.
+
+**Yeniden değerlendirme.** Ayrı ileri kolun aynı katkı ile gram ve net
+değeri, farklı makas rejimlerinde kıyaslanır. Ons ve kur veri geçişi
+eşzamanlı spot ve roll kanıtıyla ele alınır.
+[Ölçüm ve makbuzlar](../docs/TAHMIN-DENETIMI-2026-11-25.md)
+
+---
+
+## #032 — 2026-11-24 — İleri deneyde maruziyet ve model sürümü
+
+İlk beş giriş, beş pozisyonla genişlik ve işlem maliyeti arasında
+başlangıç tercihidir. İlk on koruma, haftalık sıra 5/6 çevresinde
+gereksiz al-sat yapılmasını azaltır. %8 tahsis ve %0,6 masraflı
+stop zararı isim başına giriş bütçesidir. Beş yeni pozisyonda
+yaklaşık %40 hisse, %60 nakit ve %3 girişte stop riski hedeflenir.
+Fiyat hareketi, masraf, lot ve stop boşluğu bu değerleri değiştirir.
+
+Net tasfiye üzerinden güncel hisse ve nakit payı, eş pasif payları,
+açık stop riski ve stres gözlemi kaydedilir. Eksik değerleme
+bilinmiyor kalır. Ölçüm, mevcut emir ve tahmin kurallarını değiştirmez.
+
+Özellik, ufuk, maliyet veya karar semantiği değişen ML adayına ayrı
+kimlik ve ayrı defter gerekir. İleri sıralama dosyası, girdisi ve
+vadesi korunur. Devam eden momentum aynı 120–20 tanımıyla izlenir.
+Sıradaki bağımsız deneyler altın için eş bütçeli makas-zamanlama,
+BIST için ortak sinyal üzerinde tek değişkenli trend ve R:R
+kıyaslarıdır. Ortak T0 bu deneylerin ön koşulu değildir.
 
 ---
 

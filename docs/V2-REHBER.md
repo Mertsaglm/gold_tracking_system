@@ -1,11 +1,16 @@
 # Birikim V2 — Kullanım ve işletim
 
+Güncel [durum](../ai/STATE.md), [doküman haritası](PROJE-ICINDEKILER.md) ve [25 Kasım araştırma denetimi](TAHMIN-DENETIMI-2026-11-25.md).
+
+> **2026-11-25 devir notu.** Güncel üretim, yerel paket, bağımsız momentum ve ortak T0 durumu [STATE kaydında](../ai/STATE.md). Bu sayfadaki tarihli kesitler kendi koşullarına aittir.
+
+
 > Güncel üretim durumu ve bekleyen kabul için [STATE](../ai/STATE.md). Karar ve defter kanıtı [24 Kasım denetiminde](DENETIM-2026-11-24.md).
 
 ## Ne yapar?
 
 BIST ve gram altın iki bağımsız Python projesi olarak çalışır. Her biri kendi
-fiyatını okur, kararını üretir ve kendi sanal hesabına yazar. `dashboard/`
+fiyatını okur, kararını üretir ve kendi sanal hesabına yazar. BIST deposundaki `dashboard/`
 içindeki Birikim paneli iki hesabı birlikte gösterir. Bankaya emir gönderen
 bir bağlantı, gerçek para veya kredi kullanımı yoktur.
 

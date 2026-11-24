@@ -1,17 +1,22 @@
 # İZLEME — İzleme Dönemi El Kitabı
 
-## Birikim V2 — güncel kısa kontrol (2026-09-23)
+> **2026-11-25 devir notu.** Güncel üretim, yerel paket, bağımsız momentum ve ortak T0 durumu [STATE kaydında](ai/STATE.md). Bu sayfadaki tarihli kesitler kendi koşullarına aittir.
 
-- [Canlı panel](https://birikim-paneli.vercel.app/): BIST ve gram altın ayrı sanal
-  hesap olarak görünmeli. Son kayıt ve analiz tarihine bak; eski analiz varsa yeni
-  alımın durması beklenir, koruyucu satışın durması beklenmez.
-- GitHub Actions'ta her iki depodaki `portfolio.yml` ve `advisor-watchdog.yml`
-  çalışmalarını kontrol et. Yeni nominal 30 dakika cron yedeği ve 45 dakika
-  çevrim boşluğu uyarısı ilk üretim seansında ayrıca doğrulanacak; cron zaman
-  garantisi vermez.
-- Karar/defter kanıtı her deponun `data/advisor/latest.json`, `run_status.json`
-  ve `events.jsonl` dosyalarında. Açık riskler `reports/ACIK-RISKLER-2026-09-23.md`,
-  görevlerin güncel sırası `ai/STATE.md` içindedir.
+
+## Birikim V2 izleme sırası
+
+1. [STATE](ai/STATE.md) üzerinden son üretim kesiti, yerel paket ve kabulü kontrol et.
+2. Panelde kaynak zamanı, analiz günü ve 1/1 geçerli banka fiyatına bak.
+   Alım için makas, kapanış ve risk kontrolleri ayrıca geçmelidir.
+3. Nominal 23.17 kapanışı ile makbuzun İstanbul rapor gününü eşleştir.
+   24 Kasım yerel paketindeki 00.07 telafisi aynı rapor gününü kullanır.
+   Eksik kapanış bildirimi yeni fiyat, değerleme veya işlem üretmez.
+4. Portföy çevrimi, nöbetçi çıktısı ve Telegram teslimini ayrı kontrol et.
+   GitHub planı, kuyruk başlangıcı ve gerçek veri zamanı farklıdır.
+5. T0 kapalıyken beş yeni sanal defter açılmaz. Koşullar ve iki piyasa
+   kabulü [deney belgesinde](docs/PORTFOY-DENEYI-2026-10-01.md).
+
+[İşletim rehberi](docs/ISLETIM-2026-11-18.md) · [24 Kasım kanıtı](docs/DENETIM-2026-11-24.md)
 
 **Aşağıdaki kontrol listesi V1 altın veri toplama ve rapor hattına aittir.**
 V2 portföy çevriminin veya panelin sağlığını tek başına kanıtlamaz.
@@ -19,7 +24,8 @@ V2 portföy çevriminin veya panelin sağlığını tek başına kanıtlamaz.
 İnşa dönemi bitti. Sistem GitHub Actions'ta kendi kendine çalışıyor. Bu belge haftalık
 **5 dakikalık kontrol listesi** ve karşılaşabileceğin durumların ne anlama geldiğidir.
 
-> Kural: Yerelde bir şey çalıştırmadan önce **her zaman `git pull`** (sistem 15 dk'da bir commit atıyor).
+> Canlı veriyi denetlerken üretim kesitini ve zamanını doğrula. Yerel SQLite ve
+> çalışma kopyası eski kalabilir. Ayırdığın kopyada çalışarak yerel değişiklikleri koru.
 
 ---
 

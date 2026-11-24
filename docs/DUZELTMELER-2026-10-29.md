@@ -1,7 +1,8 @@
 # Yerel ücretsiz işletim düzeltmeleri — 2026-10-29
 
-Bu dosya yayın öncesi doğrulama kesitidir. Mert 2026-10-29 tarihinde
-commit/push ve gerekli güvenli işlemleri yetkilendirdi. Canlı kabul ayrı doğrulanır. Ek ücretli servis,
+> Ekim 2026 çalışma kesiti. Sonraki üretim ve açık işler [STATE](../ai/STATE.md) ile [24 Kasım denetiminde](DENETIM-2026-11-24.md).
+
+Durum: yerelde hazır; commit/push/üretim yayını yapılmadı. Ek ücretli servis,
 limit artışı veya gerçek emir yok. Üretim SQL/defter/geçmiş kapsüller ve deney T0 korundu.
 
 - Geçerli geniş makas ayrı `BEKLE/spread_limit` sonucu verir; %3 alım eşiği ve

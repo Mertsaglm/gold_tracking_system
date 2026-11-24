@@ -1,5 +1,9 @@
 # Basit rakip ve katkı ölçümü — 2026-09-25
 
+> **Tarihsel kesit:** Bu belgedeki ölçüm ve yayın durumu yazıldığı tarihin kesitidir.
+> Güncel üretim ve açık işler için [ai/STATE.md](../ai/STATE.md) ile
+> [2026-10-01 deney durumuna](PORTFOY-DENEYI-2026-10-01.md) bakın.
+
 Kullanıcının beş sorusundan çıkan uygulama. Önceki revizyonun üstüne gelir;
 üretim yayını yapılmadı. Yalnız sanal portföy ve geçici tarihsel sınav vardır.
 

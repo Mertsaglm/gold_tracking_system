@@ -45,3 +45,17 @@
 - İki 5 seans adayının tahmin motoru aynı, giriş kuralları farklı. SMA50 eğitilmez.
 - Eski `data/advisor` dosyaları değişmedi. Yeni canlı başarı kaydı oluşturulmadı.
 - Üretimde önceki sürüm sürüyor; yerel eğitim dosyası yayın/aktivasyon değildir.
+
+## 2026-10-01 yayın öncesi kanıt
+
+- Uzak altın 14:33 UTC: eski hesap 10.000 TL katkı/sıfır işlem; 33 çıktı
+  07:02–14:46 UTC (en büyük boşluk 15,3 dk). Özel BIST Safari'de okundu:
+  14:46:54 başarılı, 29 çıktı 08:02–14:47 UTC (en büyük boşluk 17 dk).
+  İki uzak SQL geçici DB'de incelendi: BIST30 30/30 bar 2026-09-30,
+  altın tarih/banka tick'i 2026-09-30, ons/kur OHLC 2026-09-29. Actions
+  manuel dispatch + planlı yedek gösterir; dış kaynak kimliği açık.
+- Güncel BIST defterinde 7.124, altın defterinde 1.863 olayın hash zinciri ve
+  dörder hesabın bağımsız muhasebesi doğrulandı. BIST ana hesap 55.000 TL,
+  altın ana hesap 10.000 TL nakitte; ikisinde de ana işlem yok.
+- Eski yerel kapsüller (BIST 148, altın 86) sabit ortamda tekrarlandı; altın
+  `.venv` pandas/tzdata kilidine eşitlendi. Güncel üretim kapsülleri açık.

@@ -1,6 +1,11 @@
 # Yerel tamamlanma ve eğitim denetimi — 2026-09-25
 
-Commit/push/deploy yapılmadı. Bu rapor önceki aynı tarihli ölçümleri günceller.
+> **Tarihsel kesit:** Bu belgedeki ölçüm ve yayın durumu yazıldığı tarihin kesitidir.
+> Güncel üretim ve açık işler için [ai/STATE.md](../ai/STATE.md) ile
+> [2026-10-01 deney durumuna](PORTFOY-DENEYI-2026-10-01.md) bakın.
+
+2026-09-25 kesitinde commit/push/deploy yapılmamıştı. Bu rapor önceki aynı
+tarihli ölçümleri günceller; sonraki yayın için güncel durum belgesine bakın.
 Eski karşılaştırma JSON'ları `reports/archive/pre-audit-2026-09-25/` altında korunur.
 
 ## Bulunan ve düzeltilenler

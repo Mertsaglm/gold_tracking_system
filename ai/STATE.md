@@ -4,8 +4,8 @@
 
 25 Kasım seans öncesi GitHub, SQL ve iki defter yeniden doğrulandı.
 Son doğrulanan finansal çevrimler 24 Kasım.
-Araştırma yayın hedefi `codex/forecast-audit-docs-20261125`.
-Bu dal inceleme içindir. Üretim kaynağı `main`.
+Araştırma inceleme dalına gönderildi. [İlk paket `da41461`](https://github.com/Mertsaglm/gold_tracking_system/commit/da414615e5f0f3a7f41559663e6c0928874a1fa3).
+Üretim kaynağı `main`. Canlı kabul ayrıca ölçülür.
 
 | Konu | Son doğrulanmış durum |
 |---|---|

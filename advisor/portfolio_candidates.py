@@ -160,19 +160,11 @@ def _core(ledger, cfg, records, rows, quotes, now, book='core'):
     if cfg['market'] == 'bist' and len(members) != cfg.get('core_expected_members', 30):
         return [{'status': 'çekirdek_üyeliği_eksik', 'observed': len(members),
                  'expected': cfg.get('core_expected_members', 30)}]
-    account = ledger.account(book)
     if cfg['market'] == 'gold':
         if cfg.get('execution_phase') != 'entry':
             return actions
-        symbols = members
-        # Pasif altın kontrolünün taktik dilimi de GRAM alır.
-        for symbol in symbols:
-            if _valid(rows.get(symbol), symbol, cfg, quotes, now):
-                budget = account['cash_cents'] / 100
-                if budget > 0:
-                    actions.append(_trade(ledger, cfg, quotes, now, book, symbol, 'BUY', budget,
-                                          reason='core_accumulation'))
-        return actions
+        return _gold_core(ledger, cfg, rows, quotes, now, book)
+    account = ledger.account(book)
     # Bir önceki haftanın dengelemesi aynı hafta ikinci defa satış üretmez.
     week = _week(day)
     rebalance = f'core-rebalance:{book}:{week}' not in ledger.keys
@@ -209,6 +201,24 @@ def _core(ledger, cfg, records, rows, quotes, now, book='core'):
         ledger.add('rebalance_check', f'core-rebalance:{book}:{week}', now.isoformat(),
                    book=book, target_weight=1 / len(members), members=sorted(members))
     return actions
+
+
+def core_quote_config(cfg):
+    """GRAM çekirdeği ve pasif kontrol için ön kayıtlı ayrı makas sınırı."""
+    if cfg['market'] != 'gold':
+        return cfg
+    return {**cfg, 'max_spread_pct': cfg.get('experiment_core_max_spread_pct', cfg['max_spread_pct'])}
+
+
+def _gold_core(ledger, cfg, rows, quotes, now, book):
+    budget = ledger.account(book)['cash_cents'] / 100
+    if not budget:
+        return []
+    row = rows.get('GRAM')
+    if not row or not row.get('quality_ok') or row.get('date') != cfg.get('expected_analysis_date'):
+        return [{'status': 'çekirdek_kapanışı_eksik', 'symbol': 'GRAM', 'book': book}]
+    return [_trade(ledger, core_quote_config(cfg), quotes, now, book, 'GRAM', 'BUY', budget,
+                   reason='core_accumulation')]
 
 
 def _net_forecast(row, forecast, quote, cfg, notional_try=1000):
@@ -255,6 +265,8 @@ def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now, *, review_daily
             if price <= p['stop']:
                 actions.append(_trade(ledger, cfg, quotes, now, 'tactical', symbol, 'SELL',
                                       float(p['quantity']) * price, reason='tactical_stop'))
+    if not forecasts:
+        return actions
     account = ledger.account('tactical')
     exited_today = {f['symbol'] for f in account['fills'] if f['side'] == 'SELL' and
                     datetime.fromisoformat(f['at']).astimezone(IST).date() == now.astimezone(IST).date()}
@@ -434,6 +446,8 @@ def cycle(state, frame, base, quotes, now, records, rows, forecasts, model, spec
                     'code_id': digest({p.name: digest(p.read_text())
                                        for p in sorted(Path(__file__).parent.glob('*.py'))})}
         prior = next((e['data'] for e in ledger.events if e['kind'] == 'portfolio_contract'), None)
+        if cfg['market'] == 'gold' and (prior is None or 'core_max_spread_pct' in prior):
+            terms['core_max_spread_pct'] = core_quote_config(cfg)['max_spread_pct']
         if prior is not None and any(prior.get(k) != v for k, v in terms.items()):
             raise ValueError('Ön kayıtlı aday sözleşmesi geçmişin üstüne değiştirilemez.')
         contract = prior or dict(terms, first_data_date=str(frame.date.max()) if frame is not None else None,
@@ -469,8 +483,7 @@ def cycle(state, frame, base, quotes, now, records, rows, forecasts, model, spec
                     ranked_forecasts = {}
                     scores = {}
                     diagnostics.append({'status': 'özelleşmiş_model_hazır_değil'})
-                if ranked_forecasts:
-                    diagnostics += _tactical(ledger, cfg, rows, quotes, ranked_forecasts, scores, now)
+                diagnostics += _tactical(ledger, cfg, rows, quotes, ranked_forecasts, scores, now)
         fee_books = books if spec == 'legacy-control' else (('portfolio', books, 'core'),)
         custody = costs.accrue(ledger, cfg, quotes, now, books=fee_books)
         view = _view(ledger, cfg, quotes, now, spec)

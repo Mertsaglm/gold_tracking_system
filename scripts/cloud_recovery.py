@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import json
 import os
 from pathlib import Path
+import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -36,12 +37,10 @@ def missing_cycle(now, cfg, status):
     if now < opening + timedelta(minutes=15):
         return None
     since = max(opening, now - interval)
-    if cfg['market'] == 'gold':
-        _, execution_close = calendar.window(day, cfg)
-        if now > execution_close:
-            # Son işlem saati içindeki çevrim, ilk kapanış değerlemesinin yerine geçmez.
-            since = max(since, execution_close + timedelta(microseconds=1))
-            slot = max(slot, execution_close)
+    _, execution_close = calendar.window(day, cfg)
+    if now >= execution_close:
+        since = max(since, execution_close)
+        slot = max(slot, execution_close)
     if status and status.get('ok') is True and status.get('skipped') is False:
         at = datetime.fromisoformat(status['at'])
         if since <= at <= now:
@@ -49,7 +48,7 @@ def missing_cycle(now, cfg, status):
     return slot
 
 
-def recently_requested(runs, now, slot):
+def recently_requested(runs, now, slot, *, retry_completed=False):
     failed_recoveries = 0
     for run in runs:
         at = datetime.fromisoformat(run['created_at'].replace('Z', '+00:00'))
@@ -57,7 +56,7 @@ def recently_requested(runs, now, slot):
             return True
         if (at >= slot and run['event'] == 'workflow_dispatch'
                 and run['actor']['login'] == 'github-actions[bot]'):
-            if run.get('conclusion') not in ('failure', 'timed_out', 'cancelled'):
+            if not retry_completed and run.get('conclusion') not in ('failure', 'timed_out', 'cancelled'):
                 return True
             failed_recoveries += 1
     # Aynı zaman aralığında ilk telafi başarısızsa bir kez daha dene.
@@ -71,20 +70,25 @@ def api(path, *, raw=False, missing_ok=False, payload=None):
     data = None if payload is None else json.dumps(payload).encode()
     request = Request('https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/' + path,
                       headers=headers, data=data)
-    try:
-        with urlopen(request, timeout=30) as response:
-            body = response.read()
-    except HTTPError as error:
-        if missing_ok and error.code == 404:
-            return None
-        raise
+    for attempt in range(3):
+        try:
+            with urlopen(request, timeout=20) as response:
+                body = response.read()
+            break
+        except HTTPError as error:
+            if missing_ok and error.code == 404:
+                return None
+            print('GitHub API', 'okuma' if payload is None else 'tetikleme', error.code, 'deneme', attempt + 1)
+            if payload is not None or error.code not in (502, 503, 504) or attempt == 2:
+                raise
+            time.sleep(2 ** attempt)
     return json.loads(body) if body else None
 
 
 def dispatch(workflow, slot, now, inputs=None):
     path = 'actions/workflows/' + workflow
     runs = api(path + '/runs?branch=main&per_page=100')['workflow_runs']
-    if recently_requested(runs, now, slot):
+    if recently_requested(runs, now, slot, retry_completed=workflow == 'portfolio.yml'):
         print(workflow, 'bekleyen, yeni veya aynı aralık için telafi koşusu var')
         return
     api(path + '/dispatches', payload={'ref': 'main', 'inputs': inputs or {}})
@@ -105,9 +109,18 @@ def main():
             dispatch('gunluk.yml' if bist else 'daily.yml', slot, now)
             return
     if missing_cycle(now, cfg, None):
-        account = cfg['account_id']
-        status = api(f'contents/data/advisor/accounts/{account}/run_status.json?ref=main',
-                     raw=True, missing_ok=True)
+        latest = api('contents/data/advisor/latest.json?ref=main', raw=True, missing_ok=True)
+        status = None
+        if latest and latest.get('market') == cfg['market']:
+            health = latest.get('health', {})
+            complete = (health.get('expected_quotes', 0) > 0
+                        and health.get('quote_coverage') == health['expected_quotes']
+                        and not health.get('errors') and not health.get('analysis_issues'))
+            observed_phase = latest.get('monitoring', {}).get('phase')
+            expected_phase = calendar.phase(now, cfg)
+            accepted = ('valuation',) if expected_phase == 'valuation' else ('entry', 'protection')
+            if complete and observed_phase in accepted:
+                status = {'ok': True, 'skipped': False, 'at': latest['generated_at']}
         slot = missing_cycle(now, cfg, status)
         if slot:
             dispatch('portfolio.yml', slot, now, {'manual_run': 'true'} if bist else {})

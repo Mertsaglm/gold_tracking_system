@@ -1,5 +1,17 @@
 # PROJECT.md — Projenin Kimliği
 
+Güncel devir ve açık işler [STATE](STATE.md), son denetim kanıtı [24 Kasım raporunda](../docs/DENETIM-2026-11-24.md).
+
+## Araştırma yaklaşımı — 2026-11-24
+
+Mevcut ana strateji ve eş bütçeli pasif kol referanstır. Kontrollü rakipler
+ayrı sanal hesaplarda veya zaman sıralı replay'de fiilen sınanır. Veri
+güvenilirliği ve muhasebe kuralları ortak kalır. Trend, makas, R:R ve
+tahsis ekonomik hipotezlerdir. Katkıdan arındırılmış net getiri, düşüş,
+maliyet, kapsama ve reddedilen fırsatlar ön kayıtla izlenir. İlk deneme
+üstünlük kanıtı gerektirmez. Ana politika için ileri ekonomik kanıt gerekir.
+Ortak T0 yalnız ortak beş kolun başlangıcıdır. Bağımsız araştırmalar sürer.
+
 ## Revizyon hedefi — 2026-11-19
 
 BIST ve İş Bankası gram altını için iki ayrı otomatik sanal hesap. Her piyasa
@@ -11,6 +23,14 @@ yeni fiyat, risk veya sinyal değişince yeniden değerlendirilir. Tahminin
 bulut gözlemi ve kısa gün sonu Telegram raporu, bilgisayar kapalıyken de
 çalışmalıdır. Gerçek emir, elle rutin tetikleme ve ek harcama kapsam dışıdır.
 
+## İşletim bütçesi — 2026-10-29
+
+Mert ek ödeme yapamayacağını belirtti. Ücretli servis/LLM açılmaz, harcama limiti
+artırılmaz ve özel depo herkese açılmaz. Eski düşük maliyet/LLM bütçe kararlarının
+yerine geçer. BIST günlük otomasyonu V1 LLM olmadan veri/rapor üretir;
+deterministik V2 çalışmaya devam eder. Saatlik gözlem stop kontrol sıklığını da
+azaltır; gerçek zaman garantisi yok. Yerel hazırlık ve üretim kabulü ayrı tutulur.
+
 ## İleri sanal sınav kapsamı — 2026-10-01
 
 Ana/önceki altın hesapları korunur. BIST ile ortak ileri T0 sonrasında ayrı
@@ -20,6 +40,17 @@ masraf sonrası tahmin ve stop riskiyle sınırlanır. Taktik kârı çekirdek +
 ve çekirdek + pasif altın kollarına göre ölçülür. Ons/kur Ridge yalnız ayrı
 model adayıdır; üstünlük veya otomatik terfi kabul edilmez. Gerçek emir yok;
 ortak T0 henüz açılmadı. Ayrıntı: `docs/PORTFOY-DENEYI-2026-10-01.md`.
+Kod 2026-10-01'de iki deponun `main` dalına yayımlandı. Altın ilk yeni kod
+çevrimi/Telegram makbuzu geçti; BIST ilk yeni koşusu seans dışında atlandı.
+Beş deney hesabının canlı çalışması, ortak gelecek T0 ön koşullarına bağlıdır.
+
+## Karar ölçümü — 2026-11-24
+
+60 takvim günü yeni strateji alımı yoksa işlemsizlik incelemesi yapılır.
+BEKLE ölçümü kapıları, masraf sonrası varsayımsal getiriyi, eşleşen pasif
+kıyası ve eksik vade kotasyonunu gösterir. Zorunlu tahsis yalnız ayrı,
+ön kayıtlı bir deney olarak değerlendirilebilir. Ortak T0 açılışı uygun
+kotasyona, eş bütçeye ve iki piyasanın canlı kabulüne bağlıdır.
 
 ## Güncel kapsam — 2026-09-25
 
@@ -27,7 +58,6 @@ Mert'in yeni talebi: BIST ve İş Bankası gram altını için iki ayrı otomati
 sanal portföy, ortak web paneli, kısa ve net Türkçe Telegram kararları. Amaç masrafları
 hesaba katarak birikimin değerini, hisse/gram miktarlarını artıracak fırsatları izlemek.
 Gerçek emir iletimi yok. Bütçe her hesapta 50.000 TL başlangıç + aylık 5.000 TL; faizsiz nakit.
-Amaç masraf sonrası serveti artırmak; yalnız sanal hesaplar değerlendirilir.
 Yeni bütçe ayrı hesap kimliğindedir. Sınırlı aday kataloğu ayrı defterlerde sınanır;
 hiçbir adayın üstünlüğü peşinen kabul edilmez. Ayrıntı: `docs/REVIZYON-2026-09-25.md`.
 Kullanıcının gerçek varlıkları bilinmediğinden yeni sanal hesaplara aktarılmadı.
@@ -41,84 +71,39 @@ Başarı tanımı: para korunumu ve tekrar çalıştırma testleri geçer; fiyat
 her işlem fiyatı ve masrafıyla izlenir; katkılar hariç getiri aynı bütçeli al-tut ile
 karşılaştırılır. Ayrıntı: `docs/V2-REHBER.md` ve `reports/REVIZYON-2026-09-15.md`.
 
-## Önceki kapsamın kaydı
+## Mimari ve teknik sınırlar
 
-Aşağıdaki V1 kararları tarihsel bağlamdır; çelişen bütçe/rapor/karar kurallarında V2 geçerlidir.
+- Python 3.12; yerelde macOS, üretimde GitHub Actions. SQLite'ın deterministik
+  `data/altin.sql` arşivi ile V2 olay defteri ayrı kayıtlardır. Eski yerel SQLite'tan
+  dump üretmek üretim arşivini geriye sarabilir (L-009).
+- Ortak `advisor/` motoru BIST deposuyla `advisor/shared-manifest.json` ve
+  `scripts/advisor_manifest.py` üzerinden eşlik kontrolü taşır. Ortak panel BIST
+  deposunun `dashboard/` klasöründedir; iki hesabı okur, karar/işlem yazmaz.
+- Açılmış hesabın bütçesi ve geçmişi geriye dönük değiştirilmez; yeni bütçe/yöntem
+  ayrı hesap veya deney kimliği alır. Katkı kâr değildir. Eksik/bayat fiyat,
+  kesin servet veya sıfır zarar sayılmaz.
+- Önceki tamamlanmış kapanış olmadan yeni alım yok; geçerli güncel kotasyonla
+  mevcut koruyucu çıkış ayrı değerlendirilir. Kotasyonun okunma saati yeni fiyat
+  değildir. Banka referansı gerçek dolum veya kesintisiz stop gözetimi değildir.
+- Model eğitimi/kalibrasyon zaman sıralıdır; sonuçlanmamış etiket eğitime girmez.
+  Mühürlü tahmin vadesi ayar değişikliğiyle değişmez. Replay ve düşük tahmin hatası
+  canlı getiri üstünlüğü değildir; başarısız sınav sonrası eşik gevşetilmez.
+- `collector.py`, `supervisor.py` ve `deploy/` alternatif işletim altyapısıdır;
+  üretimde kullanılmıyor diye silinmez (L-006). GitHub cron'u zaman garantisi vermez.
 
-> Bir kez yazılır, nadiren değişir. Derin teknik detay için kök dizindeki
-> **README.md** ve **config.yaml**'a bak. **PROJE-REHBERI.md** yalnız inşa
-> dönemini (Faz 1-7) kapsar — karar motoru orada YOKTUR, onun için
-> `ai/DECISIONS.md` #007/#008.
+## V1 araştırma sınırları ve geçmiş
 
-## Proje Adı
-Altın Takip Sistemi (`gold_tracking_system`)
+V1'in amaç fonksiyonu terminal gram sayısıdır, TL getirisi değil. Bu eski
+karne/kapı ölçütü V2'nin maliyet sonrası servet ve pasif kol kıyasına taşınmaz.
+Tam kayıt: `ai/archive/PROJECT-V1-2026-10-02.md`.
 
-## Tek Cümlelik Amaç
-Mert'in **elindeki gram sayısını artırmasına** yardım eden kişisel karar-destek
-sistemi: Kapalıçarşı primini, makası ve göstergeleri otonom izler, her gün
-**net bir hüküm** verir (bu ay ne kadar al · satılır mı), verdiği her hükmü
-kaydedip **karnesini tutar**; GitHub Actions üstünde kendi kendine çalışır.
+Prim'in iki fiyat bacağı bağımsız olmalıdır; aynı satıcıdan türetilmiş günler
+z-skor kapısına sayılmaz (ADR #014). Canlı spot ons ile tarihsel GC=F ayrıdır;
+vadeli kontrat roll'ü prim sinyali değildir. Ons ve kurun farklı anlara ait
+high/low değerlerinden gram OHLC uydurulmaz; nominal `^TNX` reel faiz yedeği değildir.
 
-## Amaç Fonksiyonu (her hüküm buna karşı ölçülür)
-**Terminal gram sayısı** — TL getirisi değil. Ölçüt gram olunca TL enflasyonu
-artefaktı kendiliğinden ölür ve her iddia yanlışlanabilir olur: 100 gramla
-başladın, 108 gram bitirdin → tuttu.
-
-## Kapsam (Ne VAR)
-- **Veri toplama:** Truncgil (gram/çeyrek/kur **+ ons spot**) + yfinance
-  (**yalnız USD/TRY canlı** + GC=F tarihsel OHLC) + TCMB EVDS (faiz/TÜFE) +
-  FRED (reel faiz/DXY)
-  🔴 **Prim bugün ölçüm taşımıyor (ADR #014):** ons ile gram aynı satıcıdan
-  gelince ons prim formülünde sadeleşiyor. Bağımsızlık nöbetçisi bunu tespit
-  edip kapı sayacının dışına alıyor; kalıcı çözüm bağımsız ons kaynağı — karar
-  bekliyor.
-- **Depolama:** 15 dk CSV arşivi (`data/archive/`) + SQLite (diff'lenebilir
-  dump `data/altin.sql`)
-- **Hesap:** teorik has gram, prim %, makas %, prim z-skoru (60 gün kapısı),
-  ATR, çeyrek primi, **bağımsızlık nöbetçisi** (prim'in iki bacağı bağımsız mı)
-- **Bildirim:** eşik-tabanlı anomali (24s soğuma + günlük tavan), hafta sonu
-  beklentisi; üç bacak FRESH değilse anomali bastırılır
-- **Rapor:** günlük (18:35 TR) + pazar haftalık; grafik yorumu (destek/direnç +
-  gösterge teyidi)
-- **Telegram bot komutları:** `/hukum` `/karne` `/durum` `/rapor` `/net` `/bilezik`
-  `/grafik` `/aipaket` — ⚠️ **yalnız yerelde `python -m src.telegram_bot` açıkken
-  yanıt verir.** Üretim (GitHub Actions) push-only: bot rapor/bildirim GÖNDERİR,
-  gelen komutu okumaz (long-polling'e kalıcı süreç lazım, cron'da yok). Ölçüldü
-  2026-07-29: `telegram_chat.json`'da Mert'in 3 komutunun hiçbirine cevap yok.
-  **KARAR (ADR #012-E, 2026-08-11): bu sınır KABUL EDİLDİ.** Gerekçe ölçüm — 4 ayda
-  3 komut kullanımı; komutların döndüğü her şey (HÜKÜM · karne · grafik · durum)
-  zaten günlük push raporunda var; `getUpdates` polling'i eklemek onu 13 günlük
-  sessiz kesintinin yaşandığı `archive.yml` yoluna sokardı. Yeniden gözden geçir:
-  komut kullanımı ayda 5'i geçerse.
-
-## Kapsam Dışı (Ne YOK)
-- **Üçüncü kişilere** yatırım tavsiyesi / danışmanlık servisi. Sistem Mert'in
-  **kişisel** karar-destek aracıdır; kendisine net hüküm verir ve o hükmün
-  karnesini tutar. Disclaimer satırı kalır (maliyeti sıfır) ama çıktıyı
-  sulandırmaz — dürüstlük hedge dilinden değil KARNEDEN gelir (ADR #007).
-- Otomatik alım-satım / emir iletimi
-- Ayrı sunucu / 7x24 servis — **şimdilik** yok, üretim GitHub Actions cron.
-  Oracle Cloud'a geçiş düşünüldü ama **ertelendi (iptal değil)**; masada duran bir
-  seçenek. Bu yüzden `deploy/` systemd dosyaları ve `runtime_mode: collector`
-  silinmez — o senaryonun hazır altyapısıdır.
-
-## Kısıtlar
-- **Bütçe:** ücretsiz kalmalı — üretim GitHub Actions (public repo, sınırsız dk)
-- **Ortam:** Python 3.12; yerel geliştirme macOS (Apple Silicon); üretim ubuntu-latest
-- **Araç-bağımsızlık:** Claude Code aboneliği bitince Codex/Antigravity/GLM/Kiro/
-  VSCode ile devam edilecek → araç-özel çözümden kaçın (bkz DECISIONS #001, #002)
-- **Veri kalitesi:** Actions cron throttling → 15 dk hedefinin ~%62-75'i
-  gerçekleşiyor (sistem tolere ediyor; z-skor yalnız FRESH kayıt sayar)
-
-## Teknoloji Yığını
-| Katman | Seçim |
-|---|---|
-| Dil | Python 3.12 (harici bağımlılık minimal: requests, PyYAML, yfinance) |
-| Veri | SQLite + aylık CSV arşiv |
-| Kaynaklar | Truncgil · yfinance · TCMB EVDS · FRED |
-| Çalışma | GitHub Actions — `archive.yml` (*/15 dk), `daily.yml` (15:35 UTC), `test.yml` (push/PR — merge kapısı) |
-| Bildirim | Telegram Bot API (saf `requests`) |
-
-## Başarı Kriteri
-Doğru ölçülmüş prim/z-skor, güvenilir günlük rapor ve düşük yanlış-alarmlı
-bildirim; sistem elle müdahale olmadan günlerce çalışmaya devam ediyor.
+Eski Telegram komutları `/hukum`, `/karne`, `/durum`, `/rapor`, `/net`, `/bilezik`,
+`/grafik`, `/aipaket` yalnız yerelde `python -m src.telegram_bot` açıkken yanıt
+verir. Actions üretimi push-only'dir; gelen komutu okumaz (ADR #012-E).
+İnşa dönemi Faz 1–7 kaydı `PROJE-REHBERI.md`'dedir; güncel V2 için
+`docs/V2-REHBER.md` ve `ai/DECISIONS.md` esas alınır.

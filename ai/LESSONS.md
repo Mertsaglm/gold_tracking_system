@@ -1,18 +1,34 @@
 # LESSONS.md — Dersler ve Anti-Pattern'ler
 
-> Geçmiş hatalardan çıkan dersler. Usta bunları bilir ve aynı çukura ikinci
-> kez düşülmesine izin vermez. `/ders <olay>` komutuyla yeni ders eklenir.
-> Bu dosya projeler arası taşınır — dersler birikir.
->
-> ⚠️ **NUMARA UZAYI ORTAKTIR.** Bu dosya ile devir paketindeki
-> `Proje Yardımcısı - .../ai/LESSONS.md` **aynı L-NNN numaralarını paylaşır**;
-> buradaki sürüm proje ayrıntılı, oradaki genelleştirilmiştir. Yeni ders
-> eklerken **iki dosyadaki en büyük numaraya** bak ve bir sonrakini al —
-> yalnız buraya bakıp numara vermek çakışma üretir (2026-07-27'de tam bu oldu:
-> yeni ders L-005 sanıldı, oysa pakette L-005 `.gitignore` dersiydi → L-009'a
-> taşındı). Kontrol: `pytest tests/test_dokuman_tutarliligi.py -q`.
+> Tarihli hata kayıtları ve tekrarını önleyen bilgiler; ilgili konuya göre başvurulur.
+> Eski durumlar güncel üretim iddiası değildir; V1 olayları V2'ye otomatik uygulanmaz.
+> L-NNN numaralarının kaynağı bu dosyadır. Eski devir paketi mevcutsa aynı
+> numarayı orada genelleştirilmiş dersle eşleştir.
+> Bu ayrım 2026-07-27'deki numara çakışmasını önler; kontrol
+> `tests/test_dokuman_tutarliligi.py` dosyasındadır.
 
 ---
+
+## L-032 — 2026-11-24 — Model arızası pasif çekirdeği durdurmamalı
+
+Özelleşmiş model çağrısı bozulduğunda ortak kol çağrısı yapılmıyordu.
+Tahmin yokken taktik stop da çağrılmıyordu. Hata görünür, çekirdek
+ve mevcut stop geçerli veride işler. Altın fiyatının tazeliği, aktif
+ve pasif kolların farklı makas sınırlarından ayrı korunur.
+[Davranış sınavı](../tests/test_portfolio_experiments.py)
+
+## L-031 — 2026-11-21 — Geciken kapanışın ait olduğu gün saklanmalı
+
+2026-11-24 regresyonunda cuma 18.26 son gözlemi ve cumartesi 00.07
+telafisi sınandı. Eksik kapanış bildirimi yalnız Telegram makbuzu ekledi.
+Seans dışında geçici fiyat çalıştırılarak kapanış boşluğu doldurulmaz.
+Geniş makası geçerli fiyat kapsamından ve eksik vade sonucundan ayrı say.
+[24 Kasım kanıtı](../docs/DENETIM-2026-11-24.md)
+
+Altın kapanış işi 20 Kasım seans penceresinden sonra başladı. Yeşil koşu
+hafta sonu nedeniyle atlanmıştı, gün sonu Telegram makbuzu oluşmadı. Günlük
+rapor dosyası, V2 kapanış tesliminin kanıtı olamaz. Önceki seansın beklenen
+kapanışını çalışma saatinden ayrı takip et. Taze fiyat yoksa boşluğu belirt.
 
 ## L-030 — 2026-11-19 — Karar makbuzu kapanış raporu değildir
 
@@ -20,6 +36,8 @@ Gün içi BEKLE değişmediyse durum mesajını bastırmak yararlıdır. Aynı k
 gün sonu raporunu sessizce eleyebilir. Kapanışa İstanbul işlem günü
 kimliği ver, gerçekleşmeleri defterden say ve eksik kapanış toparlanırsa
 güncel raporu ilet. Çevrim başarı durumu Telegram teslimini kanıtlamaz.
+Yeni makbuz sözleşmesini eski görünümden bekleme. Üretici beklentiyi
+görünümde açıkça kaydetsin. Eski geçerli teslim kendi kuralıyla doğrulansın.
 
 ## L-028 — 2026-10-29 — Tam replay ve operasyon yedeği farklı kapsamlardır
 

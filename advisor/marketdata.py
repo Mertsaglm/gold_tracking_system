@@ -124,14 +124,11 @@ def parse_stocks(html, now, url, symbols):
     return rows
 
 
-def fetch(cfg, symbols, now):
-    market = cfg["market"]
-    url = cfg["sources"]["stocks" if market == "bist" else "gold"]
-    html = fetch_page(url)
+def parse_reference(html, market, url, symbols, now):
     try:
         if market == 'bist':
             return parse_stocks(html, now, url, symbols)
-        quotes = parse_gold(html, now, url)
+        return parse_gold(html, now, url)
     except (ValueError, KeyError, IndexError) as exc:
         # Parser'ın kendi sabit hata mesajları güvenlidir; ham sayfa saklanmaz.
         known = {'Sayfada İş Bankası ürün kimliği doğrulanamadı.',
@@ -141,6 +138,21 @@ def fetch(cfg, symbols, now):
                  'İstenen hisseler fiyat tablosunda yok.'}
         kind = str(exc) if str(exc) in known else type(exc).__name__
         raise SourceError('stocks_parser' if market == 'bist' else 'gold_parser', kind) from None
+
+
+def fetch(cfg, symbols, now):
+    market = cfg["market"]
+    url = cfg["sources"]["stocks" if market == "bist" else "gold"]
+    try:
+        quotes = parse_reference(fetch_page(url), market, url, symbols, now)
+    except SourceError as exc:
+        if not exc.stage.endswith('_parser'):
+            raise
+        # Geçici hata sayfası veya eksik HTML için aynı doğrulamayla tek ek okuma.
+        time.sleep(1)
+        quotes = parse_reference(fetch_page(url), market, url, symbols, now)
+    if market == 'bist':
+        return quotes
     try:
         import yfinance as yf
         legs = {}

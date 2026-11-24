@@ -8,11 +8,78 @@ import pytest
 from advisor import benchmark, corporate, policy, portfolio_candidates as pc, service, universe, filter_diagnostics, news, specialized
 from advisor.ledger import Ledger
 from scripts.audit_production import independent
-from scripts.portfolio_preflight import start_issues
+from scripts.portfolio_preflight import quote_evidence, start_issues
 from scripts.portfolio_smoke import run as smoke_run
 
 ROOT = Path(__file__).resolve().parents[1]
 NOW = datetime(2026, 10, 1, 10, 30, tzinfo=timezone.utc)
+
+
+def test_passive_gold_core_uses_its_own_cap_without_tactical_forecast(tmp_path):
+    cfg = config('gold')
+    cfg.update(experiment_core_max_spread_pct=4., require_next_quote=True)
+    records, rows, quotes = setup('gold')
+    quotes['GRAM'].update(ask=103.5, kind='bank_reference')
+    ledger = Ledger(tmp_path / 'core')
+    pc._fund(ledger, cfg, '2026-10-01', NOW, 'core-ridge')
+    assert pc._core(ledger, cfg, records, rows, quotes, NOW)[0]['status'] == 'sonraki_kotasyon'
+    assert pc._tactical(ledger, cfg, rows, quotes, {'GRAM': 50}, {'GRAM': 50}, NOW) == []
+    next_at = NOW + timedelta(minutes=20)
+    assert pc._core(ledger, cfg, records, rows, quotes, next_at)[0]['status'] == 'sonraki_kotasyon'
+    quotes['GRAM']['quoted_at'] = next_at.isoformat()
+    too_wide = {'GRAM': {**quotes['GRAM'], 'ask': 105.}}
+    assert pc._core(ledger, cfg, records, rows, too_wide, next_at)[0]['status'] == 'veri_engeli'
+    assert pc._core(ledger, cfg, records, rows, quotes, next_at)[0]['status'] == 'doldu'
+    assert ledger.account('core')['positions']['GRAM']['quantity'] > 0
+    assert not ledger.account('tactical')['positions']
+
+
+def test_tactical_stop_works_when_forecasts_are_unavailable(tmp_path):
+    cfg = config()
+    _, rows, quotes = setup()
+    ledger = Ledger(tmp_path / 'tactical')
+    ledger.add('contribution', 'cash', NOW.isoformat(), book='tactical', amount_cents=1_000_000)
+    assert pc._trade(ledger, cfg, quotes, NOW, 'tactical', 'AAA', 'BUY', 1000, stop=95)['status'] == 'doldu'
+    later = NOW + timedelta(minutes=30)
+    quotes['AAA'].update(bid=80, ask=80, quoted_at=later.isoformat())
+    assert pc._tactical(ledger, cfg, rows, quotes, {}, {}, later)[0]['status'] == 'doldu'
+    assert not ledger.account('tactical')['positions']
+
+
+def test_t0_uses_core_spread_and_rejects_a_previous_day_quote():
+    cfg = config('gold')
+    cfg['experiment_core_max_spread_pct'] = 4.
+    _, _, quotes = setup('gold')
+    quotes['GRAM'].update(ask=103.5, kind='bank_reference')
+    snapshot = {'market':'gold', 'generated_at':NOW.isoformat(), 'quotes':quotes}
+    assert quote_evidence(snapshot, {'GRAM'}, cfg, NOW)['usable'] == 1
+    assert quote_evidence(snapshot, {'GRAM'}, cfg, NOW + timedelta(days=1))['usable'] == 0
+
+
+def test_gold_timing_waits_three_sessions_and_uses_a_distinct_quote(tmp_path):
+    from advisor.experiments import gold_quote_timing
+
+    cfg = config('gold')
+    cfg.update(execution_window={'open':'09:00','close':'23:00'},
+               entry_window={'open':'09:00','close':'18:00'},
+               observation_window={'open':'09:00','close':'23:30'})
+    source = Ledger(tmp_path / 'source')
+    source.add('contribution', 'initial', '2026-11-20T10:00:00+03:00',
+               book='strategy', amount_cents=100_000, period='2026-11-20')
+    for day in ('2026-11-20', '2026-11-23', '2026-11-24', '2026-11-25'):
+        for minute in ('00', '15', '30'):
+            at = f'{day}T10:{minute}:00+03:00'
+            quoted_at = f'{day}T10:00:00+03:00' if minute == '15' else at
+            source.add('quote_snapshot', at, at, quotes={'GRAM': {'bid':100, 'ask':103.5, 'quoted_at':quoted_at}})
+    result = gold_quote_timing(source, cfg, '2026-11-20', '2026-11-25', tmp_path)
+    first, timed = (result['arms'][key] for key in ('first-eligible', 'tight-then-eligible'))
+    assert first['buy_days'] == ['2026-11-20']
+    assert timed['buy_days'] == ['2026-11-25']
+    assert first['grams'] == timed['grams']
+    assert first['equity_try'] == timed['equity_try']
+    assert first['contributed_try'] == timed['contributed_try'] == 1000
+    assert result['entry_sessions_observed'] == result['expected_sessions'] == 4
+    assert not source.path.exists()
 
 
 def config(market='bist'):

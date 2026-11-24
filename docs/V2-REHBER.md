@@ -1,5 +1,7 @@
 # Birikim V2 — Kullanım ve işletim
 
+> Güncel üretim durumu ve bekleyen kabul için [STATE](../ai/STATE.md). Karar ve defter kanıtı [24 Kasım denetiminde](DENETIM-2026-11-24.md).
+
 ## Ne yapar?
 
 BIST ve gram altın iki bağımsız Python projesi olarak çalışır. Her biri kendi
@@ -11,6 +13,23 @@ V1 kaynakları ve raporları korunur. Yeni kararın sahibi `advisor/` katmanıd�
 V1 LLM yorumları eski karne ve ayrıntılı araştırma bağlamı olarak kalır;
 kanıtlanmamış bir LLM gerekçesi V2'de sayısal fiyat veya işlem miktarı üretemez.
 
+## 2026-10-01 üretim durumu ve yeni deney
+
+Kod iki deponun `main` dalına yayımlandı. Mevcut ana hesap ve önceki adaylar
+kendi kurallarıyla çalışmaya devam eder. Yeni beş hesap ayrı bir deneydir:
+mevcut politika kontrolü, %80 çekirdek + %20 nakit, çekirdek + pasif yatırım,
+çekirdek + mevcut Ridge taktiği ve çekirdek + piyasaya özel Ridge taktiği.
+`experiment_start_date: null` olduğundan bu beş hesap henüz açılmadı.
+BIST çekirdeği tarihli BIST30 eşit ağırlıklı sepet, altın çekirdeği İş Bankası
+GRAM'dır; çekirdek alımı model onayı beklemez. Taktik bütçe en fazla %20'dir.
+Yeni hesaplarda 20 seans zorunlu satış ve tahmin hedefinden otomatik kâr alma
+yoktur. Ayrıntı, tarihli model sınavı ve T0 kapısı [deney sözleşmesinde](PORTFOY-DENEYI-2026-10-01.md).
+
+2026-10-01 yayınından sonra altın çevrimi ve Telegram makbuzu başarılıdır;
+BIST ilk koşusu seans dışında atlanmıştır. Vercel yeni statik dosyaları servis
+eder; parolalı veri görünümü henüz doğrulanmadı. Bunlar yeni taktik modelin
+getiri üstünlüğünü veya beş hesabın canlı çalıştığını kanıtlamaz.
+
 ## Bütçe ve karar
 
 `advisor/config.json` içindeki başlangıç varsayımı (2026-09-25) her hesap için 50.000 TL,
@@ -19,7 +38,7 @@ gerçek hisseleri, gramları veya toplam serveti bu hesaplara aktarılmamıştı
 Yeni ay katkısı bir kez yazılır; sistemin koşmadığı aylar nakit olarak tamamlanır.
 Kaçırılan tarihlerde geriye dönük alım yapılmaz.
 
-- **AL:** Fiyat, trend, maliyet, net kazanç/risk ve bütçe koşulları birlikte geçti.
+- **AL:** Mevcut ana politikanın fiyat, trend, maliyet, net kazanç/risk ve bütçe koşulları birlikte geçti.
 - **SAT:** Kayıtlı zarar/hedef sınırı, BIST süre sınırı veya olumsuz görünüm tetiklendi.
 - **TUT:** Elde varlık var; satış koşulu oluşmadı.
 - **BEKLE:** Güncel veri var, yeterli fırsat yok veya bütçe/risk sınırı dolu.
@@ -28,7 +47,9 @@ Kaçırılan tarihlerde geriye dönük alım yapılmaz.
 Her işlem; karar kimliği, fiyat kaynağı/zamanı, adet, tutar ve masrafıyla yazılır.
 BIST alımları tam lot, altın alımları 0,01 gram adımıyla yapılır. Negatif bakiye,
 elde olmayan varlığın satışı ve aynı gün satılanın geri alımı reddedilir.
-Altın aylık katkısı yalnız yeni fırsat varsa kullanılır; ay sonu zorunlu satışı yoktur.
+Mevcut altın ana hesabında aylık katkı yalnız yeni fırsat varsa kullanılır;
+ay sonu zorunlu satışı yoktur. Yeni deney çekirdeği ise T0 sonrasında geçerli
+kotasyonda düzenli birikim yapar.
 
 ## Fiyatın ve sonucun anlamı
 
@@ -77,7 +98,9 @@ masrafları kullanır; tam lota yetmeyen payı nakitte bırakır. Mevduat faizi 
 4. Modelin dahili sınavı tahmin taramasıdır. Ayrı `simulate` komutu tam sanal
    portföy/stop/nakit deneyi sağlar; tarihsel veri sınırları aşağıda açıklanır.
    Sabit güncel evren ve sonradan düzeltilmiş fiyatlar ayrıca yanlılık yaratabilir.
-5. Model sınavı ve yeni sanal sonuçlar yeterli olmadan küçük deneme sınırı sürer.
+5. Mevcut ana hesapta model sınavı ve yeni sanal sonuçlar yeterli olmadan küçük
+   deneme sınırı sürer. Yeni deneyin sabit %20 taktik bütçesine aynı çarpan
+   ikinci kez uygulanmaz.
    Kanıtlanmış üstünlük veya kâr garantisi yoktur; panel aksi izlenim vermez.
 6. Güncel kararlardan ilk uygulanabilir tahmin mühürlenir. Hedef vadesi dolunca
    düzeltilmiş toplam getiri serisinin değişimi, tahmin hatası ve kaçan yükseliş kaydedilir; bu net banka getirisi değildir. Veri bekleyen
@@ -131,11 +154,12 @@ kurulumdaki varsayımı değiştirirken eski hesabı silmeden arşivle.
 
 ## Otomatik çalışma
 
-BIST `portfolio.yml` hafta içi nominal saatlik (10:17–19:17 TR), günlük veri
-workflow'u bitince ve `manual_run=true` ile elle çalışır. Sahibi doğrulanmamış
-eski girdisiz dış dispatch runner başlamadan elenir. Altın nominal 30 dakika
-yedek zamanlamasını ve mevcut dispatch hattını korur. Bu yerel yapılandırma
-2026-10-29 düzeltme paketindedir; üretime uygulanma durumu STATE'tedir.
+BIST `portfolio.yml` hafta içi 10.17–19.17 İstanbul saatlerinde nominal
+saatlik çalışır. Günlük veri işi tamamlanınca kapanış tetiklenir. Cron ile
+girdisiz dış çağrı aynı saatlik tekrar kontrolünü kullanır.
+`manual_run=true` açıkça istenen işletim çevrimidir. Altında nominal GitHub
+yedeği 30 dakika, kapanış slotu 23.17. 00.07 telafisi 24 Kasım yerel paketinde.
+Canlı paket kabulü [STATE](../ai/STATE.md) üzerinden izlenir.
 GitHub cron kesin zaman veya kesintisiz fiyat akışı sağlamaz; stop da
 yalnız koşunun gördüğü fiyatla simüle edilir. Aradaki fiyat hareketi doldurulmaz.
 
@@ -155,9 +179,26 @@ Push denemeleri tükenirse koşu kırmızı olur; iki depoda operasyon kurtarma 
 Telegram ağı başarı cevabını kaybederse sonraki denemede mükerrer mesaj ihtimali
 vardır; Telegram API'siyle tam “bir kez teslim” garantisi verilemez.
 
+## 24 Kasım karar ve teslim ölçümü
+
+Haftalık kıyas, aktif yatırım sonucu eksi pasif yatırım sonucudur.
+Haftalık Telegram çıktısı ayrıca aktif deneylerin eş bütçeli sonuçlarını,
+son hafta vadesi dolan BEKLE gözlemlerini ve eksik kotasyon paydasını
+gösterir. Nakit ve eşleşen pasifi aşan varsayımsal alımlar ayrı sayılır.
+Örneklemdeki hipotez yönü ve bir sonraki ölçüm adımı rapora girer.
+Yerel önizleme için `python -m advisor weekly` kullanılır.
+Veri gelmemesi, geçerli fakat geniş makas ve beklenen vade ayrı sonuçlardır.
+60 günlük işlemsizlik denetimi iki piyasa için BIST deposundaki
+`scripts/decision_activity.py` aracıyla çalıştırılır. Kapı kesişimleri ve
+masraf sonrası varsayımsal sonuçlar tarihli raporda izlenir.
+
+Yerel paket BIST kapanışı ile seans gözlemini ayırır, panel tazeliğini
+nöbetçi ayarına bağlar ve altın kapanışını gecikince arşivden raporlar.
+Canlı kabul [işletim rehberi](ISLETIM-2026-11-18.md) ve STATE’te izlenir.
+
 ## Paneli yerelde aç
 
-`dashboard/` Node 22 veya üzeriyle, ek npm paketi kurmadan çalışır:
+BIST deposundaki ortak `dashboard/` Node 22 veya üzeriyle, ek npm paketi kurmadan çalışır:
 
 ```bash
 node dashboard/server.mjs
@@ -175,6 +216,9 @@ ayarlanabilir; tarayıcı parolayı yalnız oturum belleğinde tutar.
 ## Canlı panel ve Vercel
 
 Canlı adres: [birikim-paneli.vercel.app](https://birikim-paneli.vercel.app/).
+2026-10-01'de canlı `app.js`, `insights.js` ve `style.css` yeni kodla byte
+düzeyinde eşleşti. Parolasız `/api/status` HTTP 401 döndü; parolalı iki piyasa
+görünümü kullanıcı oturumu olmadan doğrulanmadı.
 Paneli izlemek için Mac'te Node sunucusunu açık tutmak gerekmez. Portföy çevrimleri
 GitHub Actions'ta çalışır; Vercel yalnız iki depodaki son `latest.json` görünümünü sunar.
 Yerel `node dashboard/server.mjs` komutu geliştirme ve çevrimdışı inceleme içindir.

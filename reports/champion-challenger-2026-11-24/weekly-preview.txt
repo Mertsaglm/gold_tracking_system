@@ -1,0 +1,15 @@
+GOLD · SON 7 GÜN · SANAL
+Eklenen para: 0.00 TL
+Yatırım sonucu: +0.00 TL
+Ödenen masraf: 0.00 TL (sonuca dahil)
+Pasif yatırım sonucu: -624.55 TL
+Aktif eksi pasif: +624.55 TL
+İşlemler: 0 alış, 0 satış
+Son değerleme: 24.11.2026 16.31 İstanbul
+
+ARAŞTIRMA · SANAL
+Çekirdek/taktik · T0 bekleniyor
+İlk günden aktif eksi pasif (TL) · sma50-v1 +7498, recent-20-v1 +7498, recent-5-v1 +7498, reversion-5-v1 +7498
+BEKLE no_edge · ölçülen 5/5, fiyat eksik 0, ort. net -11.48%, nakit üstü 0/5, pasif üstü 0/5 · 1 örtüşmeyen pencere
+Öğrenilen · Ölçülen ret gruplarının ortalaması nakdi geçmedi.
+Sırada · Ortak T0 uygunluğunu ölç, bağımsız rakipleri izlemeyi sürdür.

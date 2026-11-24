@@ -69,13 +69,17 @@ def closing_day(snapshot, now):
 def _closing_complete(snapshot):
     health = snapshot['health']
     expected = health.get('expected_quotes', 0)
+    if snapshot['market'] == 'bist' and snapshot.get('monitoring', {}).get('closing_refresh'):
+        observation_day = datetime.fromisoformat(snapshot['generated_at']).astimezone(IST).date().isoformat()
+        if observation_day != health.get('expected_analysis_date'):
+            return False
     return (expected > 0 and health.get('quote_coverage') == expected
             and snapshot['analysis_date'] == health.get('expected_analysis_date')
             and not health.get('errors') and not health.get('analysis_issues')
             and snapshot['strategy'].get('valuation_complete') is not False)
 
 
-def _closing_summary(snapshot, ledger, day, url, limit):
+def _closing_summary(snapshot, ledger, day, url, limit, *, missed_cycle=False):
     market = 'BIST' if snapshot['market'] == 'bist' else 'ALTIN'
     health = snapshot['health']
     counts = Counter(d['action'] for d in snapshot['decisions'])
@@ -95,13 +99,21 @@ def _closing_summary(snapshot, ledger, day, url, limit):
                    and c.get('decisions', 0) >= c['expected_quotes'] and not c.get('errors')
                    and not c.get('analysis_issues') and not c.get('data_blocked_symbols')
                    for c in session_checks)
+    coverage = ('Kapanış fiyatı: doğrulanamadı.' if missed_cycle else
+                f"Son geçerli fiyat: {health.get('quote_coverage', 0)}/{health.get('expected_quotes', 0)}"
+                f" · analiz: {snapshot['analysis_date']}")
     lines = [f'{market} · GÜN SONU · {day}',
              f"Tam fiyat+karar: {complete}/{len(session_checks)} çalışan işlem çevrimi.",
-             f"Son geçerli fiyat: {health.get('quote_coverage', 0)}/{health.get('expected_quotes', 0)}"
-             f" · analiz: {snapshot['analysis_date']}",
+             coverage,
              'Son kararlar: ' + (', '.join(f'{k} {v}' for k, v in sorted(counts.items())) or 'yok')]
     if not _closing_complete(snapshot):
         lines.append('Uyarı: kapanış verisi veya çevrimde eksik var.')
+    if snapshot['market'] == 'bist' and snapshot.get('monitoring', {}).get('closing_refresh'):
+        observation_day = datetime.fromisoformat(snapshot['generated_at']).astimezone(IST).date().isoformat()
+        if observation_day != day:
+            lines.append(f'Fiyat gözleminin tarihi {observation_day}.')
+    if missed_cycle:
+        lines.append('Kapanış çevrimi zamanında kaydedilmedi. Gün içi işlemler arşivden sayıldı.')
     for book, label in (('strategy', 'Strateji'), ('benchmark', 'Pasif')):
         booked = [f for f in fills if f['book'] == book]
         buys = sum(f['side'] == 'BUY' for f in booked)
@@ -154,14 +166,20 @@ def delivered(ledger, snapshot, *, require_closing=True):
     return last['data'].get('state_key', last['key'].removeprefix('telegram:')) == key
 
 
-def publish_weekly(cfg, snapshot, ledger, now):
+def weekly_key(cfg, ledger, now):
     from .calendar import IST
-    from .reporting import weekly_text
     local=now.astimezone(IST)
-    if not cfg['telegram']['enabled'] or local.weekday()!=4 or local.hour<18 or not snapshot['weekly'].get('ready'):
-        return False
+    if not cfg['telegram']['enabled'] or local.weekday()!=4 or local.hour<18:
+        return None
     key=f"weekly:{local.isocalendar().year}:{local.isocalendar().week}"
-    if key in ledger.keys:return False
+    return key if key not in ledger.keys else None
+
+
+def publish_weekly(cfg, snapshot, ledger, now):
+    from .reporting import weekly_text
+    key = weekly_key(cfg, ledger, now)
+    if not key or not snapshot['weekly'].get('ready'):
+        return False
     token,chat=os.environ.get('TELEGRAM_BOT_TOKEN'),os.environ.get('TELEGRAM_CHAT_ID')
     if not token or not chat:raise RuntimeError('Telegram bağlantısı eksik.')
     text=weekly_text(snapshot)+'\n'+cfg.get('dashboard_url','')
@@ -178,9 +196,6 @@ def publish_weekly(cfg, snapshot, ledger, now):
 def publish(root, cfg, snapshot, ledger, now):
     if not cfg["telegram"]["enabled"]:
         return False
-    token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
-    if not token or not chat:
-        raise RuntimeError('Telegram bağlantısı için mevcut bot/chat ayarları eksik.')
     at = datetime.fromisoformat(snapshot['generated_at'])
     if at.tzinfo is None or not -60 <= (now-at).total_seconds() <= cfg['max_quote_age_minutes'] * 60:
         raise ValueError('Bildirim için görünüm eski veya zamanı geçersiz; güncel cycle gerekli.')
@@ -191,6 +206,37 @@ def publish(root, cfg, snapshot, ledger, now):
     url, limit = cfg.get('dashboard_url', ''), cfg['telegram']['max_characters']
     text = (_closing_summary(snapshot, ledger, report_day, url, limit) if report_day
             else summary(snapshot, url, limit))
+    report_data = {'report_day': report_day, 'closing_complete': _closing_complete(snapshot)} if report_day else {}
+    return _send(text, ledger, now, event_key, snapshot, report_data)
+
+
+def recover_closing(cfg, ledger, now, report_day, snapshot=None):
+    """Daha önce kaydedilmiş kapanışı veya eksik kapanış özetini teslim et."""
+    if not cfg['telegram']['enabled']:
+        return False
+    if snapshot is not None:
+        at = datetime.fromisoformat(snapshot['generated_at'])
+        if (at.tzinfo is None or at > now or closing_day(snapshot, at) != report_day
+                or snapshot['health'].get('ledger_hash') not in {e['hash'] for e in ledger.events}):
+            snapshot = None
+    archived = snapshot is not None
+    if not archived:
+        snapshot = {'market': cfg['market'], 'generated_at': None, 'analysis_date': 'doğrulanamadı',
+                    'health': {'expected_quotes': 1, 'quote_coverage': 0}, 'strategy': {}, 'decisions': []}
+    complete = _closing_complete(snapshot)
+    if any(e['kind'] == 'notification' and e['data'].get('report_day') == report_day
+           and (e['data'].get('closing_complete') or not complete) for e in ledger.events):
+        return False
+    text = _closing_summary(snapshot, ledger, report_day, cfg.get('dashboard_url', ''),
+                            cfg['telegram']['max_characters'], missed_cycle=not archived)
+    report_data = {'report_day': report_day, 'closing_complete': complete, 'late_recovery': True}
+    return _send(text, ledger, now, digest(report_data), snapshot, report_data)
+
+
+def _send(text, ledger, now, event_key, snapshot, report_data):
+    token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat:
+        raise RuntimeError('Telegram bağlantısı için mevcut bot/chat ayarları eksik.')
     for attempt in range(3):
         try:
             r = requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json={"chat_id": chat, "text": text, "disable_web_page_preview": True}, timeout=(5, 15))
@@ -214,7 +260,6 @@ def publish(root, cfg, snapshot, ledger, now):
     receipt = digest({'state': event_key, 'snapshot_at': snapshot['generated_at'],
                       'previous_receipt': next((e['key'] for e in reversed(ledger.events) if e['kind']=='notification'), None)})
     result = response.get('result', {})
-    report_data = {'report_day': report_day, 'closing_complete': _closing_complete(snapshot)} if report_day else {}
     ledger.add("notification", "telegram:" + receipt, now.isoformat(), text=text, **report_data,
                state_key=event_key, snapshot_at=snapshot['generated_at'],
                snapshot_ledger_hash=snapshot.get('health', {}).get('ledger_hash'),

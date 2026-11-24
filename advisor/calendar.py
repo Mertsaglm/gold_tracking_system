@@ -97,6 +97,7 @@ def monitoring_snapshot(now, cfg):
             'observation_window': cfg.get('observation_window', cfg.get('execution_window', {})),
             'calendar': cfg.get('calendar', {'available':False,'years':[],'full_days':[],'half_days':[]}), 'checked_on': local.date().isoformat(),
             'cycle_interval_minutes': cfg.get('cycle_interval_minutes',30),
+            'watchdog_grace_minutes': cfg.get('watchdog_grace_minutes', 90),
             'note': f"Nominal gözlem aralığı {cfg.get('cycle_interval_minutes',30)} dakika; GitHub zaman garantisi vermez. Referans fiyat anlık emir defteri değildir."}
 
 

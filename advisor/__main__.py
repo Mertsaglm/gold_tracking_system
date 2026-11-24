@@ -95,14 +95,17 @@ def main():
         print(json.dumps({'added':count,'note':'Panel bir sonraki cycle ile güncellenir.'}))
     elif args.command == 'weekly':
         from .ledger import Ledger,locked
-        from .reporting import weekly,weekly_text
+        from .notifications import publish_weekly, weekly_key
+        from .reporting import weekly, weekly_research, weekly_text
         with locked(state / '.lock'):
             ledger=Ledger(state / 'events.jsonl')
             now=datetime.now(timezone.utc)
+            if args.notify and not weekly_key(cfg, ledger, now):
+                return
             snapshot={'market':cfg['market'],'weekly':weekly(ledger,now)}
+            snapshot['research_lines'] = weekly_research(args.root, state, ledger, cfg, now)
             print(weekly_text(snapshot))
             if args.notify:
-                from .notifications import publish_weekly
                 publish_weekly(cfg,snapshot,ledger,now)
     elif args.command == 'watchdog':
         from .watchdog import inspect

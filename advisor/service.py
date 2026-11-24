@@ -17,6 +17,9 @@ IST = ZoneInfo("Europe/Istanbul")
 
 def configuration(root):
     cfg = json.loads((root / "advisor/config.json").read_text(encoding="utf-8"))
+    core_spread = cfg.get('experiment_core_max_spread_pct', cfg['max_spread_pct'])
+    if isinstance(core_spread, bool) or not isinstance(core_spread, (int, float)) or not 0 < core_spread < 100:
+        raise ValueError('Deney çekirdeğinin makas sınırı geçersiz.')
     if cfg.get('experiment_start_date') is not None:
         from datetime import date
         try:
@@ -198,6 +201,12 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
             if cfg.get('experiment_start_date'):
                 from .portfolio_candidates import owned as portfolio_owned
                 owned |= portfolio_owned(state)
+            if cfg.get('forward_momentum_start'):
+                try:
+                    forward = Ledger(state / 'forward_momentum' / 'events.jsonl')
+                    owned |= set(forward.account()['positions']) | set(forward.account('benchmark')['positions'])
+                except (ValueError, OSError):
+                    pass  # Bağımsız deneyin hatası kendi görünümüne yazılır.
             current = features[features.symbol.isin(set(symbols) | owned)].groupby('symbol').tail(1).copy()
             symbols = sorted(set(symbols) | owned)
             missing = set(symbols) - set(current.symbol)
@@ -213,13 +222,17 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
             corporate = []
             if cfg["market"] == "bist":
                 corporate = [dict(r) for r in con.execute("SELECT ticker,date,kind,value FROM corporate_actions WHERE date>=? AND date<=?", (cfg["start_date"], local_day))]
+        source_failure = None
         if quotes is None:
             try:
                 quotes = {} if offline else marketdata.fetch(cfg, symbols, now)
             except Exception as exc:
                 quotes = {}
                 diagnosis = str(exc) if isinstance(exc, marketdata.SourceError) else type(exc).__name__
-                errors.append("Banka fiyat kaynağı alınamadı: " + diagnosis)
+                source_label = 'Banka fiyatı' if cfg['market'] == 'gold' else 'Hisse fiyatı'
+                errors.append(source_label + " kaynağı alınamadı: " + diagnosis)
+                if isinstance(exc, marketdata.SourceError):
+                    source_failure = {'stage': exc.stage, 'reason': exc.kind, 'http': exc.status}
         # Eksik yeni kotasyon geçmiş fiyatla işlem gerçekleştiremez.
         ledger.add("quote_snapshot", "quotes:" + digest(quotes), now.isoformat(), quotes=quotes)
         action_health = {}
@@ -323,7 +336,8 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                    analysis_issues=analysis_issues,
                    data_blocked_symbols=[d['symbol'] for d in decisions if d['action']=='VERİ BEKLENİYOR'],
                    entry_blocked_symbols=[d['symbol'] for d in decisions if d.get('code')=='spread_limit'],
-                   in_execution_window=current_phase in ('entry', 'protection'), in_observation_window=True)
+                   in_execution_window=current_phase in ('entry', 'protection'), in_observation_window=True,
+                   phase=current_phase, source_failure=source_failure)
         snapshot = {"schema_version": 2, "market": cfg["market"], "generated_at": now.isoformat(),
                     "analysis_date": data_date, "mode": "paper", "strategy": strategy, "benchmark": benchmark,
                     "decisions": decisions, "quotes": quotes, "news": agenda, "learning": {k: model.get(k) for k in ("id", "asof", "ready", "status", "approved", "training_rows", "training_dates", "evaluation", "limitations", "features")},
@@ -342,6 +356,7 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                     "budget": budget_signature, 'cost_notes': cfg.get('cost_notes', []), "costs": {k: cfg[k] for k in ("commission_rate", "commission_min_try", "commission_bsmv_rate", "exchange_fee_rate", "gold_buy_tax_rate", "slippage_bps")}}
         from .filter_diagnostics import summarize as summarize_filters
         snapshot['filter_diagnostics'] = summarize_filters(decisions)
+        snapshot['collection'] = reporting.collection(ledger, cfg, now)
         if cfg.get('candidates_enabled'):
             from .candidates import cycle as candidate_cycle
             try:
@@ -358,14 +373,27 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
             specialized_model = None
             if cfg.get('experiment_start_date') and local_day >= cfg['experiment_start_date']:
                 from .specialized import current as specialized_current
-                specialized_model = specialized_current(state, features, cfg, forecasts, fresh_current)
+                try:
+                    specialized_model = specialized_current(state, features, cfg, forecasts, fresh_current)
+                except Exception as exc:
+                    specialized_model = {'ready': False, 'error': type(exc).__name__}
             snapshot['portfolio_experiments'] = portfolio_cycle(
                 state, frame, cfg, quotes, now, universe_module.read(root),
                 {row['symbol']: row for row in records}, forecasts, model,
                 specialized=specialized_model, actions=corporate)
+            if specialized_model and specialized_model.get('error'):
+                snapshot['portfolio_experiments']['specialized_model_error'] = specialized_model['error']
         except Exception as exc:
             snapshot['portfolio_experiments'] = {'status': 'hata', 'accounts': [], 'error': type(exc).__name__}
             errors.append('Çekirdek/taktik sınavı tamamlanamadı: ' + type(exc).__name__)
+        if cfg.get('forward_momentum_start'):
+            from . import forward_momentum
+            try:
+                momentum = forward_momentum.cycle(state, cfg, universe_module.read(root),
+                                                  {r['symbol']: r for r in records}, quotes, now, corporate)
+                snapshot['forward_momentum'] = momentum or {'status': 'İlk seans bekleniyor'}
+            except (ValueError, OSError, KeyError) as exc:
+                snapshot['forward_momentum'] = {'status': 'hata', 'error': type(exc).__name__}
         snapshot['health']['ledger_hash'] = ledger.root_hash
         ledger.save()
         atomic_json(state / "latest.json", snapshot)

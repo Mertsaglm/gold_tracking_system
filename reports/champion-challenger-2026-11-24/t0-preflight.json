@@ -1,0 +1,26 @@
+{
+  "market": "gold",
+  "latest_archive_date": "2026-11-23",
+  "expected_previous_session": "2026-11-24",
+  "core_members": 1,
+  "missing": [],
+  "start_date": "2026-11-25",
+  "core_quote_evidence": {
+    "usable": 1,
+    "expected": 1,
+    "missing": [],
+    "max_spread_pct": 4
+  },
+  "initial_try": 50000,
+  "monthly_try": 5000,
+  "ready": false,
+  "reasons": [
+    "Kapanış eski: 2026-11-23; beklenen en az 2026-11-24"
+  ],
+  "assessed_at": "2026-11-24T20:10:00+03:00",
+  "source_head": "ec9a8cce5699bfe1682210356f23369c4f03936b",
+  "archive_blob": "46374221007bed667a43e249a6784b21a6dad8e6",
+  "observation_time_rounded": "2026-11-24T17:46:00+03:00",
+  "activation_config": null,
+  "executed_on_production": false
+}

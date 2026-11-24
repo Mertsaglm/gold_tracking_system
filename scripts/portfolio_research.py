@@ -118,9 +118,32 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--market', required=True, choices=('bist', 'gold'))
     parser.add_argument('--database', type=Path)
+    parser.add_argument('--quote-ledger', type=Path)
+    parser.add_argument('--start')
     parser.add_argument('--asof', type=str)
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
+    if args.quote_ledger:
+        if args.market != 'gold' or not all((args.start, args.asof, args.output)):
+            parser.error('Banka kotasyonu sınavı için gold, --start, --asof ve --output gerekli.')
+        if args.output.resolve() == args.quote_ledger.resolve() or args.output.exists():
+            parser.error('Yeni ve ayrı bir rapor dosyası gerekli.')
+        from tempfile import TemporaryDirectory
+        from advisor import calendar
+        from advisor.experiments import gold_quote_timing
+        from advisor.ledger import Ledger
+        from advisor.service import configuration
+        cfg = configuration(ROOT)
+        cfg['calendar'] = calendar.load(ROOT)
+        source = Ledger(args.quote_ledger)
+        if not args.quote_ledger.is_file():
+            parser.error('Kotasyon defteri bulunamadı.')
+        with TemporaryDirectory(prefix='gold-timing-') as work:
+            report = gold_quote_timing(source, cfg, args.start, args.asof, Path(work))
+        atomic_json(args.output, report)
+        print(json.dumps({name: {k: v for k, v in arm.items() if k != 'series'}
+                          for name, arm in report['arms'].items()}, ensure_ascii=False, indent=2))
+        return
     with history.connection(ROOT, args.market, args.database) as con:
         available = con.execute('SELECT max(date) FROM ' + ('bars_daily' if args.market == 'bist' else 'history_daily')).fetchone()[0]
         asof = min(available, args.asof) if args.asof else available

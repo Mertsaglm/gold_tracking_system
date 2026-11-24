@@ -573,3 +573,11 @@ tekrar işlem saati kontrolü yapıyordu; sağlam veri yanlışlıkla sorunlu g�
 `advisor/decision_trace.py` motorla aynı valuation kuralını kullanır.
 `tests/test_advisor_trace_regression.py` bayat kotasyonun reddini ve dolum
 üretilmemesini birlikte korur. Bu değişiklik canlı yayın kanıtı değildir.
+
+## L-032 — 2026-11-24 — Model arızası pasif çekirdeği durdurmamalı
+
+Kanonik proje dersinde davranış ve doğrulama kaydedildi.
+
+## L-031 — 2026-11-21 — Geciken kapanışın ait olduğu gün saklanmalı
+
+Kanonik proje dersinde davranış ve doğrulama kaydedildi.

@@ -1,9 +1,11 @@
 """Sabit aday kataloğu; seçim geliştirme bölümünde, son bölüm yalnız sınavdır."""
 import copy
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from . import calendar, marketdata, policy, portfolio_candidates
 from .candidates import CATALOG, configuration
 from .simulation import simulate
-from .ledger import digest
+from .ledger import Ledger, digest
 from .calendar import trading_day, require_coverage
 
 
@@ -68,3 +70,81 @@ def compare(frame, cfg, start, end, *, scenario=None):
                 selected_on_development=selected['id'] if selected else None, production_eligible=False,
                 automatic_promotion=False,
                 note='Bu sınav keşif amaçlıdır. Bugünkü evren/sonradan düzeltilmiş fiyatlar kullanılır; tarihsel banka kotasyonu yoktur. Son bölümdeki sonuca göre tekrar seçim yapmak yeni bir denemedir. Araştırma 20 seansta bir, ileriye dönük hat her yeni kapanışta eğitilir; sonuçlar eşdeğer değildir.')
+
+
+def gold_quote_timing(source, config, start, end, workspace):
+    """Mühürlü banka kotasyonlarında aynı katkının iki pasif zamanlaması."""
+    require_coverage(start, end, config)
+    if config['market'] != 'gold' or end < start:
+        raise ValueError('Altın kotasyon deneyi için geçerli tarih aralığı gerekli.')
+    cfg = {**config, 'max_spread_pct': 4., 'require_next_quote': True, 'execution_phase': 'entry'}
+    arms = {key: Ledger(workspace / key) for key in ('first-eligible', 'tight-then-eligible')}
+    series = {key: {} for key in arms}
+    wait_until = {}
+    covered_days, entry_quotes, observed = set(), 0, 0
+    contributions = []
+    events = sorted(source.events, key=lambda event: datetime.fromisoformat(event['at']))
+    for event in events:
+        at = datetime.fromisoformat(event['at']).astimezone(calendar.IST)
+        day = at.date().isoformat()
+        if not start <= day <= end:
+            continue
+        data = event['data']
+        if event['kind'] == 'contribution' and data['book'] == 'strategy':
+            contributions.append({'at': at.isoformat(), 'cents': data['amount_cents'], 'period': data['period']})
+            for key, ledger in arms.items():
+                ledger.add('contribution', event['key'], at.isoformat(), book='core',
+                           amount_cents=data['amount_cents'], period=data['period'])
+                wait_until.setdefault(key, calendar.add_sessions(day, 3, cfg))
+        if event['kind'] != 'quote_snapshot' or not contributions:
+            continue
+        quote = data['quotes'].get('GRAM')
+        phase = calendar.phase(at, cfg)
+        if phase == 'closed' or marketdata.price_problem(quote, cfg, at) is not None:
+            continue
+        if quote.get('kind') == 'historical_assumption':
+            raise ValueError('Altın kotasyon deneyinde banka arşivi gerekli.')
+        observed += 1
+        if phase == 'entry' and quote.get('tradable') is not False:
+            covered_days.add(day)
+            entry_quotes += 1
+            for key, ledger in arms.items():
+                cap = 2.75 if key == 'tight-then-eligible' and day < wait_until.get(key, '') else 4.
+                account = ledger.account('core')
+                if account['cash_cents'] and not marketdata.spread_problem(quote, {**cfg, 'max_spread_pct': cap}):
+                    trade = portfolio_candidates._trade(ledger, cfg, {'GRAM': quote}, at, 'core', 'GRAM', 'BUY',
+                                                        account['cash_cents'] / 100, reason=key)
+                    if trade['status'] == 'doldu':
+                        wait_until.pop(key, None)
+        for key, ledger in arms.items():
+            value = policy.value_account(ledger.account('core'), {'GRAM': quote}, cfg, at)
+            series[key][day] = {name: value[name] for name in ('equity_try', 'cash_try', 'contributed_try')}
+    if not contributions or not observed:
+        raise ValueError('Katkı ve geçerli banka kotasyonu bulunamadı.')
+    expected = sum(calendar.trading_day(date.fromisoformat(start) + timedelta(days=i), cfg)
+                   for i in range((date.fromisoformat(end) - date.fromisoformat(start)).days + 1))
+    reports = {}
+    for key, ledger in arms.items():
+        nav = peak = 1.
+        worst = previous_value = previous_contributed = 0.
+        records = []
+        for day, row in series[key].items():
+            denominator = previous_value + row['contributed_try'] - previous_contributed
+            nav *= row['equity_try'] / denominator
+            peak = max(peak, nav)
+            worst = min(worst, nav / peak - 1)
+            previous_value, previous_contributed = row['equity_try'], row['contributed_try']
+            records.append({'date': day, **row, 'nav': nav})
+        account = ledger.account('core')
+        reports[key] = {**records[-1], 'twr_pct': (nav - 1) * 100, 'max_drawdown_pct': worst * 100,
+                        'fees_try': sum(f['fee_cents'] for f in account['fills']) / 100,
+                        'grams': str(account['positions'].get('GRAM', {}).get('quantity', 0)),
+                        'buys': len(account['fills']), 'buy_days': [f['at'][:10] for f in account['fills']],
+                        'series': records, 'ledger_hash': ledger.root_hash}
+    return {'status': 'offline banka kotasyonu deneyi', 'start': start, 'end': end, 'source_hash': source.root_hash,
+            'expected_sessions': expected, 'entry_sessions_observed': len(covered_days),
+            'valid_entry_quotes': entry_quotes, 'contributions': contributions, 'arms': reports,
+            'protocol': {'first_cap_pct': 4., 'tight_cap_pct': 2.75, 'wait_sessions': 3,
+                         'gold_buy_tax_rate': cfg['gold_buy_tax_rate'], 'execution': 'sonraki taze banka kotasyonu'},
+            'automatic_promotion': False,
+            'limitations': 'Gözlem boşlukları, kişisel İşCep fiyatı ve gerçek dolum bilinmiyor. Ortak gün sonu son geçerli banka fiyatıyla net değerleme.'}

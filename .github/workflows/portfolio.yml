@@ -10,6 +10,8 @@ on:
     # Dış 15 dk tetikleyici aksarsa ilk taraf yedeği; GitHub cron zaman garantisi vermez.
     - cron: '17,47 6-19 * * 1-5'
     - cron: '17 20 * * 1-5'
+    # 00.07 İstanbul, önceki seansın geç kalmış kapanış özeti.
+    - cron: '7 21 * * 1-5'
 
 permissions:
   contents: write
@@ -36,14 +38,26 @@ jobs:
       - name: Bagimliliklar
         run: |
           pip install --quiet -r requirements-runtime.txt
+      - name: Planlı kapanış veya gecikmiş gün sonu özeti
+        id: closing
+        if: github.event_name == 'schedule' && (github.event.schedule == '17 20 * * 1-5' || github.event.schedule == '7 21 * * 1-5')
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          result=$(python -m scripts.gold_closing ${{ github.event.schedule == '17 20 * * 1-5' && '--primary' || '' }})
+          echo "$result"
+          echo "run_cycle=$(python -c 'import json,sys; print(str(json.load(sys.stdin)["run_cycle"]).lower())' <<< "$result")" >> "$GITHUB_OUTPUT"
       - name: Kapanmis altin barini tamamla
         id: refresh
+        if: steps.closing.outcome == 'skipped' || steps.closing.outputs.run_cycle == 'true'
         continue-on-error: true
         env:
           EVDS_API_KEY: ${{ secrets.EVDS_API_KEY }}
         run: python -m src.advisor_refresh
       - name: Fiyat, karar ve sanal defter
         id: cycle
+        if: steps.closing.outcome == 'skipped' || steps.closing.outputs.run_cycle == 'true'
         run: |
           python -m advisor cycle
           echo "skipped=$(python -c 'import json; print(str(json.load(open("data/advisor/run_status.json")).get("skipped", False)).lower())')" >> "$GITHUB_OUTPUT"
@@ -64,7 +78,7 @@ jobs:
             bash ops/push_retry.sh
           fi
       - name: Kisa Telegram ozeti
-        if: always() && steps.persist.outcome == 'success' && steps.cycle.outputs.skipped != 'true'
+        if: always() && steps.persist.outcome == 'success' && steps.cycle.outcome != 'skipped' && steps.cycle.outputs.skipped != 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -78,7 +92,7 @@ jobs:
             bash ops/push_retry.sh
           fi
       - name: Cuma haftalik V2 ozeti
-        if: success() && steps.cycle.outputs.skipped != 'true'
+        if: success() && steps.cycle.outcome == 'success' && steps.cycle.outputs.skipped != 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

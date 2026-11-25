@@ -1,7 +1,7 @@
 -- Altin DB dump (deterministik, diff'lenebilir). Sema koddan gelir.
 -- Restore: python -m src.restore_db
 
--- ticks: 8571 satır
+-- ticks: 8577 satır
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T15:32:13.113034+00:00', 'yfinance', 'ons_usd', NULL, 4156.60009765625, '');
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T15:32:13.113034+00:00', 'yfinance', 'usdtry', NULL, 46.83599853515625, '');
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-07-07T15:32:14.732494+00:00', 'truncgil', 'ceyrek', 10018.75, 10249.98, '');
@@ -8573,8 +8573,14 @@ INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-11-24T12:08:28.235098+00:00', 'gh_actions', 'ons_usd', NULL, 3635.6, '');
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-11-24T12:08:28.235098+00:00', 'gh_actions', 'usd', 50.62, 50.6349, '');
 INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-11-24T12:08:28.235098+00:00', 'gh_actions', 'usdtry', NULL, 50.62120056152344, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-11-24T22:28:09.663028+00:00', 'gh_actions', 'ceyrek', 9874.0, 10116.0, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-11-24T22:28:09.663028+00:00', 'gh_actions', 'gram_altin', 5793.5, 5794.33, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-11-24T22:28:09.663028+00:00', 'gh_actions', 'gram_has_altin', 5764.53, 5765.36, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-11-24T22:28:09.663028+00:00', 'gh_actions', 'ons_usd', NULL, 3556.46, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-11-24T22:28:09.663028+00:00', 'gh_actions', 'usd', 50.6723, 50.6779, '');
+INSERT OR IGNORE INTO ticks(ts_utc, source, symbol, buying, selling, raw) VALUES('2026-11-24T22:28:09.663028+00:00', 'gh_actions', 'usdtry', NULL, 50.63520050048828, '');
 
--- ohlc_1m: 8571 satır
+-- ohlc_1m: 8577 satır
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T15:32', 'ceyrek', 10249.98, 10249.98, 10249.98, 10249.98, 1);
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T15:32', 'cumhuriyet', 42239.0, 42239.0, 42239.0, 42239.0, 1);
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-07-07T15:32', 'gram_altin', 6238.75, 6238.75, 6238.75, 6238.75, 1);
@@ -17146,8 +17152,14 @@ INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11-24T12:08', 'ons_usd', 3635.6, 3635.6, 3635.6, 3635.6, 1);
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11-24T12:08', 'usd', 50.6349, 50.6349, 50.6349, 50.6349, 1);
 INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11-24T12:08', 'usdtry', 50.62120056152344, 50.62120056152344, 50.62120056152344, 50.62120056152344, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11-24T22:28', 'ceyrek', 10116.0, 10116.0, 10116.0, 10116.0, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11-24T22:28', 'gram_altin', 5794.33, 5794.33, 5794.33, 5794.33, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11-24T22:28', 'gram_has_altin', 5765.36, 5765.36, 5765.36, 5765.36, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11-24T22:28', 'ons_usd', 3556.46, 3556.46, 3556.46, 3556.46, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11-24T22:28', 'usd', 50.6779, 50.6779, 50.6779, 50.6779, 1);
+INSERT OR IGNORE INTO ohlc_1m(minute_utc, symbol, o, h, l, c, n) VALUES('2026-11-24T22:28', 'usdtry', 50.63520050048828, 50.63520050048828, 50.63520050048828, 50.63520050048828, 1);
 
--- prim_history: 1402 satır
+-- prim_history: 1403 satır
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T15:32:14.732494+00:00', 4156.60009765625, 46.83599853515625, 6259.05963300728, 6207.56, 6238.75, -0.8228014434579878, -0.32448377548884855, 0.015466209554251539, -0.0759368583472031, 0, 0, 0, 'tum_bacaklar_taze');
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T15:33:15.000223+00:00', 4156.60009765625, 46.83599853515625, 6259.05963300728, 6207.56, 6238.75, -0.8228014434579878, -0.32448377548884855, 0.015466209554251539, -0.0759368583472031, 0, 0, 0, 'tum_bacaklar_taze');
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-07-07T15:34:15.266399+00:00', 4156.60009765625, 46.83599853515625, 6259.05963300728, 6207.56, 6238.75, -0.8228014434579878, -0.32448377548884855, 0.015466209554251539, -0.0759368583472031, 0, 0, 0, 'tum_bacaklar_taze');
@@ -18550,6 +18562,7 @@ INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-11-23T14:41:20.538715+00:00', 3689.56, 50.596900939941406, 6001.911073554652, 5972.54, 6002.56, -0.48936202477349866, 0.01081199700221358, 0.017247081182676656, 4.717534148387181, 1, 0, 0, 'turetilmis');
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-11-24T01:55:23.481537+00:00', 3676.49, 50.6151008605957, 5982.801001943663, 5953.97, 5983.89, -0.4818980596930533, 0.018202144045620372, 0.0149491267778388, 4.729058929899388, 1, 0, 0, 'turetilmis');
 INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-11-24T12:08:28.235098+00:00', 3635.6, 50.62120056152344, 5916.973139204637, 5888.12, 5917.7, -0.4876334322605258, 0.012284334883094772, 0.017324517079078387, 5.653637905588793, 1, 0, 0, 'turetilmis');
+INSERT OR IGNORE INTO prim_history(ts_utc, ons_usd, usdtry, theoretical, market_has, gram_retail, prim_pct, prim_pct_naive, spread_pct, quarter_prim_pct, indicative, weekend, holiday, reason) VALUES('2026-11-24T22:28:09.663028+00:00', 3556.46, 50.63520050048828, 5789.7728388990445, 5765.36, 5794.33, -0.4216545204506983, 0.07871053369032932, 0.014397361986973462, 6.18187332296769, 1, 0, 0, 'turetilmis');
 
 -- weekend_expectation: 496 satır
 INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-07-10T21:08:11.051093+00:00', 6194.42, 6233.111111837655, -0.6207351536566375, 1);
@@ -19049,7 +19062,7 @@ INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretic
 INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-11-22T10:20:42.971421+00:00', 5703.29, 5731.777841390207, -0.49701579821345154, 0);
 INSERT OR IGNORE INTO weekend_expectation(ts_utc, weekend_gram, frozen_theoretical, expectation_pct, reconciled) VALUES('2026-11-22T17:58:57.956122+00:00', 5703.29, 5729.994905622417, -0.4660546136998067, 0);
 
--- evds_daily: 8075 satır
+-- evds_daily: 8078 satır
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-01-02', 'TP.APIFON4', 8.52);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-01-05', 'TP.APIFON4', 8.51);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-01-06', 'TP.APIFON4', 8.5);
@@ -22165,6 +22178,7 @@ INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-19', 
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-20', 'TP.DK.EUR.A.YTL', 55.3581);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-23', 'TP.DK.EUR.A.YTL', 55.2974);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-24', 'TP.DK.EUR.A.YTL', 55.4656);
+INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-25', 'TP.DK.EUR.A.YTL', 55.219);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-05-25', 'TP.DK.USD.A.YTL', 45.5532);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-05-26', 'TP.DK.USD.A.YTL', 45.6312);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-06-01', 'TP.DK.USD.A.YTL', 45.6312);
@@ -22292,6 +22306,7 @@ INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-19', 
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-20', 'TP.DK.USD.A.YTL', 50.3786);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-23', 'TP.DK.USD.A.YTL', 50.4028);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-24', 'TP.DK.USD.A.YTL', 50.5116);
+INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-25', 'TP.DK.USD.A.YTL', 50.5376);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-01-02', 'TP.DK.USD.S.YTL', 2.3311);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-01-05', 'TP.DK.USD.S.YTL', 2.3491);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-01-06', 'TP.DK.USD.S.YTL', 2.3453);
@@ -25286,6 +25301,7 @@ INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-19', 
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-20', 'TP.DK.USD.S.YTL', 50.4694);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-23', 'TP.DK.USD.S.YTL', 50.4936);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-24', 'TP.DK.USD.S.YTL', 50.6026);
+INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2026-11-25', 'TP.DK.USD.S.YTL', 50.6286);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-01-01', 'TP.ENFBEK.PKA12ENF', 6.81);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-02-01', 'TP.ENFBEK.PKA12ENF', 6.69);
 INSERT OR IGNORE INTO evds_daily(date, series_code, value) VALUES('2015-03-01', 'TP.ENFBEK.PKA12ENF', 6.78);
@@ -27264,9 +27280,9 @@ INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-11-20', '/ho
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-11-21', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-11-21.md', '2026-11-21T21:04:58.471148+00:00');
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-11-22', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-11-22.md', '2026-11-22T21:13:27.123167+00:00');
 INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-11-23', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-11-23.md', '2026-11-24T02:33:26.057086+00:00');
-INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-11-24', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-11-24.md', '2026-11-24T18:54:18.873062+00:00');
+INSERT OR IGNORE INTO reports(date, path, created_utc) VALUES('2026-11-24', '/home/runner/work/gold_tracking_system/gold_tracking_system/reports/rapor_2026-11-24.md', '2026-11-25T00:05:45.933933+00:00');
 
--- history_daily: 2645 satır
+-- history_daily: 2646 satır
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-04', 1075.0999755859375, 2.9233, 101.04464458553299, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-05', 1078.4000244140625, 2.9475, 102.19385094467796, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2016-01-06', 1091.9000244140625, 2.9803, 104.62462649067037, 'GC=F');
@@ -29912,8 +29928,9 @@ INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_sour
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-11-19', 3685.5, 50.4444, 5977.236480521046, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-11-20', 3515.39990234375, 50.4694, 5704.189437476252, 'GC=F');
 INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-11-23', 3651.39990234375, 50.4936, 5927.707930998389, 'GC=F');
+INSERT OR IGNORE INTO history_daily(date, ons_usd, usdtry, gram_teorik, ons_source) VALUES('2026-11-24', 3547.60009765625, 50.6026, 5771.630929107584, 'GC=F');
 
--- gld_tonnage: 132 satır
+-- gld_tonnage: 133 satır
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-07', 981.1081828606455);
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-08', 993.7133874900146);
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-07-09', 978.1426763231632);
@@ -30046,8 +30063,9 @@ INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-11-21', 1159.144189
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-11-22', 1159.144189899342);
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-11-23', 1115.9401265163558);
 INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-11-24', 1145.716487681521);
+INSERT OR IGNORE INTO gld_tonnage(date, tonnes) VALUES('2026-11-25', 1147.7819356708108);
 
--- ohlc_daily: 5572 satır
+-- ohlc_daily: 5574 satır
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-04', 'GC=F', 1063.4000244140625, 1082.5, 1063.199951171875, 1075.0999755859375, 143.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-05', 'GC=F', 1075.5999755859375, 1081.5, 1075.300048828125, 1078.4000244140625, 82.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-06', 'GC=F', 1081.5999755859375, 1093.699951171875, 1081.5999755859375, 1091.9000244140625, 52.0, 'yfinance');
@@ -32786,6 +32804,7 @@ INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('20
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-11-19', 'GC=F', 3730.300048828125, 3759.5, 3620.60009765625, 3685.5, 203702.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-11-20', 'GC=F', 3633.800048828125, 3638.10009765625, 3502.89990234375, 3515.39990234375, 336479.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-11-23', 'GC=F', 3570.5, 3691.0, 3552.300048828125, 3651.39990234375, 336479.0, 'yfinance');
+INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-11-24', 'GC=F', 3559.300048828125, 3566.800048828125, 3546.10009765625, 3547.60009765625, 3139.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-01', 'TRY=X', 2.911900043487549, 2.911900043487549, 2.911900043487549, 2.911900043487549, 0.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-04', 'TRY=X', 2.9164600372314453, 2.973870038986206, 2.913789987564087, 2.9161500930786133, 0.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2016-01-05', 'TRY=X', 2.964240074157715, 2.9904301166534424, 2.9565000534057617, 2.964319944381714, 0.0, 'yfinance');
@@ -35620,6 +35639,7 @@ INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('20
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-11-19', 'TRY=X', 50.458839416503906, 50.46760940551758, 50.42770004272461, 50.46200180053711, 0.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-11-20', 'TRY=X', 50.56719970703125, 50.57743835449219, 50.52980041503906, 50.56232833862305, 0.0, 'yfinance');
 INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-11-23', 'TRY=X', 50.583560943603516, 50.60239028930664, 50.57889938354492, 50.57600021362305, 0.0, 'yfinance');
+INSERT OR IGNORE INTO ohlc_daily(date, symbol, o, h, l, c, v, source) VALUES('2026-11-24', 'TRY=X', 50.57033157348633, 50.6273307800293, 50.57033157348633, 50.60070037841797, 0.0, 'yfinance');
 
 -- predictions: 498 satır
 INSERT OR IGNORE INTO predictions(id, created_utc, model_version, kaynak, asof_date, horizon_days, target_date, kol, hukum, skor, guven, beklenen_gram_kazanc_pct, esik_pct, kapi_acik, ozellikler_json) VALUES(1, '2026-07-27T17:20:24.612371+00:00', 'v1.0', 'canli', '2026-07-24', 5, '2026-07-31', 'cekirdek', 'AL_AZ', NULL, 'düşük', NULL, 0.46771009197181723, 0, '{"asof_date": "2026-07-24", "n_gun": 2561, "gram_teorik": 6176.7907416855305, "ons_usd": 4067.60009765625, "usdtry": 47.2317, "gram_getiri_1ay": 0.12894464338064626, "ons_getiri_1ay": -1.508506408403365, "kur_getiri_1ay": 1.6625304298601096, "gram_getiri_3ay": -10.954386079395784, "ons_getiri_3ay": -15.69740730246114, "kur_getiri_3ay": 5.626186658436927, "gram_getiri_6ay": -0.619278026847625, "ons_getiri_6ay": -9.413618809817258, "kur_getiri_6ay": 9.708237228845974, "gram_getiri_12ay": 45.016524910454, "ons_getiri_12ay": 22.828843390089617, "kur_getiri_12ay": 18.063901692779915, "kur_bacagi_payi": 0.5242860662478288, "ons_gma200": 4450.752993164063, "ons_gma200_uzaklik_pct": -8.608720728746345, "gram_gma200_uzaklik_pct": -1.784672505746776, "kur_oynaklik_60g": 1.419524360610124, "gram_oynaklik_60g": 24.336990396159266, "ons_oynaklik_60g": 24.212623664282475, "ons_donchian_20": 0.4837758112094395, "gram_donchian_20": 0.578693422795214, "ons_donchian_55": 0.11159502149687349, "gram_donchian_55": 0.23664960929574405, "ons_atr": 75.28829606545335, "ons_atr_pct": 1.8509266952971715, "ons_rsi": 45.93950758513773, "kur_atr": 0.07115677881875551, "kur_atr_pct": 0.15038375392299744, "kur_rsi": 98.94855528989358, "gram_rsi": 48.73838496834433, "mevduat_3ay_brut": 46.09, "mevduat_1yil_brut": 47.05, "politika_faizi": 40.0, "enf_bek_12ay": 23.81, "reel_net_mevduat": 13.070430498344244, "gerekce": ["Reel net mevduat %+13.1 → yüksek: mevduat gerçek rakip, altının fırsat maliyeti artıyor.", "Bu ayki alımı 0.75× yap — ama alımı KESME."]}');
@@ -36121,7 +36141,7 @@ INSERT OR IGNORE INTO predictions(id, created_utc, model_version, kaynak, asof_d
 INSERT OR IGNORE INTO predictions(id, created_utc, model_version, kaynak, asof_date, horizon_days, target_date, kol, hukum, skor, guven, beklenen_gram_kazanc_pct, esik_pct, kapi_acik, ozellikler_json) VALUES(497, '2026-11-24T18:53:12.977991+00:00', 'v1.0', 'canli', '2026-11-23', 63, '2027-02-19', 'cekirdek', 'AL', NULL, 'düşük', NULL, 6.143314508600473, 0, '{"asof_date": "2026-11-23", "n_gun": 2645, "gram_teorik": 5927.707930998389, "ons_usd": 3651.39990234375, "usdtry": 50.4936, "gram_getiri_1ay": -8.455529699225362, "ons_getiri_1ay": -10.072899464013785, "kur_getiri_1ay": 1.7985343185185965, "gram_getiri_3ay": -18.178786652088952, "ons_getiri_3ay": -22.274254882033162, "kur_getiri_3ay": 5.269127010269736, "gram_getiri_6ay": -10.91813055160844, "ons_getiri_6ay": -19.851616425577035, "kur_getiri_6ay": 11.146183460672376, "gram_getiri_12ay": 9.45360485200537, "ons_getiri_12ay": -8.701305408245453, "kur_getiri_12ay": 19.885180550971903, "kur_bacagi_payi": 0.1515010192926282, "ons_gma200": 4452.2409948730465, "ons_gma200_uzaklik_pct": -17.98737070727978, "gram_gma200_uzaklik_pct": -10.95305756601409, "kur_oynaklik_60g": 1.153932980453713, "gram_oynaklik_60g": 25.26206833030403, "ons_oynaklik_60g": 25.17857451371889, "ons_donchian_20": 0.2270071404295342, "gram_donchian_20": 0.24306048880923295, "ons_donchian_55": 0.14148977566092197, "gram_donchian_55": 0.17896110301377968, "ons_atr": 105.95501411933897, "ons_atr_pct": 2.901764171361479, "ons_rsi": 33.22279382584671, "kur_atr": 0.06804641747056336, "kur_atr_pct": 0.13454290015649462, "kur_rsi": 96.71308994910063, "gram_rsi": 35.53198812140633, "mevduat_3ay_brut": 40.19, "mevduat_1yil_brut": 41.68, "politika_faizi": 36.0, "enf_bek_12ay": 23.89, "reel_net_mevduat": 9.313100330938727, "gerekce": ["Reel net mevduat %+9.3 → ara bant (%0–%10): ayırt edici sinyal yok.", "Düzenli alım planına aynen devam."]}');
 INSERT OR IGNORE INTO predictions(id, created_utc, model_version, kaynak, asof_date, horizon_days, target_date, kol, hukum, skor, guven, beklenen_gram_kazanc_pct, esik_pct, kapi_acik, ozellikler_json) VALUES(498, '2026-11-24T18:53:12.977991+00:00', 'v1.0', 'canli', '2026-11-23', 63, '2027-02-19', 'taktik', 'TUT', NULL, 'yüksek', NULL, 7.338819508600469, 0, '{"asof_date": "2026-11-23", "n_gun": 2645, "gram_teorik": 5927.707930998389, "ons_usd": 3651.39990234375, "usdtry": 50.4936, "gram_getiri_1ay": -8.455529699225362, "ons_getiri_1ay": -10.072899464013785, "kur_getiri_1ay": 1.7985343185185965, "gram_getiri_3ay": -18.178786652088952, "ons_getiri_3ay": -22.274254882033162, "kur_getiri_3ay": 5.269127010269736, "gram_getiri_6ay": -10.91813055160844, "ons_getiri_6ay": -19.851616425577035, "kur_getiri_6ay": 11.146183460672376, "gram_getiri_12ay": 9.45360485200537, "ons_getiri_12ay": -8.701305408245453, "kur_getiri_12ay": 19.885180550971903, "kur_bacagi_payi": 0.1515010192926282, "ons_gma200": 4452.2409948730465, "ons_gma200_uzaklik_pct": -17.98737070727978, "gram_gma200_uzaklik_pct": -10.95305756601409, "kur_oynaklik_60g": 1.153932980453713, "gram_oynaklik_60g": 25.26206833030403, "ons_oynaklik_60g": 25.17857451371889, "ons_donchian_20": 0.2270071404295342, "gram_donchian_20": 0.24306048880923295, "ons_donchian_55": 0.14148977566092197, "gram_donchian_55": 0.17896110301377968, "ons_atr": 105.95501411933897, "ons_atr_pct": 2.901764171361479, "ons_rsi": 33.22279382584671, "kur_atr": 0.06804641747056336, "kur_atr_pct": 0.13454290015649462, "kur_rsi": 96.71308994910063, "gram_rsi": 35.53198812140633, "mevduat_3ay_brut": 40.19, "mevduat_1yil_brut": 41.68, "politika_faizi": 36.0, "enf_bek_12ay": 23.89, "reel_net_mevduat": 9.313100330938727, "gerekce": ["SAT kapısı KAPALI — config `karar.taktik.aktif: false`. Açılma şartı: canlı karnede ≥30 çözülmüş tahmin, gram etkisi > %0.0, isabet farkı > +10p", "Ölçülen taban: satmanın 63 günlük gram kazancı ortalama %-6.14 (N=40, SAT kazanma %22).", "Kârlı olması için bir sinyalin tabanı +7.34 puan yenmesi gerek.", "Bu eşiği aşan bir sinyal HENÜZ ÖLÇÜLMEDİ."]}');
 
--- prediction_entries: 486 satır
+-- prediction_entries: 492 satır
 INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(1, '2026-07-27', 6170.4859233469315, '2026-07-29T16:53:40.634589+00:00');
 INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(2, '2026-07-27', 6170.4859233469315, '2026-07-29T16:53:40.634589+00:00');
 INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(3, '2026-07-27', 6170.4859233469315, '2026-07-29T16:53:40.634589+00:00');
@@ -36608,8 +36628,14 @@ INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_t
 INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(484, '2026-11-20', 5870.9018871095395, '2026-11-24T02:32:20.783266+00:00');
 INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(485, '2026-11-20', 5870.9018871095395, '2026-11-24T02:32:20.783266+00:00');
 INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(486, '2026-11-20', 5870.9018871095395, '2026-11-24T02:32:20.783266+00:00');
+INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(487, '2026-11-23', 5801.1760991940755, '2026-11-25T00:04:40.445848+00:00');
+INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(488, '2026-11-23', 5801.1760991940755, '2026-11-25T00:04:40.445848+00:00');
+INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(489, '2026-11-23', 5801.1760991940755, '2026-11-25T00:04:40.445848+00:00');
+INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(490, '2026-11-23', 5801.1760991940755, '2026-11-25T00:04:40.445848+00:00');
+INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(491, '2026-11-23', 5801.1760991940755, '2026-11-25T00:04:40.445848+00:00');
+INSERT OR IGNORE INTO prediction_entries(prediction_id, giris_date, giris_gram_teorik, doldurma_utc) VALUES(492, '2026-11-23', 5801.1760991940755, '2026-11-25T00:04:40.445848+00:00');
 
--- prediction_outcomes: 310 satır
+-- prediction_outcomes: 316 satır
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(1, '2026-08-05T17:06:18.357984+00:00', '2026-08-03', 6194.103057765824, 46.52, 0.15832175643719637, 1.1955049999999967, 1, 1, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(2, '2026-08-05T17:06:18.357984+00:00', '2026-08-03', 6194.103057765824, 46.52, 0.15832175643719637, 1.1955049999999967, 1, 1, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(3, '2026-08-28T00:34:59.186085+00:00', '2026-08-25', 7145.621002311619, 46.52, -11.682054513633421, 1.1955049999999967, 1, 1, 0.0);
@@ -36728,6 +36754,8 @@ INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, 
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(116, '2026-09-02T18:56:14.090410+00:00', '2026-08-31', 6845.814170562476, 45.4, 5.0196904429031575, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(117, '2026-09-25T19:30:22.302487+00:00', '2026-09-23', 6797.75455913768, 45.4, 7.54185406937391, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(118, '2026-09-25T19:30:22.302487+00:00', '2026-09-23', 6797.75455913768, 45.4, 7.54185406937391, 1.1955049999999967, 0, 0, 0.0);
+INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(119, '2026-11-25T00:04:40.450178+00:00', '2026-11-23', 5801.1760991940755, 45.4, 31.490572888560585, 1.1955049999999967, 0, 0, 0.0);
+INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(120, '2026-11-25T00:04:40.450178+00:00', '2026-11-23', 5801.1760991940755, 45.4, 31.490572888560585, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(121, '2026-09-03T18:51:22.495876+00:00', '2026-09-01', 6794.825368464047, 45.4, 5.718609660581309, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(122, '2026-09-03T18:51:22.495876+00:00', '2026-09-01', 6794.825368464047, 45.4, 5.718609660581309, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(123, '2026-09-26T18:42:09.342287+00:00', '2026-09-24', 6771.3861182059745, 45.4, 7.8696633214235145, 1.1955049999999967, 0, 0, 0.0);
@@ -36890,6 +36918,8 @@ INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, 
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(358, '2026-11-24T02:32:20.787920+00:00', '2026-11-20', 5870.9018871095395, 42.53, 14.119220783687037, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(361, '2026-11-02T23:12:39.629938+00:00', '2026-10-30', 6357.406425595053, 42.53, 2.670883896595666, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(362, '2026-11-02T23:12:39.629938+00:00', '2026-10-30', 6357.406425595053, 42.53, 2.670883896595666, 1.1955049999999967, 0, 0, 0.0);
+INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(363, '2026-11-25T00:04:40.450178+00:00', '2026-11-23', 5801.1760991940755, 42.53, 14.28942750245239, 1.1955049999999967, 0, 0, 0.0);
+INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(364, '2026-11-25T00:04:40.450178+00:00', '2026-11-23', 5801.1760991940755, 42.53, 14.28942750245239, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(367, '2026-11-03T21:15:01.451628+00:00', '2026-11-02', 6307.088224590115, 42.78, 2.6005776265191516, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(368, '2026-11-03T21:15:01.451628+00:00', '2026-11-02', 6307.088224590115, 42.78, 2.6005776265191516, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(373, '2026-11-04T21:28:07.360302+00:00', '2026-11-03', 6415.7982866625125, 42.78, 1.0906038215470204, 1.1955049999999967, 1, 1, 0.0);
@@ -36920,3 +36950,5 @@ INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, 
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(446, '2026-11-20T21:29:40.651410+00:00', '2026-11-19', 5917.134900346377, 41.64, 7.612168772626959, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(451, '2026-11-24T02:32:20.787920+00:00', '2026-11-20', 5870.9018871095395, 40.19, 7.170207085348257, 1.1955049999999967, 0, 0, 0.0);
 INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(452, '2026-11-24T02:32:20.787920+00:00', '2026-11-20', 5870.9018871095395, 40.19, 7.170207085348257, 1.1955049999999967, 0, 0, 0.0);
+INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(457, '2026-11-25T00:04:40.450178+00:00', '2026-11-23', 5801.1760991940755, 40.19, 8.23855501549302, 1.1955049999999967, 0, 0, 0.0);
+INSERT OR IGNORE INTO prediction_outcomes(prediction_id, cozum_utc, cikis_date, cikis_gram_teorik, mevduat_yillik_pct, gram_carry_kazanc_pct, roundtrip_maliyet_pct, hukum_dogru, taban_dogru, gram_etkisi_pct) VALUES(458, '2026-11-25T00:04:40.450178+00:00', '2026-11-23', 5801.1760991940755, 40.19, 8.23855501549302, 1.1955049999999967, 0, 0, 0.0);

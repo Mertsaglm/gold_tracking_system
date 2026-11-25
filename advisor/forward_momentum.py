@@ -2,7 +2,7 @@
 from datetime import datetime
 import math
 
-from . import benchmark, corporate, costs, marketdata, policy, portfolio_candidates as portfolio
+from . import benchmark, corporate, costs, marketdata, policy, portfolio_candidates as portfolio, reporting, risk
 from .calendar import IST
 from .ledger import Ledger, fund
 from .service import benchmark_nav, feedback
@@ -86,14 +86,21 @@ def cycle(state, cfg, records, rows, quotes, now, actions):
     costs.accrue(ledger, cfg, quotes, now)
     strategy = policy.value_account(ledger.account(), quotes, cfg, now)
     passive = policy.value_account(ledger.account('benchmark'), quotes, cfg, now)
+    active_risk = risk.summary(ledger.account(), quotes, cfg, now)
+    # Ana hesabın portföy sınırı bu deneyin stop gözlemi için geçerli değildir.
+    active_risk.pop('limit_pct')
+    exposure = {'strategy': reporting.allocation(strategy), 'benchmark': reporting.allocation(passive)}
     performance = feedback(ledger, strategy)
     passive_nav = benchmark_nav(ledger, passive)
     if strategy['valuation_complete']:
         ledger.add('valuation', 'valuation:' + at, at, equity_try=strategy['equity_try'],
                    contributed_try=strategy['contributed_try'], nav=performance['nav'],
-                   benchmark_try=passive['equity_try'], benchmark_nav=passive_nav)
+                   benchmark_try=passive['equity_try'], benchmark_nav=passive_nav,
+                   exposure=exposure, stop_risk_pct=active_risk['stop_risk_pct'])
     ledger.save()
     return {'status': 'İleri sanal deney', 'start_date': terms['start_date'], 'rank_coverage': len(scores),
             'strategy': strategy, 'benchmark': passive, 'feedback': performance, 'benchmark_nav': passive_nav,
+            'exposure': exposure, 'risk': active_risk,
+            'observed_allocation': reporting.observed_allocation(ledger, now),
             'pending': pending,
             'ledger_hash': ledger.root_hash}

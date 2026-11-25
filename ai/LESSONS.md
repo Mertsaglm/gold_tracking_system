@@ -1,5 +1,7 @@
 # LESSONS.md — Dersler ve Anti-Pattern'ler
 
+Güncel oturum devri ve doğrulama kesiti [STATE](STATE.md) dosyasındadır.
+
 > Tarihli hata kayıtları ve tekrarını önleyen bilgiler; ilgili konuya göre başvurulur.
 > Eski durumlar güncel üretim iddiası değildir; V1 olayları V2'ye otomatik uygulanmaz.
 > L-NNN numaralarının kaynağı bu dosyadır. Eski devir paketi mevcutsa aynı

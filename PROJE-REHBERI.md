@@ -16,10 +16,10 @@
 > | Nerede kaldık / sırada ne var | `ai/STATE.md` |
 > | Günlük kontrol listesi | `İZLEME.md` |
 > | Birikim V2 sanal portföy ve Vercel paneli | `docs/V2-REHBER.md` |
-> | Ne inşa edildi, hangi iddia çürüdü (anlatı) | `Proje Yardımcısı - Gold Tracking System/ai/PROJE-GUNLUGU.md` |
+> | Ne inşa edildi, hangi iddia çürüdü (anlatı) | [Teslimat arşivi](docs/TESLIMAT-ARSIV.md) |
 >
-> Buradaki fiyat/prim/vergi formülleri hâlâ geçerlidir; eskiyen şey kapsamdır,
-> içerik değil.
+> Bu dönemden devreden formüllerin kullanım ve kaynak sınırı için V2 rehberi,
+> yerel düzeltmeler ve güncel sonuç için [24 Kasım denetimi](docs/DENETIM-2026-11-24.md).
 >
 > ⚠️ **Bir istisna — ONS KAYNAĞI DEĞİŞTİ.** Aşağıdaki kaynak tablosu ons'u
 > yfinance (`GC=F`) altında anlatır; bu **artık canlı yol değildir**:

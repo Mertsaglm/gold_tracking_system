@@ -3,9 +3,36 @@ from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta
 import json
 import sqlite3
+from statistics import mean
 
 from .ledger import cents
 from .policy import fee
+
+
+def allocation(view):
+    """Net tasfiye değeri tabanında hisse ve nakit payları."""
+    equity = view['equity_try']
+    if equity is None or equity <= 0:
+        return {'invested_pct': None, 'cash_pct': None}
+    invested = sum(position['value_try'] for position in view['positions'])
+    return {'invested_pct': invested / equity * 100, 'cash_pct': view['cash_try'] / equity * 100}
+
+
+def observed_allocation(ledger, now):
+    from .calendar import IST
+
+    today = now.astimezone(IST).date()
+    days = {}
+    for event in ledger.events:
+        if event['kind'] != 'valuation' or 'exposure' not in event['data']:
+            continue
+        at = datetime.fromisoformat(event['at'])
+        day = at.astimezone(IST).date()
+        if today - timedelta(days=6) <= day <= today and at <= now:
+            days[day] = event['data']['exposure']
+    marks = [r['strategy'] for r in days.values() if r['strategy']['cash_pct'] is not None]
+    return {'days': len(marks), 'mean_cash_pct': mean(r['cash_pct'] for r in marks) if marks else None,
+            'all_cash_days': sum(r['invested_pct'] == 0 for r in marks)}
 
 
 def enrich(decisions, ledger, cfg, previous_decisions):
@@ -166,6 +193,24 @@ def weekly_research(root, state, ledger, cfg, now):
         active = momentum.get('strategy', {}).get('equity_try')
         if active is not None and passive is not None:
             lines.append(f'İleri momentum, başlangıçtan aktif eksi pasif {active - passive:+.0f} TL')
+        for key, label in (('strategy', 'Momentum'), ('benchmark', 'Eş pasif')):
+            view = momentum.get(key)
+            if view is None:
+                continue
+            exposure = allocation(view)
+            invested, cash = exposure['invested_pct'], exposure['cash_pct']
+            if invested is None:
+                lines.append(f'{label} · Maruziyet ve nakit oranı için tam değerleme bekleniyor.')
+            else:
+                lines.append(f'{label} · Hisse %{invested:.1f}, nakit %{cash:.1f}')
+        risk = momentum.get('risk', {})
+        if risk.get('stop_risk_pct') is not None:
+            lines.append(f"Momentum · Açık stop riski {risk['stop_risk_try']:.0f} TL / %{risk['stop_risk_pct']:.2f}")
+        elif 'risk' in momentum:
+            lines.append('Momentum · Açık stop riski ölçülemedi.')
+        observed = momentum.get('observed_allocation', {})
+        if observed.get('days'):
+            lines.append(f"Son 7 günde {observed['days']} değerleme günü · ort. nakit %{observed['mean_cash_pct']:.1f}")
 
     try:
         corporate_days = defaultdict(set)

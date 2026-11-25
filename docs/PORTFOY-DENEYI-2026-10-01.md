@@ -1,5 +1,8 @@
 # Çekirdek/taktik sanal sınavı — 2026-10-01
 
+> **2026-11-25 devir notu.** Güncel üretim, yerel paket, bağımsız momentum ve ortak T0 durumu [STATE kaydında](../ai/STATE.md). Bu sayfadaki tarihli kesitler kendi koşullarına aittir.
+
+
 Bu paket ana BIST/altın hesaplarının kararını değiştirmez. Ayrı defterlerde aynı
 başlangıç ve katkılarla beş kol açar: mevcut politika, %80 çekirdek + %20 nakit,
 çekirdek + pasif kalan dilim, çekirdek + mevcut Ridge ve çekirdek + piyasaya özel

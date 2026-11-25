@@ -1,8 +1,14 @@
 # Yerel yayın hazırlığı — 2026-09-30
 
-25 Eylül yeni hesap/aday revizyonu üretimde henüz yok. Mevcut yerel değişiklikler
-korunarak ortak çekirdek BIST ile eşitlendi; 33 modül hash'i aynı. Commit/push/deploy
-yapılmadı, üretim defterine veya SQL'e yazılmadı, bildirim gönderilmedi.
+> **Tarihsel kesit:** Bu belgedeki ölçüm ve yayın durumu yazıldığı tarihin kesitidir.
+> Güncel üretim ve açık işler için [ai/STATE.md](../ai/STATE.md) ile
+> [2026-10-01 deney durumuna](PORTFOY-DENEYI-2026-10-01.md) bakın.
+
+25 Eylül yeni hesap/aday revizyonu 2026-09-30'da üretimde yoktu; kod
+2026-10-01'de yayımlandı. O günkü yerel değişiklikler
+korunarak ortak çekirdek BIST ile eşitlendi; 2026-09-30 kesitinde 33 modül hash'i aynıydı. Commit/push/deploy
+2026-09-30 kesitinde yapılmadı, üretim defterine veya SQL'e yazılmadı,
+bildirim gönderilmedi. Sonraki canlı koşu deney belgesinde kayıtlıdır.
 
 - Aktif/eski/aday hesabı okuyan audit düzeltildi; ücret borcu bağımsız hesaplanır.
 - SQL yazan daily/archive/portfolio işleri `repo-commit` + `queue: max` kullanır;

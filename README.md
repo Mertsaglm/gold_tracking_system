@@ -1,24 +1,34 @@
 # Altın Takip
 
-[İşletim, yayın ve sonraki adımlar](docs/ISLETIM-2026-11-18.md)
+> **Güncel başlangıç.** [Doküman haritası](docs/PROJE-ICINDEKILER.md), [durum ve üretim kanıtı](ai/STATE.md), [25 Kasım tahmin denetimi](docs/TAHMIN-DENETIMI-2026-11-25.md). Tarihli kesitler kendi ölçüm koşullarına aittir.
 
 
-Yerel eğitim ve son tamamlanma denetimi (2026-09-25): [rapor](docs/YEREL-DENETIM-2026-09-25.md). Commit/push/deploy yapılmadı.
+Yeni oturum için [proje kapsamı](ai/PROJECT.md) ve [güncel durum](ai/STATE.md). [İşletim rehberi](docs/ISLETIM-2026-11-18.md) ve [24 Kasım denetimi](docs/DENETIM-2026-11-24.md).
+
+**Tarihsel yayın kaydı (2026-10-01):** Yeni kod [BIST `main`](https://github.com/Mertsaglm/bist-analiz/commit/bee1a1c)
+ve [altın `main`](https://github.com/Mertsaglm/gold_tracking_system/commit/dddb27c)
+dallarında. Altın yeni kodla canlı çevrim ve Telegram gönderimi yaptı; ilk BIST
+koşusu seans dışında atlandı. Beş yeni %80 çekirdek/%20 taktik deney hesabı
+için ortak T0 hâlâ kapalıdır; geçmiş performans üstünlüğü gösterilmedi.
+Güncel durum [STATE](ai/STATE.md), deney sözleşmesi
+[PORTFOY-DENEYI](docs/PORTFOY-DENEYI-2026-10-01.md).
+[2026-09-25 yerel denetimi](docs/YEREL-DENETIM-2026-09-25.md) tarihsel kesittir.
 
 ## Birikim V2 — 2026-09-15 revizyonu
 
 Yeni karar ve sanal portföy hattı `advisor/`, iki piyasayı birlikte gösteren web paneli
-`dashboard/` içindedir. Bütçe ve hesap sürümü `advisor/config.json` ile belirlenir.
+BIST deposunun `dashboard/` dizinindedir. Bütçe ve hesap sürümü `advisor/config.json` ile belirlenir.
 2026-09-25 revizyonu: [yeni hesap ve öğrenme düzeni](docs/REVIZYON-2026-09-25.md).
 Gerçek emir gönderilmez. Alım/satım kararı, miktarı, masrafı ve fiyat kaynağı deftere yazılır.
 
 - [2026-09-16: öncelik grupları ve uygulama sonucu](reports/IYILESTIRME-2026-09-16.md)
 - [Kullanım, mimari ve Vercel kurulumu](docs/V2-REHBER.md)
+- [Çekirdek/taktik deney, eski veri sınavı ve canlı yayın sınırı](docs/PORTFOY-DENEYI-2026-10-01.md)
 - [İnceleme, değişiklikler ve doğrulama raporu](reports/REVIZYON-2026-09-15.md)
 - Güncel kod, üretim ve açık risk durumu: [ai/STATE.md](ai/STATE.md).
 - Kısa karar: `.venv/bin/python -m advisor status`
 - Canlı panel: [birikim-paneli.vercel.app](https://birikim-paneli.vercel.app/) (parola gerekli).
-- Yerel panel: proje kökünden `node dashboard/server.mjs` veya `cd dashboard && npm run dev`.
+- Ortak panel geliştirme komutunu BIST deposunun kökünde çalıştır: `node dashboard/server.mjs`.
 
 Geçmiş kayıtlar korunur. V1 veri toplama ve ayrıntılı rapor üretimi sürer; V2 aktif
 workflow'larda kısa Telegram özetinin sahibi olur. Önceki modelin ölçülmüş başarısızlıkları,
@@ -392,10 +402,8 @@ davranış üretilir — köprü dosyaları yalnızca AGENTS.md'ye yönlendirir:
 Sohbete `/durum`, `/baslat`, `/karar`, `/plan`, `/kapat` yazmak yeterli (araç özelliği değil,
 AGENTS.md'de tanımlı sözleşme). Kararların gerekçesi `ai/DECISIONS.md`'de ADR olarak tutulur.
 
-Devir paketi: **`Proje Yardımcısı - Gold Tracking System/`** — kuralların
-taşınabilir ikizi + `ai/PROJE-GUNLUGU.md` (ne inşa edildi, ne ölçüldü, hangi
-iddia çürüdü, bugünkü sınırlar). Kural değişikliği **önce köke** yazılır, sonra
-oraya kopyalanır; senkron testle denetlenir.
+Yeni oturum [kapsam](ai/PROJECT.md) ve [güncel durum](ai/STATE.md) ile başlar.
+Tarihli inşa öyküsü ve geri çekilen iddialar [teslimat arşivinde](docs/TESLIMAT-ARSIV.md).
 
 ## Kanıt
 

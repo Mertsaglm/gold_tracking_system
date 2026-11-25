@@ -14,6 +14,15 @@ from .ledger import Ledger, atomic_json, cents, digest
 
 POLICY_ID = 'core-tactical-80-20-v1'
 CATALOG = ('legacy-control', 'core-cash', 'core-passive', 'core-ridge', 'core-specialized')
+CODE_SCOPE = 'portfolio-policy-v2'
+# These modules present or deliver results outside the candidate trade path.
+NON_POLICY_MODULES = {'notifications.py', 'reporting.py', 'watchdog.py'}
+
+
+def _code_ids():
+    modules = {p.name: digest(p.read_text()) for p in sorted(Path(__file__).parent.glob('*.py'))}
+    policy_modules = {name: sha for name, sha in modules.items() if name not in NON_POLICY_MODULES}
+    return digest(policy_modules), digest(modules)
 
 
 def _week(day):
@@ -254,7 +263,9 @@ def _risk_limited_budget(account, symbol, cfg, buy, stop, desired_try, risk_limi
     return 0
 
 
-def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now, *, review_daily=False):
+def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now, *, review_daily=False, rank_only=False):
+    if rank_only and cfg['market'] != 'bist':
+        raise ValueError('Saf sıralama araştırması yalnız BIST için tanımlıdır.')
     account = ledger.account('tactical')
     actions = []
     # Koruyucu stop haftalık seçimin dışında, gözlem boyunca işler.
@@ -265,7 +276,7 @@ def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now, *, review_daily
             if price <= p['stop']:
                 actions.append(_trade(ledger, cfg, quotes, now, 'tactical', symbol, 'SELL',
                                       float(p['quantity']) * price, reason='tactical_stop'))
-    if not forecasts:
+    if not (scores if rank_only else forecasts):
         return actions
     account = ledger.account('tactical')
     exited_today = {f['symbol'] for f in account['fills'] if f['side'] == 'SELL' and
@@ -313,22 +324,29 @@ def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now, *, review_daily
                        net_forecast_pct=net, proposals=[proposal])
         return actions
     valid = {s: r for s, r in rows.items() if s in cfg['allowed_entry_symbols'] and _valid(r, s, cfg, quotes, now)}
+    if rank_only:
+        valid = {s: r for s, r in valid.items() if s in scores}
     if not valid:
         return actions
     ordered = sorted(valid, key=lambda s: (-(scores.get(s, float('-inf'))), s))
     rank = {s: i + 1 for i, s in enumerate(ordered)}
-    net = {s: _net_forecast(r, forecasts.get(s), quotes[s], cfg) for s, r in valid.items()}
+    net = {s: None if rank_only else _net_forecast(r, forecasts.get(s), quotes[s], cfg)
+           for s, r in valid.items()}
     held = set(account['positions'])
+    protected = (held.intersection(cfg['allowed_entry_symbols']).difference(valid)
+                 if rank_only else set())
     keep = {s for s in held if s not in exited_today and rank.get(s, 999) <= 10
-            and net.get(s) is not None and net[s] > 0}
+            and (rank_only or (net.get(s) is not None and net[s] > 0))}
     sector_counts = {}
     for s in keep:
         sector = valid[s].get('sector')
         sector_counts[sector] = sector_counts.get(sector, 0) + 1
     for symbol in ordered[:5]:
-        if len(keep) >= 5:
+        if len(keep) + len(protected) >= 5:
             break
-        if symbol in keep or symbol in exited_today or net[symbol] is None or net[symbol] < 1 or scores.get(symbol, 0) <= 0:
+        if symbol in keep or symbol in exited_today:
+            continue
+        if not rank_only and (net[symbol] is None or net[symbol] < 1 or scores.get(symbol, 0) <= 0):
             continue
         sector = valid[symbol].get('sector')
         if sector_counts.get(sector, 0) >= 2:
@@ -336,6 +354,8 @@ def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now, *, review_daily
         keep.add(symbol)
         sector_counts[sector] = sector_counts.get(sector, 0) + 1
     for symbol in sorted(held - keep):
+        if symbol in protected:
+            continue
         if review_daily and symbol in cfg['allowed_entry_symbols'] and net.get(symbol) is None:
             # Fiyat koruması yukarıda çalışır. Eksik model girdisi bir satış sinyali değildir.
             continue
@@ -370,7 +390,7 @@ def _tactical(ledger, cfg, rows, quotes, forecasts, scores, now, *, review_daily
                               'current_value_try': current, 'target_value_try': current + delta,
                               'target_weight_pct': (current + delta) / equity * 100 if equity else None,
                               'stop': stop, 'risk_limit_try': equity * .002})
-            if delta > 0 and _net_forecast(valid[symbol], forecasts[symbol], quotes[symbol], cfg, delta) >= 1:
+            if delta > 0 and (rank_only or _net_forecast(valid[symbol], forecasts[symbol], quotes[symbol], cfg, delta) >= 1):
                 actions.append(_trade(ledger, cfg, quotes, now, 'tactical', symbol, 'BUY', delta,
                                       stop=stop, sector=valid[symbol].get('sector'), reason='tactical_rank_entry'))
     if _completed(actions):
@@ -432,6 +452,7 @@ def cycle(state, frame, base, quotes, now, records, rows, forecasts, model, spec
     if day < start:
         return {'status': 'T0 bekleniyor', 'policy_id': POLICY_ID, 'accounts': []}
     results = []
+    policy_code_id, build_code_id = _code_ids()
     for spec in CATALOG:
         cfg = copy.deepcopy(base)
         cfg['start_date'] = start
@@ -442,15 +463,18 @@ def cycle(state, frame, base, quotes, now, records, rows, forecasts, model, spec
                     'core_ratio': .8, 'tactical_ratio': .2, 'horizon_sessions': cfg['horizon_sessions'],
                     'costs': {k: cfg[k] for k in ('commission_rate', 'commission_min_try', 'commission_bsmv_rate',
                                                  'exchange_fee_rate', 'gold_buy_tax_rate', 'slippage_bps')},
-                    'candidate_model': 'relative-ridge-v1' if cfg['market'] == 'bist' else 'gold-legs-ridge-v1',
-                    'code_id': digest({p.name: digest(p.read_text())
-                                       for p in sorted(Path(__file__).parent.glob('*.py'))})}
+                    'candidate_model': 'relative-ridge-v1' if cfg['market'] == 'bist' else 'gold-legs-ridge-v1'}
         prior = next((e['data'] for e in ledger.events if e['kind'] == 'portfolio_contract'), None)
+        if prior is not None and 'code_scope' not in prior:
+            terms['code_id'] = build_code_id
+        else:
+            terms.update(code_scope=CODE_SCOPE, code_id=policy_code_id)
         if cfg['market'] == 'gold' and (prior is None or 'core_max_spread_pct' in prior):
             terms['core_max_spread_pct'] = core_quote_config(cfg)['max_spread_pct']
         if prior is not None and any(prior.get(k) != v for k, v in terms.items()):
             raise ValueError('Ön kayıtlı aday sözleşmesi geçmişin üstüne değiştirilemez.')
-        contract = prior or dict(terms, first_data_date=str(frame.date.max()) if frame is not None else None,
+        contract = prior or dict(terms, first_build_code_id=build_code_id,
+                                 first_data_date=str(frame.date.max()) if frame is not None else None,
                                  first_data_id=(digest({'rows': len(frame),
                                                        'hash': str(__import__('pandas').util.hash_pandas_object(frame, index=False).sum())})
                                                 if frame is not None else None),

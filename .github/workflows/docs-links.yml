@@ -1,0 +1,18 @@
+name: Documentation links
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            ai
+            docs
+            scripts
+      - run: python3 scripts/check_doc_links.py

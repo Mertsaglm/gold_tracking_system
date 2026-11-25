@@ -46,6 +46,43 @@ def test_tactical_stop_works_when_forecasts_are_unavailable(tmp_path):
     assert not ledger.account('tactical')['positions']
 
 
+def test_replay_rank_only_can_enter_without_absolute_forecast(tmp_path):
+    cfg = config()
+    _, rows, quotes = setup()
+    cfg['allowed_entry_symbols'] = sorted(rows)
+    ledger = Ledger(tmp_path / 'rank')
+    pc._fund(ledger, cfg, '2026-10-01', NOW, 'core-ridge')
+    assert pc._tactical(ledger, cfg, rows, quotes, {}, {'AAA': 1}, NOW) == []
+    assert not ledger.account('tactical')['fills']
+    pc._tactical(ledger, cfg, rows, quotes, {}, {'AAA': 1}, NOW, rank_only=True)
+    assert set(ledger.account('tactical')['positions']) == {'AAA'}
+
+
+def test_started_candidate_accepts_reports_change_and_rejects_policy_change(tmp_path, monkeypatch):
+    cfg = config()
+    members, rows, quotes = setup()
+    args = (tmp_path, None, cfg, quotes, NOW, members, rows, {}, {'ready': False})
+    pc.cycle(*args)
+    def snapshot():
+        return {p.parent.name: p.read_bytes()
+                for p in (tmp_path / 'portfolio_candidates').glob('*/events.jsonl')}
+    original = snapshot()
+    read_text = Path.read_text
+    edited_module = 'reporting.py'
+
+    def changed(path, *args, **kwargs):
+        contents = read_text(path, *args, **kwargs)
+        return contents + '\n# simulated edit' if path.name == edited_module else contents
+
+    monkeypatch.setattr(Path, 'read_text', changed)
+    assert len(pc.cycle(*args)['accounts']) == 5
+    assert snapshot() == original
+    edited_module = 'policy.py'
+    with pytest.raises(ValueError, match='sözleşmesi'):
+        pc.cycle(*args)
+    assert snapshot() == original
+
+
 def test_t0_uses_core_spread_and_rejects_a_previous_day_quote():
     cfg = config('gold')
     cfg['experiment_core_max_spread_pct'] = 4.

@@ -1,6 +1,6 @@
 # PROJECT.md — Projenin Kimliği
 
-Güncel devir ve açık işler [STATE](STATE.md), son denetim kanıtı [24 Kasım raporunda](../docs/DENETIM-2026-11-24.md).
+Güncel devir [STATE](STATE.md), dokümanlar [proje haritasında](../docs/PROJE-ICINDEKILER.md), son araştırma [25 Kasım denetiminde](../docs/TAHMIN-DENETIMI-2026-11-25.md).
 
 ## Araştırma yaklaşımı — 2026-11-24
 
@@ -11,6 +11,14 @@ tahsis ekonomik hipotezlerdir. Katkıdan arındırılmış net getiri, düşüş
 maliyet, kapsama ve reddedilen fırsatlar ön kayıtla izlenir. İlk deneme
 üstünlük kanıtı gerektirmez. Ana politika için ileri ekonomik kanıt gerekir.
 Ortak T0 yalnız ortak beş kolun başlangıcıdır. Bağımsız araştırmalar sürer.
+İleri momentumun ilk 5/ilk 10, %8 tahsis ve %0,6 stop protokolü
+[karar günlüğünde](DECISIONS.md). Özellik, vade veya karar semantiği
+değişen ML adayına ayrı kimlik ve defter açılır. Mevcut tahmin mühürleri,
+kaynak kesitleri ve vadeleri korunur.
+
+25 Kasım tahmin araştırması 5/20/60 seansta teorik gram, ayrı ons ve
+kur tahmini ve sıfır getiri kıyasını; banka kotasyonlarıyla ayrı katkı
+zamanlaması replay'ini ölçtü. [Ortak araştırma](../docs/TAHMIN-DENETIMI-2026-11-25.md)
 
 ## Revizyon hedefi — 2026-11-19
 

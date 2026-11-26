@@ -17,12 +17,25 @@ CATALOG = ('legacy-control', 'core-cash', 'core-passive', 'core-ridge', 'core-sp
 CODE_SCOPE = 'portfolio-policy-v2'
 # These modules present or deliver results outside the candidate trade path.
 NON_POLICY_MODULES = {'notifications.py', 'reporting.py', 'watchdog.py'}
+# Runtime market inputs and settings used only outside the shared experiment.
+UNSEALED_SETTINGS = {
+    'allowed_entry_symbols', 'blocked_symbols', 'calendar', 'event_risk_multiplier',
+    'execution_phase', 'expected_analysis_date', 'holidays', 'live_gate_passed',
+    'raw_forecasts', 'risk_multiplier',
+    'cost_notes', 'dashboard_url', 'forward_momentum_start', 'risk_factors',
+    'telegram', 'watchdog_grace_minutes', 'watchdog_max_gap_minutes',
+}
 
 
 def _code_ids():
     modules = {p.name: digest(p.read_text()) for p in sorted(Path(__file__).parent.glob('*.py'))}
     policy_modules = {name: sha for name, sha in modules.items() if name not in NON_POLICY_MODULES}
     return digest(policy_modules), digest(modules)
+
+
+def _economic_settings(cfg):
+    """Seal declarative settings by default; market data changes each cycle."""
+    return {key: value for key, value in cfg.items() if key not in UNSEALED_SETTINGS}
 
 
 def _week(day):
@@ -453,24 +466,30 @@ def cycle(state, frame, base, quotes, now, records, rows, forecasts, model, spec
         return {'status': 'T0 bekleniyor', 'policy_id': POLICY_ID, 'accounts': []}
     results = []
     policy_code_id, build_code_id = _code_ids()
+    settings = _economic_settings(base)
+    settings_id = digest(settings)
+    contracts = []
+    opening = False
+    # Check every sealed book before any contribution, fill or snapshot is written.
     for spec in CATALOG:
-        cfg = copy.deepcopy(base)
-        cfg['start_date'] = start
         path = Path(state) / 'portfolio_candidates' / spec
         ledger = Ledger(path / 'events.jsonl')
         terms = {'id': spec, 'policy_id': POLICY_ID, 'start_date': start,
-                    'initial_try': cfg['initial_try'], 'monthly_try': cfg['monthly_try'],
-                    'core_ratio': .8, 'tactical_ratio': .2, 'horizon_sessions': cfg['horizon_sessions'],
-                    'costs': {k: cfg[k] for k in ('commission_rate', 'commission_min_try', 'commission_bsmv_rate',
+                    'initial_try': base['initial_try'], 'monthly_try': base['monthly_try'],
+                    'core_ratio': .8, 'tactical_ratio': .2, 'horizon_sessions': base['horizon_sessions'],
+                    'costs': {k: base[k] for k in ('commission_rate', 'commission_min_try', 'commission_bsmv_rate',
                                                  'exchange_fee_rate', 'gold_buy_tax_rate', 'slippage_bps')},
-                    'candidate_model': 'relative-ridge-v1' if cfg['market'] == 'bist' else 'gold-legs-ridge-v1'}
+                    'candidate_model': 'relative-ridge-v1' if base['market'] == 'bist' else 'gold-legs-ridge-v1'}
         prior = next((e['data'] for e in ledger.events if e['kind'] == 'portfolio_contract'), None)
+        opening |= prior is None
         if prior is not None and 'code_scope' not in prior:
             terms['code_id'] = build_code_id
         else:
             terms.update(code_scope=CODE_SCOPE, code_id=policy_code_id)
-        if cfg['market'] == 'gold' and (prior is None or 'core_max_spread_pct' in prior):
-            terms['core_max_spread_pct'] = core_quote_config(cfg)['max_spread_pct']
+        if base['market'] == 'gold' and (prior is None or 'core_max_spread_pct' in prior):
+            terms['core_max_spread_pct'] = core_quote_config(base)['max_spread_pct']
+        if prior is None or 'economic_settings_id' in prior:
+            terms.update(economic_settings=settings, economic_settings_id=settings_id)
         if prior is not None and any(prior.get(k) != v for k, v in terms.items()):
             raise ValueError('Ön kayıtlı aday sözleşmesi geçmişin üstüne değiştirilemez.')
         contract = prior or dict(terms, first_build_code_id=build_code_id,
@@ -480,6 +499,24 @@ def cycle(state, frame, base, quotes, now, records, rows, forecasts, model, spec
                                                 if frame is not None else None),
                                  first_base_model_id=model.get('id'),
                                  first_specialized_model_id=specialized.get('model_id') if specialized else None)
+        contracts.append((spec, path, ledger, contract))
+
+    if opening:
+        if day > start:
+            return {'status': 'T0 giriş seansı kaçtı', 'policy_id': POLICY_ID, 'accounts': []}
+        members = core_members(records, day, base['market'])
+        expected = base.get('core_expected_members', 30) if base['market'] == 'bist' else 1
+        core_cfg = core_quote_config(base)
+        missing = sorted(symbol for symbol in members
+                         if not _valid(rows.get(symbol), symbol, core_cfg, quotes, now))
+        if base.get('execution_phase') != 'entry' or len(members) != expected or missing:
+            return {'status': 'T0 için uygun giriş gözlemi bekleniyor', 'policy_id': POLICY_ID,
+                    'accounts': [], 'opening': {'expected': expected, 'members': len(members),
+                                                'missing': missing, 'phase': base.get('execution_phase')}}
+
+    for spec, path, ledger, contract in contracts:
+        cfg = copy.deepcopy(base)
+        cfg['start_date'] = start
         ledger.add('portfolio_contract', 'portfolio_contract', now.isoformat(), **contract)
         _fund(ledger, cfg, day, now, spec)
         books = ('strategy',) if spec == 'legacy-control' else ('core', 'tactical')

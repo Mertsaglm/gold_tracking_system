@@ -46,8 +46,9 @@ Ana/önceki altın hesapları korunur. BIST ile ortak ileri T0 sonrasında ayrı
 geçerli İş Bankası kotasyonunda düzenli birikimdir; en fazla %20 taktik
 masraf sonrası tahmin ve stop riskiyle sınırlanır. Taktik kârı çekirdek + nakit
 ve çekirdek + pasif altın kollarına göre ölçülür. Ons/kur Ridge yalnız ayrı
-model adayıdır; üstünlük veya otomatik terfi kabul edilmez. Gerçek emir yok;
-ortak T0 henüz açılmadı. Ayrıntı: `docs/PORTFOY-DENEYI-2026-10-01.md`.
+model adayıdır. Son geçerli kaynak kapanışı ve taze banka kotasyonu
+ilk T0 çevriminde ekonomik ayarlarla birlikte doğrulanır.
+[Portföy deneyi](../docs/PORTFOY-DENEYI-2026-10-01.md)
 Kod 2026-10-01'de iki deponun `main` dalına yayımlandı. Altın ilk yeni kod
 çevrimi/Telegram makbuzu geçti; BIST ilk yeni koşusu seans dışında atlandı.
 Beş deney hesabının canlı çalışması, ortak gelecek T0 ön koşullarına bağlıdır.

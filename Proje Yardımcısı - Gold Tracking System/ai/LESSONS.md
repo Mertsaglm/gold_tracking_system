@@ -11,6 +11,12 @@
 
 ---
 
+## L-033 — 2026-11-26 — Kod özeti ayar değişikliğini yakalamaz
+
+Tekrarlanabilir deneylerde davranışı belirleyen ayarları sonuçtan önce
+mühürle. Birden fazla defter yazan çevrimde sözleşmeleri yazıma başlamadan
+önce birlikte doğrula. Kaynak takvimi ile işlem takvimini ayrı tut.
+
 ## L-030 — 2026-11-19 — Karar makbuzu kapanış raporu değildir
 
 Gün içi durum tekrar etmese bile gün sonu raporu ayrı kimlikle teslim

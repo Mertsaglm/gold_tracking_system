@@ -100,7 +100,7 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
 
     # Bu kapı fiyat/model/veritabanı hattından ÖNCE çalışır. Mesai dışındaki
     # workflow_run yalnız iz bırakır; yeni karar veya sanal işlem üretmez.
-    from .calendar import session_block, phase, monitoring_snapshot
+    from .calendar import session_block, phase, monitoring_snapshot, previous_analysis_session
     current_phase = phase(now, cfg) if 'observation_window' in cfg else ('closed' if session_block(now, cfg) else 'entry')
     if closing_refresh and cfg['market']=='bist':
         from .calendar import last_closed_session
@@ -148,6 +148,7 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
         local_day = now.astimezone(IST).date().isoformat()
         fund(ledger, cfg, local_day, now.isoformat())
         errors = []
+        expected_close = previous_analysis_session(now, cfg)
         with history.connection(root, cfg["market"], database) as con:
             if cfg["market"] == "bist":
                 from src import util
@@ -157,8 +158,8 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                 if local_day in cfg.get('calendar', {}).get('half_days', []) and local.strftime('%H:%M') >= '12:40':
                     asof = local_day
             else:
-                asof = (now.astimezone(IST).date() - timedelta(days=1)).isoformat()
-            frame = history.load(con, cfg["market"], asof)
+                asof = expected_close.isoformat()
+            frame = history.load(con, cfg["market"], asof, cfg.get('analysis_nonsettlement_days', {}))
             if cfg.get('watchlist_enabled'):
                 membership = universe_module.read(root)
                 watched = universe_module.members(membership, local_day)
@@ -256,10 +257,6 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
             valid = current.dropna(subset=model.get('features', learning.FEATURES))
             forecasts = dict(zip(valid.symbol, learning.predict(model, valid).tolist()))
         raw_forecasts = dict(forecasts)
-        from .calendar import trading_day
-        expected_close = now.astimezone(IST).date() - timedelta(days=1)
-        while not trading_day(expected_close, cfg):
-            expected_close -= timedelta(days=1)
         if cfg['market'] == 'bist' and current_phase == 'valuation':
             expected_close = datetime.fromisoformat(asof).date()
         # Önceki kapanış gelmediyse eski model yeni sanal alım açamaz.

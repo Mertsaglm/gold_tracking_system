@@ -8,6 +8,21 @@ Güncel oturum devri ve doğrulama kesiti [STATE](STATE.md) dosyasındadır.
 
 ---
 
+## #035 — 2026-11-26 — Ortak T0 başlangıcı ve ekonomik ayar mührü
+
+Ortak seans 27 Kasım 2026. Girişte son geçerli kaynak kapanışı,
+çekirdeğin tüm üyeleri ve güncel kotasyon doğrulanır. Beş defter
+aynı katkı kuralıyla açılır. Telegram teslimi ayrı ölçülür.
+Gold V2’de 26 Kasım GC uzlaşması yeni bar üretmez. 27 Kasım için
+25 Kasım kaynak kapanışı kullanılır. BIST 26 Kasım kapanışını
+bekler. [CME duyurusu](https://www.cmegroup.com/tools-information/holiday-calendar/files/2026/2026-thanksgiving-clearing-advisory.pdf)
+
+Yeni aday sözleşmesi statik ekonomik ayarları ve özetini saklar.
+Beş defterin sözleşmesi ilk yazımdan önce karşılaştırılır. Model
+ve fiyat gözlemleri ile bağımsız momentum ve teslim ayarları kendi
+akışlarında kalır. Yeni ekonomik hipotez ayrı deney kimliği gerektirir.
+[Başlangıç sözleşmesi](../docs/PORTFOY-DENEYI-2026-10-01.md)
+
 ## #034 — 2026-11-25 — T0 sözleşmesi ve gün içi ölçüm
 
 Yeni sözleşmede ekonomik kod özeti, bildirim, raporlama ve nöbetçi

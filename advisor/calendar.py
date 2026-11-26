@@ -114,3 +114,12 @@ def last_closed_session(now, cfg):
     if cal is not None and (not cal.get('available') or str(day.year) not in cal.get('years', [])):
         raise ValueError('Kapanış seansı için doğrulanmış takvim kaydı yok.')
     return day
+
+
+def previous_analysis_session(now, cfg):
+    """Latest completed dated analysis bar, including source-market holidays."""
+    day = now.astimezone(IST).date() - timedelta(days=1)
+    nonsettlement = cfg.get('analysis_nonsettlement_days', {})
+    while not trading_day(day, cfg) or day.isoformat() in nonsettlement:
+        day -= timedelta(days=1)
+    return day

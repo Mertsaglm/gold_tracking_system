@@ -1,5 +1,6 @@
 """Önceki kapanış yetişmediğinde V2 veri arşivinin atomik onarımı."""
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,8 @@ def seed(tmp_path):
     original = Path(__file__).resolve().parents[1]
     for name in ('config.yaml', 'holidays_tr.yaml'):
         (root / name).write_bytes((original / name).read_bytes())
+    (root / 'advisor').mkdir()
+    (root / 'advisor/config.json').write_bytes((original / 'advisor/config.json').read_bytes())
     cfg = util.load_config(root / 'config.yaml')
     cfg['paths']['db'] = str(root / 'seed.sqlite')
     con = db.connect(cfg)
@@ -70,3 +73,16 @@ def test_future_dated_row_cannot_hide_missing_expected_close(tmp_path, monkeypat
     with pytest.raises(ValueError, match='Beklenen altın kapanışı'):
         advisor_refresh.refresh(root, NOW)
     assert source.read_bytes() == before
+
+
+def test_official_nonsettlement_uses_prior_real_bar_without_fetching(tmp_path, monkeypatch):
+    root = seed(tmp_path)
+    setting = root / 'advisor/config.json'
+    cfg = json.loads(setting.read_text())
+    cfg['analysis_nonsettlement_days'] = {'2026-09-22': 'CME fixture'}
+    setting.write_text(json.dumps(cfg))
+    monkeypatch.setattr(history, 'update_recent',
+                        lambda *_: pytest.fail('Official nonsettlement must not require a new bar.'))
+    assert advisor_refresh.refresh(root, NOW) == {
+        'status': 'already_current', 'expected': '2026-09-21', 'last': '2026-09-21',
+    }

@@ -34,7 +34,7 @@ def connection(root, market, database=None, *, dump_path=None):
             yield con
 
 
-def load(con, market, asof):
+def load(con, market, asof, exclude_dates=()):
     if market == "bist":
         frame = pd.read_sql_query(
             "SELECT b.ticker symbol,b.date,b.o open,b.c close,b.c_tr total_close,b.h high,b.l low,"
@@ -44,6 +44,7 @@ def load(con, market, asof):
         frame = pd.read_sql_query(
             "SELECT date,gram_teorik close,gram_teorik total_close,ons_usd,usdtry FROM history_daily "
             "WHERE date<=? ORDER BY date", con, params=(asof,))
+        frame = frame.loc[~frame.date.isin(exclude_dates)].copy()
         frame["symbol"] = "GRAM"
         frame["sector"] = "altin"
         frame["in_live"] = 1

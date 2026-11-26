@@ -1,15 +1,33 @@
 # Çekirdek/taktik sanal sınavı — 2026-10-01
 
-> **2026-11-25 devir notu.** Güncel üretim, yerel paket, bağımsız momentum ve ortak T0 durumu [STATE kaydında](../ai/STATE.md). Bu sayfadaki tarihli kesitler kendi koşullarına aittir.
+> **2026-11-26 devir notu.** Ortak T0 hazırlığı, ilk canlı defter kanıtı ve bağımsız momentum [STATE kaydında](../ai/STATE.md). Aşağıdaki tarihli kesitler kendi koşullarına aittir.
 
 
 Bu paket ana BIST/altın hesaplarının kararını değiştirmez. Ayrı defterlerde aynı
 başlangıç ve katkılarla beş kol açar: mevcut politika, %80 çekirdek + %20 nakit,
 çekirdek + pasif kalan dilim, çekirdek + mevcut Ridge ve çekirdek + piyasaya özel
-Ridge. `advisor/config.json` içindeki `experiment_start_date` iki repoda da
-`null` olduğu için **ileri T0 başlamamıştır**. Kod 2026-10-01'de iki `main`
-dalına yayımlandı; beş deney hesabının canlı çalışması ayrı bir sonraki adımdır.
+Ridge. Ortak başlangıç seansı iki deponun `advisor/config.json` dosyasında
+`experiment_start_date` ile belirlenir. İlk fiilî katkı ve kotasyon olayları
+her piyasanın sanal defterinde doğrulanır.
 BIST ile altın arasında para aktarılmaz.
+
+## 26 Kasım başlangıç kararı
+
+Ortak seans 27 Kasım 2026. İlk çevrim beş kolu ancak o tarihin giriş
+penceresinde, son tamamlanmış kaynak kapanışı ve çekirdeğin tamamı
+için uygun kotasyon bulunduğunda açar. Sonraki kotasyonu bekleme
+kuralı ilk dolumda da geçerlidir. Seans kaçarsa geçmişe katkı yazılmaz.
+Telegram teslimi ve çekirdek dışı veri açıkları ayrı işletim kanıtıdır.
+
+Altın kaynağında 26 Kasım GC uzlaşma fiyatı önceki günden taşındığı için
+27 Kasım girişinde son geçerli teorik kapanış 25 Kasım’dır. Altının banka
+giriş penceresi yerel takvime, dolumlar güncel banka kotasyonuna tabidir.
+BIST için olağan 26 Kasım kapanışı gerekir. [CME kaynak takvimi](https://www.cmegroup.com/tools-information/holiday-calendar/files/2026/2026-thanksgiving-clearing-advisory.pdf)
+
+Her yeni defter ekonomik ayarların değerlerini ve özetini mühürler.
+Bir uyumsuzlukta beş kolda da katkı, dolum ve görünüm yazımı durur.
+Güncel fiyatlar, tarihli üyelik ve etkin işlem seansı her çevrimde okunur.
+[Karar kaydı](../ai/DECISIONS.md)
 
 ## Uygulanan sözleşme
 

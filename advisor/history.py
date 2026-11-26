@@ -34,7 +34,7 @@ def connection(root, market, database=None, *, dump_path=None):
             yield con
 
 
-def load(con, market, asof, *, exclude_dates=()):
+def load(con, market, asof, exclude_dates=()):
     if market == "bist":
         frame = pd.read_sql_query(
             "SELECT b.ticker symbol,b.date,b.o open,b.c close,b.c_tr total_close,b.h high,b.l low,"

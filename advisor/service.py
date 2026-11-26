@@ -159,8 +159,7 @@ def cycle(root, *, database=None, now=None, quotes=None, offline=False, notify=F
                     asof = local_day
             else:
                 asof = expected_close.isoformat()
-            frame = history.load(con, cfg["market"], asof,
-                                 exclude_dates=cfg.get('analysis_nonsettlement_days', {}))
+            frame = history.load(con, cfg["market"], asof, cfg.get('analysis_nonsettlement_days', {}))
             if cfg.get('watchlist_enabled'):
                 membership = universe_module.read(root)
                 watched = universe_module.members(membership, local_day)

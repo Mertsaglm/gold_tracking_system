@@ -9,7 +9,8 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from advisor.calendar import IST, load, trading_day
+from advisor.calendar import load, previous_analysis_session
+from advisor.service import configuration
 
 from . import db, dbdump, evds_job, history, util
 from .sources import evds
@@ -20,10 +21,9 @@ def refresh(root: Path = util.ROOT, now: datetime | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     if now.tzinfo is None:
         raise ValueError('Saat dilimi eksik.')
-    expected = now.astimezone(IST).date() - timedelta(days=1)
-    calendar = {'calendar': load(root)}
-    while not trading_day(expected, calendar):
-        expected -= timedelta(days=1)
+    advisor_cfg = configuration(root)
+    advisor_cfg['calendar'] = load(root)
+    expected = previous_analysis_session(now, advisor_cfg)
     expected_day = expected.isoformat()
     source = root / 'data/altin.sql'
     if not source.is_file():

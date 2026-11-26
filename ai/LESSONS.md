@@ -11,6 +11,14 @@ Güncel oturum devri ve doğrulama kesiti [STATE](STATE.md) dosyasındadır.
 
 ---
 
+## L-033 — 2026-11-26 — Kod özeti ayar değişikliğini yakalamaz
+
+Açılmış deneyin risk ayarı değişince 25 Kasım sürümü yeni çevrimi kabul
+ediyordu. Ekonomik ayarların değerlerini ve özetini mühürle. Bir kolun
+sözleşmesi uyuşmadığında diğer dört kol da yazıma geçmeden durmalı.
+Kaynak tatili ile bankanın işlem seansını ayrı tut.
+[Davranış testleri](../tests/test_portfolio_experiments.py)
+
 ## L-032 — 2026-11-24 — Model arızası pasif çekirdeği durdurmamalı
 
 Özelleşmiş model çağrısı bozulduğunda ortak kol çağrısı yapılmıyordu.

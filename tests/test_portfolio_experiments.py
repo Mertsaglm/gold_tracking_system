@@ -1,11 +1,13 @@
 """Çekirdek/taktik adaylarında para ve zaman sınırlarının davranış kilitleri."""
+from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
+import sqlite3
 
 import pytest
 
-from advisor import benchmark, corporate, policy, portfolio_candidates as pc, service, universe, filter_diagnostics, news, specialized
+from advisor import benchmark, calendar, corporate, history, policy, portfolio_candidates as pc, service, universe, filter_diagnostics, news, specialized
 from advisor.ledger import Ledger
 from scripts.audit_production import independent
 from scripts.portfolio_preflight import quote_evidence, start_issues
@@ -83,6 +85,82 @@ def test_started_candidate_accepts_reports_change_and_rejects_policy_change(tmp_
     assert snapshot() == original
 
 
+@pytest.mark.parametrize('market', ['bist', 'gold'])
+@pytest.mark.parametrize(('setting', 'value'), [
+    ('risk_per_trade_pct', 1.52),
+    ('max_portfolio_risk_pct', 7),
+    ('max_position_pct', 35),
+    ('minimum_cash_pct', 21),
+    ('min_net_reward_risk', 1.65),
+    ('min_expected_net_pct', 2.5),
+    ('max_spread_pct', 2.25),
+    ('max_quote_age_minutes', 42),
+    ('require_next_quote', True),
+    ('entry_intent_minutes', 47),
+    ('entry_window.close', '16:00'),
+    ('execution_window.close', '17:00'),
+    ('observation_window.close', '17:30'),
+    ('dividend_tax_rate', .25),
+    ('learning.ridge_penalty', 71),
+    ('learning.trial_position_multiplier', .31),
+    ('sources.gold', 'https://example.test/reference'),
+    ('adaptive_risk.enabled', False),
+    ('watchlist_enabled', False),
+])
+def test_started_candidate_rejects_changed_settings_before_any_write(tmp_path, market, setting, value):
+    cfg = config(market)
+    records, rows, quotes = setup(market)
+    model = {'ready': False}
+    pc.cycle(tmp_path, None, cfg, quotes, NOW, records, rows, {}, model)
+    paths = sorted((tmp_path / 'portfolio_candidates').glob('*/*'))
+    before = {path: path.read_bytes() for path in paths}
+    changed = deepcopy(cfg)
+    parent, separator, key = setting.partition('.')
+    policy = changed[parent] if separator else changed
+    policy[key or parent] = value
+
+    with pytest.raises(ValueError, match='sözleşmesi'):
+        pc.cycle(tmp_path, None, changed, quotes, NOW + timedelta(minutes=5), records, rows, {}, model)
+
+    assert {path: path.read_bytes() for path in paths} == before
+
+
+def test_candidate_accepts_new_inputs_and_telegram_settings(tmp_path):
+    cfg = config('gold')
+    records, rows, quotes = setup('gold')
+    model = {'ready': False}
+    pc.cycle(tmp_path, None, cfg, quotes, NOW, records, rows, {}, model)
+    event_file = tmp_path / 'portfolio_candidates' / 'core-passive' / 'events.jsonl'
+    before = Ledger(event_file).events
+    later = NOW + timedelta(days=1)
+    _, next_rows, next_quotes = setup('gold', later)
+    next_rows['GRAM']['date'] = '2026-10-01'
+    cfg.update(expected_analysis_date='2026-10-01', execution_phase='protection',
+               telegram={'enabled': False}, dashboard_url='https://example.test/dashboard',
+               forward_momentum_start='2026-10-06', holidays=['2026-10-05'])
+    assert len(pc.cycle(tmp_path, None, cfg, next_quotes, later, records, next_rows, {}, model)['accounts']) == 5
+    after = Ledger(event_file).events
+    assert after[:len(before)] == before
+    assert sum(event['kind'] == 'portfolio_contract' for event in after) == 1
+    assert after[-1]['kind'] == 'portfolio_valuation'
+
+
+def test_contract_mismatch_in_last_sleeve_writes_no_candidate_ledger(tmp_path):
+    cfg = config('gold')
+    records, rows, quotes = setup('gold')
+    model = {'ready': False}
+    pc.cycle(tmp_path / 'main', None, cfg, quotes, NOW, records, rows, {}, model)
+    pc.cycle(tmp_path / 'other', None, {**cfg, 'risk_per_trade_pct': 1.71},
+             quotes, NOW, records, rows, {}, model)
+    last = Path('portfolio_candidates/core-specialized/events.jsonl')
+    (tmp_path / 'other' / last).replace(tmp_path / 'main' / last)
+    paths = sorted((tmp_path / 'main').glob('portfolio_candidates/*/*'))
+    before = {path: path.read_bytes() for path in paths}
+    with pytest.raises(ValueError, match='sözleşmesi'):
+        pc.cycle(tmp_path / 'main', None, cfg, quotes, NOW + timedelta(minutes=5), records, rows, {}, model)
+    assert {path: path.read_bytes() for path in paths} == before
+
+
 def test_t0_uses_core_spread_and_rejects_a_previous_day_quote():
     cfg = config('gold')
     cfg['experiment_core_max_spread_pct'] = 4.
@@ -155,15 +233,30 @@ def test_no_signal_funds_core_but_keeps_tactical_cash_and_replay_is_inert(tmp_pa
     assert {p.parent.name: p.read_bytes() for p in (tmp_path/'portfolio_candidates').glob('*/events.jsonl')} == before
 
 
-def test_bad_or_old_quote_never_fills_any_sleeve(tmp_path):
+def test_missing_core_quote_blocks_first_funding_until_same_session_recovery(tmp_path):
     members, rows, quotes = setup()
-    quotes['AAA']['quoted_at'] = (NOW - timedelta(hours=2)).isoformat()
+    quotes['AAA']['quoted_at'] = (NOW - timedelta(seconds=10)).isoformat()
     quotes['BBB']['bid'] = -1
-    out = pc.cycle(tmp_path, None, config(), quotes, NOW, members, rows, {},
-                   {'ready': False, 'horizon_sessions': 20})
-    for candidate in out['accounts']:
-        assert not candidate['strategy']['fills']
-        assert candidate['strategy']['cash_try'] == 50000
+    cfg = config()
+    model = {'ready': False, 'horizon_sessions': 20}
+    out = pc.cycle(tmp_path, None, cfg, quotes, NOW, members, rows, {}, model)
+    assert out['accounts'] == [] and out['opening']['missing'] == ['BBB']
+    assert not (tmp_path / 'portfolio_candidates').exists()
+
+    _, _, valid = setup(now=NOW + timedelta(minutes=5))
+    out = pc.cycle(tmp_path, None, cfg, valid, NOW + timedelta(minutes=5), members, rows, {}, model)
+    assert len(out['accounts']) == 5
+    assert all(account['strategy']['contributed_try'] == 50000 for account in out['accounts'])
+
+
+def test_new_experiment_cannot_backfill_its_first_entry_session(tmp_path):
+    cfg = config('gold')
+    now = NOW + timedelta(days=1)
+    members, rows, quotes = setup('gold', now)
+    result = pc.cycle(tmp_path, None, cfg, quotes, now, members, rows, {}, {'ready': False})
+    assert result['status'] == 'T0 giriş seansı kaçtı'
+    assert result['accounts'] == []
+    assert not (tmp_path / 'portfolio_candidates').exists()
 
 
 def test_partial_tactical_sale_cannot_consume_core_lots(tmp_path):
@@ -291,9 +384,9 @@ def test_incomplete_bist30_membership_cannot_be_relabelled_as_equal_weight_core(
     cfg['core_expected_members'] = 30
     out = pc.cycle(tmp_path, None, cfg, quotes, NOW, members, rows, {},
                    {'ready': False, 'horizon_sessions': 20})
-    core = next(a for a in out['accounts'] if a['id'] == 'core-cash')
-    assert core['strategy']['parts']['core']['fills'] == []
-    assert {'status': 'çekirdek_üyeliği_eksik', 'observed': 2, 'expected': 30} in core['diagnostics']
+    assert out['accounts'] == []
+    assert out['opening'] == {'members': 2, 'expected': 30, 'missing': [], 'phase': 'entry'}
+    assert not (tmp_path / 'portfolio_candidates').exists()
 
 
 def test_blocked_tactical_sale_remains_due_in_same_week(tmp_path):
@@ -372,3 +465,22 @@ def test_preflight_rejects_backdated_or_closed_t0():
     assert start_issues('2026-10-03', today, cfg)
     assert start_issues('2026-10-05', today, cfg)
     assert start_issues('2026-10-06', today, cfg) == []
+
+
+def test_source_nonsettlement_day_leaves_bank_session_open_and_excludes_phantom_bar():
+    at = datetime(2026, 11, 27, 11, tzinfo=calendar.IST)
+    cfg = config('gold')
+    cfg['analysis_nonsettlement_days'] = {'2026-11-26': 'CME'}
+    past = calendar.previous_analysis_session(at, cfg)
+    assert past.isoformat() == '2026-11-25'
+    assert calendar.previous_analysis_session(at, {}).isoformat() == '2026-11-26'
+    assert calendar.trading_day(date(2026, 11, 26), cfg)
+    assert calendar.phase(at, cfg) == 'entry'
+    with sqlite3.connect(':memory:') as con:
+        con.execute('CREATE TABLE history_daily(date, gram_teorik, ons_usd, usdtry)')
+        con.executemany('INSERT INTO history_daily VALUES(?,?,?,?)',
+                        [('2026-11-25', 6200, 4050, 48), ('2026-11-26', 1, 1, 1),
+                         ('2026-11-27', 6210, 4060, 48)])
+        frame = history.load(con, 'gold', '2026-11-27', exclude_dates=cfg['analysis_nonsettlement_days'])
+    assert frame.date.tolist() == ['2026-11-25', '2026-11-27']
+    assert frame.close.tolist() == [6200, 6210]

@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from advisor import history, marketdata, portfolio_candidates, service, universe
-from advisor.calendar import IST, last_closed_session, load as load_calendar, phase, trading_day
+from advisor.calendar import IST, last_closed_session, load as load_calendar, phase, previous_analysis_session, trading_day
 
 
 def start_issues(start, today, cfg):
@@ -57,13 +57,15 @@ def inspect(root, *, archive=None, snapshot=None, now=None, proposed_start=None)
     now = now or datetime.now(IST)
     today = now.astimezone(IST).date()
     cfg['calendar'] = load_calendar(root)
-    previous = last_closed_session(now, cfg)
+    previous = (previous_analysis_session(now, cfg) if cfg['market'] == 'gold'
+                else last_closed_session(now, cfg))
     launch = proposed_start or cfg.get('experiment_start_date')
     reasons = start_issues(launch, today, cfg)
     membership_day = launch if not reasons else today.isoformat()
     with history.connection(root, cfg['market'], dump_path=archive) as con:
         table = 'bars_daily' if cfg['market'] == 'bist' else 'history_daily'
-        latest = con.execute('SELECT max(date) FROM ' + table).fetchone()[0]
+        latest = con.execute(f'SELECT max(date) FROM {table} WHERE date<=?',
+                             (previous.isoformat(),)).fetchone()[0]
         missing = []
         if cfg['market'] == 'bist':
             members = portfolio_candidates.core_members(universe.read(root), membership_day, 'bist')

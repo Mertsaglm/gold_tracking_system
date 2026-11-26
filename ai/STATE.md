@@ -14,6 +14,7 @@ Araştırma inceleme dalına gönderildi. [İlk paket `da41461`](https://github.
 | Ortak T0 | 27 Kasım iki config için ortak seans. 26 Kasım kesitinde aday defterleri 0/0, bütçeler 50.000/5.000 TL, aktif defter zincirleri doğrulandı. Başlangıçta BIST 26 Kasım, altın 25 Kasım kaynak kapanışını ve aynı seansın geçerli çekirdek kotasyonlarını bekler. İlk katkı ve ilk dolum teyidi açık. [Sözleşme](../docs/PORTFOY-DENEYI-2026-10-01.md) |
 | Araştırma | Bağımsız momentum 25 Kasım'da başladı. 30/30 sıra, 50.000 TL katkı, 5 strateji ve 30 pasif dolum. 22 Aralık vadesi korunuyor. [İlk gün görünümü](https://github.com/Mertsaglm/bist-analiz/blob/044e14fd12286ee0d94328d5ba16fbd5a228fe10/data/advisor/latest.json) |
 | Tahmin araştırması | Ayrı 5/20/60 seans CPU koşusu tamamlandı. Altında sıfır getiri MAE'de üç ufukta önde. Kotasyon replay'inde ilk uygun kol 48.563,34 TL, dar makası bekleyen kol 48.330,93 TL. [Kanıt](../docs/TAHMIN-DENETIMI-2026-11-25.md) |
+| 26 Kasım tarihsel sınama | 25 Kasım kapanışı, 2.647 GC=F teorik gram günü. 59 olgun 20 seans tahmininde genişleyen Ridge MAE 5,36, sıfır 5,54 puan. Eş 340.000 TL katkıyla %3 ve %4 makas senaryolarında tüm aktif kollar pasifin altında. [Yerel ölçüm özeti](#26-kasım-tarihsel-ölçüm) |
 | Ek denetim | 24 Kasım gündüzü %4 çekirdek sınırı 32/32. Gün içi deneyde 36 eş dolum, 22 farklı saat. 25 Kasım 01.28 arşiv işi CSV'yi güncelledi; SQL/defter aynı. Sözleşme düzeltmesi main yayın paketinde. [Kanıt](../docs/TAHMIN-DENETIMI-2026-11-25.md) |
 | Yerel paket | Momentum/pasif hisse ve nakit payı, haftalık ortalama ve gün sayısı, stop ve stres ölçümleri. BIST OHLC reddinde dört ham değer. 25 Kasım main yayın paketinde. Her depoda 5 hedefli test, BIST'te 30 fiyat/telafi testi, 39 ortak modül eş. |
 | Veri İzleme | Vercel canlı dosyası doğrulandı. Parolalı oturum, altın otomatik gün sonu makbuzu ve yeni haftalık teslim açık. |
@@ -53,6 +54,26 @@ reddedilen ilk ham değerler olmadığından kök neden doğrulanmadı.
 - İki canlı model approved=false, tamamlanmış strateji roundtrip 0.
   Offline sıralama başarısı net portföy üstünlüğü değildir; otomatik T0 yok.
 - 25 Kasım yerel paketinde 1.049 test geçti, 14 atlandı. 39 ortak modül eş.
+
+## 26 Kasım tarihsel ölçüm
+
+26 Kasım takip sınaması, 25 Kasım kapanışlı aynı 59 tarihte ana Ridge'in
+ağırlıksız ayarını ve 126 seans yarı ömrünü ayırdı. Ana Ridge MAE 5,36,
+ağırlıklı karşılığı 6,69. T0 ons/kur özellikli Ridge 5,98 eş ağırlık ve
+6,77 ağırlıklı. İki makas senaryosunda pasif önde. 14.31 İstanbul canlı
+makbuzunda ortak T0 beklemede ve 0 hesap. [Fiyatlı çevrim](https://github.com/Mertsaglm/gold_tracking_system/actions/runs/45811243780)
+
+Üretim SQL'i 25 Kasım. 26 Kasım 14.01 İstanbul fiyatlı çevrimin makbuzu
+olay zincirindeki kotasyonla eşleşti. Ortak T0 27 Kasım, makbuzda 0 hesap.
+1 Ekim–26 Kasım arasında 40 İstanbul tarihinde 1.291 sıralı GRAM
+banka alış/satış gözlemi var. [Kaynak commit](https://github.com/Mertsaglm/gold_tracking_system/commit/43e998531920a109181de4f3dbc62df2303649f5) ·
+[Çevrim](https://github.com/Mertsaglm/gold_tracking_system/actions/runs/45806612222)
+
+2022-01-04–2026-11-25, eş 340.000 TL katkı ve teorik fiyatla %3/%4
+makas. Pasif 1.205.099/1.193.522 TL, SMA50 1.141.164/1.122.807 TL,
+genişleyen Ridge 1.061.034/1.020.709 TL. Birleşik protokol, çalıştırılabilir
+kod ve günlük makbuzlar BIST deposunun 26 Kasım tarihsel sınama paketinde.
+Bu ölçümden model terfisi veya canlı varsayım değişikliği çıkmadı.
 
 ## Sıradaki 3 İş
 

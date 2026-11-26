@@ -8,6 +8,15 @@ Güncel oturum devri ve doğrulama kesiti [STATE](STATE.md) dosyasındadır.
 
 ---
 
+## #036 — 2026-11-26 — Teorik eğitim penceresi ve ekonomik sınama
+
+20 seans Ridge pencereleri ve ayrı ons/kur modeli ortak günlerde sınandı.
+Genişleyen eğitim ortalama hatayı düşürdü. Eş katkılı %3 ve %4 makas
+senaryolarında bütün aktif kollar pasifin altında kaldı. Banka verisi
+40 İstanbul tarihiyle sınırlı. Model terfisi için ileri eş katkılı
+ekonomik kanıt ve gerçek GRAM kotasyon kapsamı gerekir. Ortak T0 bu
+araştırmadan bağımsız ilerler. [Ölçüm ve kaynak](STATE.md#26-kasım-tarihsel-ölçüm)
+
 ## #035 — 2026-11-26 — Ortak T0 başlangıcı ve ekonomik ayar mührü
 
 Ortak seans 27 Kasım 2026. Girişte son geçerli kaynak kapanışı,
